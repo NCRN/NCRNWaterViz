@@ -14,8 +14,8 @@ W.Cosinor<-function(Df.In, DateVar, Measure, Formula) {       #This function tak
       return(NA)                #returns NA if there is not enough data
 
   else { 
-    #Reg1<-cosinor(formula=Formula, date=Df.In[,DateVar], data=Df.In,type="daily") #does first test to see if consinor or lm is a better fit
-    Reg1<-cosinor(formula=Formula, date=DateVar, data=Df.In,type="daily")
+    #Reg1<-cosinor(formula=Formula, date=Df.In[,DateVar], data=Df.In,type="daily") #does first test to see if consinor or lm is a better fit 
+    Reg1<-cosinor(formula=Formula, date=DateVar, data=Df.In,type="daily")# new version works for R 3.x
     
     if (summary(Reg1)$significant == TRUE ) {           #if this staatement is true, then consinor is a better fit - seasonal data
       Frac<-yrfraction(Df.In[,DateVar],type="daily")    #for cosw and sinw  to determine where in the year you are
@@ -50,7 +50,7 @@ W.Cosinor<-function(Df.In, DateVar, Measure, Formula) {       #This function tak
   #redo analayis and feed to output
     Formula2<-update.formula(Formula, eval(NewMeas)~.)                               #now do analysis with updated data
   #  Reg2<-cosinor(formula=Formula2, date=Df.In[,DateVar], data=Df.In, type="daily") #does second test to see if consinor or lm is a better fit
-  Reg2<-cosinor(formula=Formula2, date=DateVar, data=Df.In, type="daily")
+  Reg2<-cosinor(formula=Formula2, date=DateVar, data=Df.In, type="daily") #new version works for R 3.x
   if (summary(Reg2)$significant == TRUE ) {              #if cosinor is the better choice do it.
         Frac<-yrfraction(Df.In[,DateVar],type="daily")    #for cosw and sinw
         Df.In$cosw<-cos(Frac*2*pi)                         #for cosinor glm

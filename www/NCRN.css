@@ -1,0 +1,62 @@
+.container-fluid{
+  padding: 0px
+}
+
+.row-fluid{
+  font-family: 'Frutiger, Arial, Verdana, Helvetica, sans-serif'
+}
+
+.shiny-text-output{
+  font-size:18px
+}
+
+.span12{
+  background-color: black
+}
+
+.span12 p{
+  color: white;
+  font-family: Arial;
+  padding-left:20px
+}
+
+label.control-label {
+  display: inline
+}
+
+.shiny-bound-input {
+  margin-left: 10px
+}
+
+.jslider{
+  max-width: 220px;
+  display: inline-block;
+  margin-left: 10px
+}
+
+hr{
+  background-color: black;
+  height: 1px;
+  margin: 5px
+}
+
+h5{
+  margin: 5px 0px
+} 
+
+.span8 p{
+  font-size: 16px
+}
+
+#GoodC, #GoodColor, #TheshPColor, #BadColor, #OutC, #OutColor, #ThreshLCol,#ThColor, #TrendLCol, #TrColor, #PointSli, #LineSliPan, #LegCheck {
+  display: inline-block;
+  width: 130px
+}
+
+#WaterTable{
+  width: 650px
+}
+
+
+
+

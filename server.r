@@ -262,11 +262,11 @@ output$TrendsOut<-renderText({
             ifelse (summary(Trends.Out()$Analysis)$coefficients[2,1] > 0, "increasing", "decreasing"),
             "trend of",c(signif(summary(Trends.Out()$Analysis)$coefficients[2,1]*365.24, digits=3)),Param.info()[Param.info()$Display==input$Param,]$Units, "per year.")
           }}, 
-  "Cosinor"=  {if(Trends.Out()$Analysis$glm$coefficients[2,4]>.05){("There is no significant trend in the data")}
+  "Cosinor"=  {if(summary(Trends.Out()$Analysis$glm)$coefficients[2,4]>.05){("There is no significant trend in the data")}
               else {
                 c("There is a significant",
-                ifelse (Trends.Out()$Analysis$glm$coefficients[2,1]>0,"increasing","decreasing"), 
-                "trend of",c(signif(Trends.Out()$Analysis$glm$coefficients[2,1]*365.24,digits=3)),Param.info()[Param.info()$Display==input$Param,]$Units, "per year.")
+                ifelse (summary(Trends.Out()$Analysis$glm)$coefficients[2,1]>0,"increasing","decreasing"), 
+                "trend of",c(signif(summary(Trends.Out()$Analysis$glm)$coefficients[2,1]*365.24,digits=3)),Param.info()[Param.info()$Display==input$Param,]$Units, "per year.")
               }},
   NULL) 
   }

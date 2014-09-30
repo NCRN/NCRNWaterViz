@@ -78,6 +78,8 @@ shinyUI(pageWithSidebar(
      
     HTML('<hr>'),
     
+    ############### Graphics options
+    
     h4(id="GraphOptHead","Graphics Options"),
     
     div(id="GraphBox",checkboxInput("GraphOptions","Show Graphics Options",FALSE)),

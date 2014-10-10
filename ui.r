@@ -4,26 +4,27 @@ ColorNames<-GraphColors$DisplayColor
 
 
 
-shinyUI(pageWithSidebar(
-  
-  tags$head(includeScript("./www/water-analytics.js")),   
-  
-  div(id="NPSBanner",
-   headerPanel(
-    windowTitle="NCRN Water Quality",
-    list(
-      tags$head(
-        tags$script(
-          'type = "text/javascript"',' var ss = document.createElement("link"); ss.type="text/css"; ss.rel="stylesheet"; 
-          ss.href = window.self === window.top ? "NCRN.css" : "NCRNframe.css"; document.getElementsByTagName("head")[0].appendChild(ss);'
-        ),
-        HTML('<link rel="icon", href="AH_small_flat_4C_12x16.png", type="image/png" />')
-      ),
-      HTML('<img src="ah_large_black.gif", style="float:right; padding-right:25px"/>',
-        '<p>  National Capital Region Network <br> Stream Water Quality </p>')
-    )
-   )
-  ),
+shinyUI(
+  pageWithSidebar(
+    
+    div(id="NPSBanner",
+      headerPanel(
+        windowTitle="NCRN Water Quality",
+        list(
+          tags$head(
+            includeScript("./www/water-analytics.js"),
+            tags$script(
+              'type = "text/javascript"',' var ss = document.createElement("link"); ss.type="text/css"; ss.rel="stylesheet"; 
+              ss.href = window.self === window.top ? "NCRN.css" : "NCRNframe.css"; document.getElementsByTagName("head")[0].appendChild(ss);'
+            ),
+            HTML('<link rel="icon", href="AH_small_flat_4C_12x16.png", type="image/png" />')
+          ),
+          HTML('<img src="ah_large_black.gif", style="float:right; padding-right:25px"/>',
+            '<p>  National Capital Region Network <br> Stream Water Quality </p>'
+          )
+        )
+      )
+    ),
   
   sidebarPanel(
     h4("Select Stream Data"),
@@ -156,7 +157,8 @@ shinyUI(pageWithSidebar(
       
       tabPanel(h4("Citations & References"),
       
-      includeHTML(paste0(getwd(),"/www/","citations.html")))
+        includeHTML(paste0(getwd(),"/www/","citations.html"))
+      )
       
       )
     

@@ -1,6 +1,7 @@
 library(shiny)
 library(lattice)
-
+library(dplyr)
+library(lubridate)
 
 source("Water_Cosinor.r")
 
@@ -8,80 +9,107 @@ setClass("NPSDate")
 setAs("character","NPSDate", function(from) as.Date(from, format="%m/%d/%Y") )  #explains to read.csv the date format from NPStoret
 
 
-################Actual shiny stuff
 
+############### get data
+WaterData<-tbl_df(
+  read.csv("Water Data.csv", header=TRUE, col.names=c("Network","StationID","StationName","VisitDate","Parameter","Result"),
+                    colClasses=c("factor","character","character","NPSDate","character","numeric" ),comment.char="")
+)
+WaterData<-WaterData %>% mutate(Year=year(VisitDate))
+
+Parameters<-tbl_df(read.csv("Parameters.csv", header=TRUE, as.is=TRUE))
+Thresholds<-tbl_df(read.csv("Thresholds.csv", header=TRUE, as.is =TRUE))
+
+
+################ Shiny Server
 
 
 shinyServer(function(input,output,session){
+
+  Parks<-unique(Thresholds$ParkName)
+
   
   
   
   W.Data<-reactiveFileReader(10000,session,"Water Data.csv",read.csv,  header=TRUE,col.names=c("Network","StationID","Station.Name","Visit.Date","Parameter","Result"),
-      colClasses=c("factor","character","character","NPSDate","character","numeric" ),comment.char="")
+      colClasses=c("factor","charaTRcter","character","NPSDate","character","numeric" ),comment.char="")
   Param.info<-reactiveFileReader(10000,session,"Parameters.csv",read.csv, header=TRUE, as.is=TRUE)
   Thresh.in<-reactiveFileReader(10000,session,"Thresholds.csv", read.csv, header=TRUE, as.is=TRUE)
 
+  ##############Make UI controls###############################
+  
+  
+  ####### Park control
+  output$parkControl<-renderUI({
+    selectizeInput(inputId="ParkIn",label="Park:", choices=Parks, 
+      options = list(placeholder='Choose a Park', onInitialize = I('function() { this.setValue(""); }'))
+    )
+  })     
+  
+  ############# Stream Control
+  output$streamControl<-renderUI({
+    validate(
+      need(input$ParkIn != "", message=FALSE)
+    ) 
+    selectizeInput(inputId = "Stream", label="Stream:", choices=c(Thresholds %>% filter(ParkName==input$ParkIn, Use==1))$DisplayName,
+      options = list(placeholder='Choose a Stream' , onInitialize = I('function() { this.setValue(""); }'))
+    )
+  })
+  
+  ############ Parameter control
+  
+  output$ParameterControl<-renderUI({
+    validate(
+        need (input$ParkIn !="", message=FALSE),
+        need (input$Stream !="", message=FALSE)
+    )
+    selectizeInput(inputId="Parameter", label="Water Parameter:", choices=Parameters$Display,
+      options = list(placeholder='Choose a Parameter' , onInitialize = I('function() { this.setValue(""); }'))
+    )
+  })
+  
+  ########## Year control  - NOTE - this control needs DataUse() below to be populated before it is created.
+  
+  output$yearControl<-renderUI({
+    validate(
+      need(input$ParkIn!="", message = FALSE),
+      need(input$Stream!="", message = FALSE),
+      need(input$Parameter!="", message=FALSE)
+    )
 
+    sliderInput(inputId="YearsShow", label= "Years to Display:", min=min(DataUse()$Year, na.rm=T),  max=max(DataUse()$Year, na.rm=T),
+      value=c( min(DataUse()$Year,na.rm=T), max=max(DataUse()$Year,na.rm=T) ), format="####"
+    )
+  })
+  
 #####housekeeping of data
   
+## Old
   Data.Use<-reactive({ W.Data()[W.Data()$Station.Name==Thresh.in()[Thresh.in()$Display.Name==input$Stream,]$Station.Name & W.Data()$Parameter==Param.info()[Param.info()$Display==input$Param,]$Parameter,] }) 
   Data.Years<-reactive({   as.numeric(format(Data.Use()$Visit.Date, format="%Y"))    })
- 
+  Data.Graph<-reactive({Data.Use()[Data.Years()>=input$YearsShow[1] & Data.Years()<=input$YearsShow[2],]})
   Thresh.Use<-reactive({Thresh.in()[Thresh.in()$Display.Name==input$Stream,]})
+
   Data.Missing<-reactive({!is.na(Data.Use()$Result)})
   Data.Out<-reactive({setNames( data.frame(as.character(Data.Use()$Visit.Date),Data.Use()$Result), c("Date",input$Param))})
   Trends.Out<-reactive({W.Cosinor(Df.In=Data.Use(), DateVar="Visit.Date", Measure="Result", Formula=Result~Visit.Date)})
-  Parks<-reactive({unique(Thresh.in()$ParkName) })
-  Data.Graph<-reactive({Data.Use()[Data.Years()>=input$YearsShow[1] & Data.Years()<=input$YearsShow[2],]})
+
   
-##############Make UI controls
-
-
-####### Park control
-output$parkControl<-renderUI({
-  selectInput("Park.in",label="Park:", c("Choose a Park",Parks()))
-})     
-
-############# Stream Control
-output$streamControl<-renderUI({
-  if( is.null(input$Park.in) || input$Park.in == "Choose a Park") {
-    return()
-  }  
-  else {
-    selectInput("Stream", "Stream:", c("Choose a Stream",unique(Thresh.in()$Display.Name[Thresh.in()$ParkName==input$Park.in & Thresh.in()$Use==1])))
-  }
-})
-
-############ Parameter control
-
-output$ParameterControl<-renderUI({
-  if( is.null(input$Park.in) || input$Park.in=="Choose a Park" || is.null(input$Stream) || input$Stream =="Choose a Stream") {
-    return()
-  }
-  else {
-      selectInput("Param", "Water Parameter:", c("Choose Water Parameter", unique(Param.info()$Display)))
-  }
-})
-
-########## Year contorol
-
-output$yearControl<-renderUI({
-  if(is.null(input$Park.in) ||input$Park.in=="Choose a Park" || is.null(input$Stream) || input$Stream =="Choose a Stream" || is.null(input$Param) || input$Param=="Choose Water Parameter") {
-    return()
-  }
- else {
-   sliderInput("YearsShow", "Years to Display:", min=min(as.numeric(format(Data.Use()$Visit.Date, format="%Y")), na.rm=T), max=max(as.numeric(format(Data.Use()$Visit.Date, format="%Y")), na.rm=T),
-    value=c(min(as.numeric(format(Data.Use()$Visit.Date, format="%Y")),na.rm=T),  max=max(as.numeric(format(Data.Use()$Visit.Date,format="%Y" )),na.rm=T)), format="####")
-  }
-})
-
-
-
+### New
+  DataUse<-reactive({ 
+    WaterData %>% filter (StationName== filter(Thresholds, DisplayName == input$Stream)$StationName &
+                          Parameter==filter(Parameters, Display == input$Parameter)$Parameter)
+#    WaterData[WaterData$StationName==Thresholds[Thresholds$DisplayName==input$Stream,]$StationName &
+ #               WaterData$Parameter==Parameters[Parameters$Display==input$Parameter,]$Parameter,]
+  })
+  DataGraph<-reactive({DataUse()[DataUse()$Year>=input$YearsShow[1] & DataUse()$Year<=input$YearsShow[2],]})
+  ThreshUse<-reactive({Thresholds[Thresholds$DisplayName==input$Stream,]})
 ############## ShowGraph switch
 
- ShowGraph<-reactive(!(is.null(input$Park.in) || input$Park.in=="Choose a Park" || is.null(input$Stream) || input$Stream =="Choose a Stream" ||        #if all the conditions are true thanthe whole thing is true
-          is.null(input$Param) || input$Param=="Choose Water Parameter" ||is.null(input$YearsShow)))
- 
+ #ShowGraph<-reactive(!(is.null(input$ParkIn) || is.null(input$Stream)  ||        
+#          is.null(input$Parameter) ||is.null(input$YearsShow) ) ) #if all the conditions are true than the whole thing is true
+
+
 
 
  #####################           Make Plot #####################
@@ -91,16 +119,20 @@ output$yearControl<-renderUI({
  ThCol<-reactive({GraphColors[GraphColors$DisplayColor==input$ThColor,]$Rcolor})
  TrCol<-reactive({GraphColors[GraphColors$DisplayColor==input$TrColor,]$Rcolor})
       
- OutPlot<-reactive( 
- if(!ShowGraph()){
-  return()
-  }
-   else{
- 
-        xyplot(Result~Visit.Date, data=Data.Graph(), cex=input$PointSize, pch=16,col=GoodCol(),
-        ylim=c(min(Param.info()[Param.info()$Display==input$Param,]$Ymin,min(0.98*Data.Graph()$Result,na.rm=TRUE)), max(Param.info()[Param.info()$Display==input$Param,]$Ymax,1.03*Data.Graph()$Result,na.rm=T)),
-        main=list(paste(input$Stream,input$Param,sep=": "),cex=input$FontSize),
-        ylab=list(label=Param.info()[Param.info()$Display==input$Param,]$Units,cex=input$FontSize),
+ OutPlot<-reactive({
+
+   validate(
+     need(input$ParkIn !="", message="Choose a Park"),
+     need(input$Stream !="", message="Choose a Stream"),
+     need(input$Parameter !="", message="Choose a Water Quality Parameter"),
+     need(input$YearsShow !="", message="Choose the Years to Display")
+    )
+    
+    xyplot(Result~VisitDate, data=DataGraph(), cex=input$PointSize, pch=16,col=GoodCol(),
+        ylim=c(min(Parameters[Parameters$Display==input$Parameter,]$Ymin, min(0.98*DataGraph()$Result, na.rm=TRUE)), 
+            max(Parameters[Parameters$Display==input$Parameter,]$Ymax,1.03*DataGraph()$Result,na.rm=T)),
+        main=list(paste(input$Stream,input$Parameter,sep=": "),cex=input$FontSize),
+        ylab=list(label=Parameters[Parameters$Display==input$Parameter,]$Units,cex=input$FontSize),
         xlab=list(label="Sample Date",cex=input$FontSize),
         scales=list(cex=input$FontSize, alternating=1, tck=c(1,0)),
         key=if(input$Legend==TRUE) {
@@ -144,71 +176,42 @@ output$yearControl<-renderUI({
         panel.xyplot(x,y,...)
        
  #######Threshold lines 
-    if(input$ThreshLine==TRUE) {
-    
-      if(Param.info()[Param.info()$Display==input$Param,]$Parameter=="ANC"){
-        panel.abline(h=Thresh.Use()$ANCt,col=ThCol(),lwd=input$LineWidth)
-      }
-    
-      if(Param.info()[Param.info()$Display==input$Param,]$Parameter=="DO (mg/L)"){
-        panel.abline(h=Thresh.Use()$DOmgt,col=ThCol(), lwd=input$LineWidth)
-      }
-      
-      if(Param.info()[Param.info()$Display==input$Param,]$Parameter=="pH"){
-        panel.abline(h=Thresh.Use()$pHmint, col=ThCol(), lwd=input$LineWidth)
-        panel.abline(h=Thresh.Use()$pHmaxt,col=ThCol(), lwd=input$LineWidth)
-      }
-      
-      if(Param.info()[Param.info()$Display==input$Param,]$Parameter=="Specific conductance"){
-        panel.abline(h=Thresh.Use()$SCt,col=ThCol(), lwd=input$LineWidth)
-      }
-      
-      if(Param.info()[Param.info()$Display==input$Param,]$Parameter=="Water Temperature"){
-        panel.abline(h=Thresh.Use()$Tempt,col=ThCol(), lwd=input$LineWidth)
-      }
-      
-      if(Param.info()[Param.info()$Display==input$Param,]$Parameter=="Nitrate 2007"){
-        panel.abline(h=Thresh.Use()$Nt,col=ThCol(), lwd=input$LineWidth)
-      }
-      
-      if(Param.info()[Param.info()$Display==input$Param,]$Parameter=="Total Phosphorus 2009"){
-        panel.abline(h=Thresh.Use()$Pt,col=ThCol(), lwd=input$LineWidth)
-
-      }
+        if(input$ThreshLine==TRUE) {
+          switch(Parameters[Parameters$Display==input$Parameter,]$Parameter,
+        
+          ANC =                     panel.abline(h=ThreshUse()$ANCt, col=ThCol(),lwd=input$LineWidth),
+          "DO (mg/L)" =             panel.abline(h=ThreshUse()$DOmgt, col=ThCol(), lwd=input$LineWidth),
+          pH={                      panel.abline(h=ThreshUse()$pHmint, col=ThCol(), lwd=input$LineWidth)
+                                    panel.abline(h=ThreshUse()$pHmaxt, col=ThCol(), lwd=input$LineWidth)
+                                    },
+          "Specific conductance"=   panel.abline(h=ThreshUse()$SCt, col=ThCol(), lwd=input$LineWidth),
+          "Water Temperature" =     panel.abline(h=ThreshUse()$Tempt,col=ThCol(), lwd=input$LineWidth),
+          "Nitrate 2007" =          panel.abline(h=ThreshUse()$Nt,col=ThCol(), lwd=input$LineWidth),
+          "Total Phosphorus 2009" = panel.abline(h=ThreshUse()$Pt,col=ThCol(), lwd=input$LineWidth)
+      )
     }
    
  #######Threshold Points
-     if(input$ThreshPoint==TRUE) {
-      
-      if(Param.info()[Param.info()$Display==input$Param,]$Parameter=="ANC"){
-        panel.points(x=Data.Use()[Data.Use()$Result<Thresh.Use()$ANCt,]$Visit.Date, y=Data.Use()[Data.Use()$Result<Thresh.Use()$ANCt,]$Result, col=BadCol(),pch=16, cex=input$PointSize)
-      }
-      
-      if(Param.info()[Param.info()$Display==input$Param,]$Parameter=="DO (mg/L)"){
-        panel.points(x=Data.Use()[Data.Use()$Result<Thresh.Use()$DOmgt,]$Visit.Date, y=Data.Use()[Data.Use()$Result<Thresh.Use()$DOmgt,]$Result, col=BadCol(),pch=16, cex=input$PointSize)
-      }
-      
-      if(Param.info()[Param.info()$Display==input$Param,]$Parameter=="pH"){
-        panel.points(x=Data.Use()[Data.Use()$Result<Thresh.Use()$pHmint | Data.Use()$Result>Thresh.Use()$pHmaxt,]$Visit.Date, y=Data.Use()[Data.Use()$Result<Thresh.Use()$pHmint | Data.Use()$Result>Thresh.Use()$pHmaxt,]$Result,
-          col=BadCol(),pch=16, cex=input$PointSize)
-      }
-      
-      if(Param.info()[Param.info()$Display==input$Param,]$Parameter=="Specific conductance"){
-        panel.points(x=Data.Use()[Data.Use()$Result>Thresh.Use()$SCt,]$Visit.Date, y=Data.Use()[Data.Use()$Result>Thresh.Use()$SCt,]$Result, col=BadCol(),pch=16, cex=input$PointSize)
-      }
-      
-      if(Param.info()[Param.info()$Display==input$Param,]$Parameter=="Water Temperature"){
-          panel.points(x=Data.Use()[Data.Use()$Result>Thresh.Use()$Tempt,]$Visit.Date, y=Data.Use()[Data.Use()$Result>Thresh.Use()$Tempt,]$Result, col=BadCol(),pch=16, cex=input$PointSize)
-      }
-      
-      if(Param.info()[Param.info()$Display==input$Param,]$Parameter=="Nitrate 2007"){
-        panel.points(x=Data.Use()[Data.Use()$Result>Thresh.Use()$Nt,]$Visit.Date, y=Data.Use()[Data.Use()$Result>Thresh.Use()$Nt,]$Result, col=BadCol(),pch=16, cex=input$PointSize)
-      }
-      
-      if(Param.info()[Param.info()$Display==input$Param,]$Parameter=="Total Phosphorus 2009"){
-        panel.points(x=Data.Use()[Data.Use()$Result>Thresh.Use()$Pt,]$Visit.Date, y=Data.Use()[Data.Use()$Result>Thresh.Use()$Pt,]$Result, col=BadCol(),pch=16, cex=input$PointSize)
-      }
-     }
+        if(input$ThreshPoint==TRUE) {
+          switch(Parameters[Parameters$Display==input$Parameter,]$Parameter,
+            ANC=  panel.points(x=DataUse()[DataUse()$Result<ThreshUse()$ANCt,]$VisitDate, y=DataUse()[DataUse()$Result<ThreshUse()$ANCt,]$Result,
+                                   col=BadCol(),pch=16, cex=input$PointSize),
+            "DO (mg/L)" = panel.points(x=DataUse()[DataUse()$Result<ThreshUse()$DOmgt,]$VisitDate,
+                  y=DataUse()[DataUse()$Result<ThreshUse()$DOmgt,]$Result, col=BadCol(),pch=16, cex=input$PointSize),
+            pH=   panel.points(x=DataUse()[DataUse()$Result<ThreshUse()$pHmint | DataUse()$Result>ThreshUse()$pHmaxt,]$VisitDate, 
+                    y=DataUse()[DataUse()$Result<ThreshUse()$pHmint | DataUse()$Result>ThreshUse()$pHmaxt,]$Result,
+                    col=BadCol(),pch=16, cex=input$PointSize),
+            "Specific conductance" = panel.points(x=DataUse()[DataUse()$Result>ThreshUse()$SCt,]$VisitDate, 
+                                    y=DataUse()[DataUse()$Result>ThreshUse()$SCt,]$Result, col=BadCol(),pch=16, cex=input$PointSize),
+            "Water Temperature" = panel.points(x=DataUse()[DataUse()$Result>ThreshUse()$Tempt,]$VisitDate, 
+                                               y=DataUse()[DataUse()$Result>ThreshUse()$Tempt,]$Result, col=BadCol(),pch=16, cex=input$PointSize),
+            "Nitrate 2007" = panel.points(x=DataUse()[DataUse()$Result>ThreshUse()$Nt,]$VisitDate,
+                                          y=DataUse()[DataUse()$Result>ThreshUse()$Nt,]$Result, col=BadCol(),pch=16, cex=input$PointSize),
+            "Total Phosphorus 2009" =  panel.points(x=DataUse()[DataUse()$Result>ThreshUse()$Pt,]$VisitDate, 
+                                                    y=DataUse()[DataUse()$Result>ThreshUse()$Pt,]$Result, col=BadCol(),pch=16, cex=input$PointSize)
+            
+          )
+        }
 
 ############# Trend lines   
     if(input$Trends==TRUE){
@@ -230,8 +233,7 @@ output$yearControl<-renderUI({
      
 } #ends panel funciton
 )# ends xyplot
-} #ends else associted with YearsShow check at top of graph
-)# end reactive
+})# end reactive
 
 ##################################### Plot Output
  

@@ -2,37 +2,23 @@ library(shiny)
 
 ColorNames<-GraphColors$DisplayColor
 
-googleAnalytics <- function(account="UA-46937828-1"){
-  HTML(paste("<script type=\"text/javascript\">
-
-             var _gaq = _gaq || [];
-             _gaq.push(['_setAccount', '",account,"']);
-             _gaq.push(['_setDomainName', 'rstudio.com']);
-             _gaq.push(['_trackPageview']);
-             
-             (function() {
-             var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-             ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-             var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-             })();
-             
-             </script>", sep=""))
-}
 
 
 shinyUI(pageWithSidebar(
   
-  div(id="NPSBanner",
+  tags$head(includeScript("./www/water-analytics.js")),   
   
+  div(id="NPSBanner",
    headerPanel(
     windowTitle="NCRN Water Quality",
-    list(tags$head(
-        tags$script('type = "text/javascript"',' var ss = document.createElement("link"); ss.type="text/css"; ss.rel="stylesheet"; 
-        ss.href = window.self === window.top ? "NCRN.css" : "NCRNframe.css"; document.getElementsByTagName("head")[0].appendChild(ss);'),
-     
+    list(
+      tags$head(
+        tags$script(
+          'type = "text/javascript"',' var ss = document.createElement("link"); ss.type="text/css"; ss.rel="stylesheet"; 
+          ss.href = window.self === window.top ? "NCRN.css" : "NCRNframe.css"; document.getElementsByTagName("head")[0].appendChild(ss);'
+        ),
         HTML('<link rel="icon", href="AH_small_flat_4C_12x16.png", type="image/png" />')
       ),
-  
       HTML('<img src="ah_large_black.gif", style="float:right; padding-right:25px"/>',
         '<p>  National Capital Region Network <br> Stream Water Quality </p>')
     )
@@ -128,7 +114,6 @@ shinyUI(pageWithSidebar(
     
   
   mainPanel(
-    googleAnalytics(),
     tabsetPanel(
       
       tabPanel(h4("Plot"), 

@@ -1,7 +1,7 @@
 library(shiny)
 library(lattice)
 
-setwd("L:/WaterShiny")  #remove this line before uploading to server
+
 source("Water_Cosinor.r")
 
 setClass("NPSDate")

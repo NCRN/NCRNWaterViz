@@ -5,18 +5,15 @@ library(lubridate)
 
 source("Water_Cosinor.r")
 
-setClass("NPSDate")
-setAs("character","NPSDate", function(from) as.Date(from, format="%m/%d/%Y") )  #explains to read.csv the date format from NPStoret
-
-
+#setClass("NPSDate")
+#setAs("character","NPSDate", function(from) as.Date(from, format="%m/%d/%Y") )  #explains to read.csv the date format from NPStoret
 
 ############### get data
 WaterData<-tbl_df(
   read.csv("Water Data.csv", header=TRUE, col.names=c("Network","StationID","StationName","VisitDate","Parameter","Result"),
                     colClasses=c("factor","character","character","NPSDate","character","numeric" ),comment.char="")
 )
-WaterData<-WaterData %>% mutate(Year=year(VisitDate))
-
+WaterData<-WaterData %>% mutate(VistiDate=ymd(VisitDate), Year=year(VisitDate))
 Parameters<-tbl_df(read.csv("Parameters.csv", header=TRUE, as.is=TRUE))
 Thresholds<-tbl_df(read.csv("Thresholds.csv", header=TRUE, as.is =TRUE))
 
@@ -29,9 +26,8 @@ shinyServer(function(input,output,session){
   Parks<-unique(Thresholds$ParkName)
 
   
-  
-  
-  W.Data<-reactiveFileReader(10000,session,"Water Data.csv",read.csv,  header=TRUE,col.names=c("Network","StationID","Station.Name","Visit.Date","Parameter","Result"),
+  W.Data<-reactiveFileReader(10000,session,"Water Data.csv",read.csv,  header=TRUE,
+                             col.names=c("Network","StationID","Station.Name","Visit.Date","Parameter","Result"),
       colClasses=c("factor","charaTRcter","character","NPSDate","character","numeric" ),comment.char="")
   Param.info<-reactiveFileReader(10000,session,"Parameters.csv",read.csv, header=TRUE, as.is=TRUE)
   Thresh.in<-reactiveFileReader(10000,session,"Thresholds.csv", read.csv, header=TRUE, as.is=TRUE)
@@ -85,25 +81,29 @@ shinyServer(function(input,output,session){
 #####housekeeping of data
   
 ## Old
-  Data.Use<-reactive({ W.Data()[W.Data()$Station.Name==Thresh.in()[Thresh.in()$Display.Name==input$Stream,]$Station.Name & W.Data()$Parameter==Param.info()[Param.info()$Display==input$Param,]$Parameter,] }) 
+  Data.Use<-reactive({
+    W.Data()[W.Data()$Station.Name==Thresh.in()[Thresh.in()$Display.Name==input$Stream,]$Station.Name &
+                                  W.Data()$Parameter==Param.info()[Param.info()$Display==input$Param,]$Parameter,]}) 
   Data.Years<-reactive({   as.numeric(format(Data.Use()$Visit.Date, format="%Y"))    })
   Data.Graph<-reactive({Data.Use()[Data.Years()>=input$YearsShow[1] & Data.Years()<=input$YearsShow[2],]})
   Thresh.Use<-reactive({Thresh.in()[Thresh.in()$Display.Name==input$Stream,]})
+#  Trends.Out<-reactive({W.Cosinor(Df.In=Data.Use(), DateVar="Visit.Date", Measure="Result", Formula=Result~Visit.Date)})
 
   Data.Missing<-reactive({!is.na(Data.Use()$Result)})
   Data.Out<-reactive({setNames( data.frame(as.character(Data.Use()$Visit.Date),Data.Use()$Result), c("Date",input$Param))})
-  Trends.Out<-reactive({W.Cosinor(Df.In=Data.Use(), DateVar="Visit.Date", Measure="Result", Formula=Result~Visit.Date)})
+ 
 
   
 ### New
-  DataUse<-reactive({ 
-    WaterData %>% filter (StationName== filter(Thresholds, DisplayName == input$Stream)$StationName &
-                          Parameter==filter(Parameters, Display == input$Parameter)$Parameter)
-#    WaterData[WaterData$StationName==Thresholds[Thresholds$DisplayName==input$Stream,]$StationName &
- #               WaterData$Parameter==Parameters[Parameters$Display==input$Parameter,]$Parameter,]
-  })
+  DataUse<-reactive({ data.frame(
+  #  WaterData %>% filter (StationName== filter(Thresholds, DisplayName == input$Stream)$StationName &
+  #                       Parameter==filter(Parameters, Display == input$Parameter)$Parameter)
+    WaterData[WaterData$StationName==Thresholds[Thresholds$DisplayName==input$Stream,]$StationName &
+               WaterData$Parameter==Parameters[Parameters$Display==input$Parameter,]$Parameter,]
+  )})
   DataGraph<-reactive({DataUse()[DataUse()$Year>=input$YearsShow[1] & DataUse()$Year<=input$YearsShow[2],]})
   ThreshUse<-reactive({Thresholds[Thresholds$DisplayName==input$Stream,]})
+  TrendsOut<-reactive({WaterCosinor(DataIn=DataUse(), DateVar="VisitDate", Measure="Result", Formula=Result~VisitDate)})
 ############## ShowGraph switch
 
  #ShowGraph<-reactive(!(is.null(input$ParkIn) || is.null(input$Stream)  ||        
@@ -183,7 +183,7 @@ shinyServer(function(input,output,session){
           "DO (mg/L)" =             panel.abline(h=ThreshUse()$DOmgt, col=ThCol(), lwd=input$LineWidth),
           pH={                      panel.abline(h=ThreshUse()$pHmint, col=ThCol(), lwd=input$LineWidth)
                                     panel.abline(h=ThreshUse()$pHmaxt, col=ThCol(), lwd=input$LineWidth)
-                                    },
+              },
           "Specific conductance"=   panel.abline(h=ThreshUse()$SCt, col=ThCol(), lwd=input$LineWidth),
           "Water Temperature" =     panel.abline(h=ThreshUse()$Tempt,col=ThCol(), lwd=input$LineWidth),
           "Nitrate 2007" =          panel.abline(h=ThreshUse()$Nt,col=ThCol(), lwd=input$LineWidth),
@@ -215,18 +215,18 @@ shinyServer(function(input,output,session){
 
 ############# Trend lines   
     if(input$Trends==TRUE){
-      if(class(Trends.Out()$Analysis)=="lm"){
-        panel.lines(Trends.Out()$Analysis$fitted.values~Trends.Out()$CDate, col=TrCol(), lwd=input$LineWidth)
+      if(class(TrendsOut()$Analysis)=="lm"){
+        panel.lines(TrendsOut()$Analysis$fitted.values~TrendsOut()$CDate, col=TrCol(), lwd=input$LineWidth)
       }
-      if(class(Trends.Out()$Analysis)=="Cosinor"){
-        panel.lines(Trends.Out()$PredLine$Preds~Trends.Out()$PredLine$PreDates.Visit.Date, col=TrCol(), lwd=input$LineWidth)
+      if(class(TrendsOut()$Analysis)=="Cosinor"){
+        panel.lines(TrendsOut()$PredLine$Preds~TrendsOut()$PredLine$PreDates.VisitDate, col=TrCol(), lwd=input$LineWidth)
       }
     }     
     
 ########### Outlier Points
   if(input$Outliers==TRUE){
-      if(nrow(Trends.Out()$Outliers) > 0){
-        panel.points(x=Trends.Out()$Outliers$Visit.Date, y=Trends.Out()$Outliers$Result, col=OutCol(), pch=1, cex=1.5+input$PointSize,lwd=2)
+      if(nrow(TrendsOut()$Outliers) > 0){
+        panel.points(x=TrendsOut()$Outliers$VisitDate, y=TrendsOut()$Outliers$Result, col=OutCol(), pch=1, cex=1.5+input$PointSize,lwd=2)
       }
   }  
 
@@ -245,7 +245,7 @@ output$Water.Plot<-renderPlot({
 
 
 output$SeasonOut<-renderText({
-  if(input$Trends==FALSE | !ShowGraph() )   {invisible()}
+  if(input$Trends==FALSE )   {invisible()}
   else{
   switch(class(Trends.Out()$Analysis),
     "lm" =      c("There is no seasonal pattern in the data."),
@@ -256,7 +256,7 @@ output$SeasonOut<-renderText({
 })
 
 output$TrendsOut<-renderText({
-  if (input$Trends==FALSE | !ShowGraph()) {invisible()} else{
+  if (input$Trends==FALSE  ) {invisible()} else{
   switch(class(Trends.Out()$Analysis),
   "lm" =  {if(summary(Trends.Out()$Analysis)$coefficients[2,4]>.05) {("There is no significant trend in the data.")} 
           else {
@@ -278,13 +278,13 @@ output$TrendsOut<-renderText({
 
 
 output$ThresholdSummary<-renderText({
-  if(input$ThreshLine==TRUE & ShowGraph()){
-    c(Param.info()[Param.info()$Display==input$Param,]$ThreshText)
+  if(input$ThreshLine==TRUE ){
+    c(Parameters[Parameters$Display==input$Param,]$ThreshText)
   }
 })
     
 output$ThresholdType<-renderText({  
-    if(input$ThreshLine==TRUE & ShowGraph() ){ 
+    if(input$ThreshLine==TRUE  ){ 
       switch(Param.info()[Param.info()$Display==input$Param,]$Parameter,
         "ANC" =                   c(input$Stream,"is in",Thresh.Use()$Karst,"terrain."),
         "DO (mg/L)" =             c(input$Stream,"is a",Thresh.Use()$Water,"water stream."),
@@ -297,8 +297,8 @@ output$ThresholdType<-renderText({
 })
       
 output$RefSummary<-renderText({
-  if(input$ThreshLine==TRUE & ShowGraph()) {
-   c(Param.info()[Param.info()$Display==input$Param,]$Refs)
+  if(input$ThreshLine==TRUE  ) {
+   c(Parameters[Parameters$Display==input$Parameter,]$Refs)
   }
 })      
 

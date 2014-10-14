@@ -120,9 +120,8 @@ shinyUI(
       tabPanel(h4("Plot"), 
         plotOutput("Water.Plot"),
         
-        conditionalPanel(condition = "input.ThreshLine &&  !(input['Park.in']==null) && input['Park.in']!=='Choose a Park' &&
-            input.Stream!=='Choose a Stream' && !(input.Stream==null) && input.Param!=='Choose Water Parameter' &&
-            !(input.Param==null)" , 
+        conditionalPanel(condition = "input.ThreshLine &&  !(input['ParkIn']==null) &&
+            !(input.Stream==null) &&  !(input.Param==null)" , 
           h4("Threshold:"),
           textOutput ("ThresholdSummary"),
           textOutput ("ThresholdType")
@@ -140,12 +139,11 @@ shinyUI(
         
         br(),
         
-        conditionalPanel(condition = "input.ThreshLine && !(input['Park.in']==null) && input['Park.in']!=='Choose a Park' &&
-            input.Stream!=='Choose a Stream' && !(input.Stream==null) && input.Param!=='Choose Water Parameter' &&
-            !(input.Param==null)", 
+  #     conditionalPanel(condition = "input.ThreshLine && !(input['ParkIn']==null) &&
+  #          !(input.Stream==null) && !(input.Parameter==null)", 
           h4("Threshold Reference:"),
           textOutput("RefSummary")
-        )
+   #     )
         
       ),
       

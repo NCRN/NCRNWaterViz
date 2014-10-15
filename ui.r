@@ -3,7 +3,6 @@ library(shiny)
 ColorNames<-GraphColors$DisplayColor
 
 
-
 shinyUI(
   pageWithSidebar(
     
@@ -115,13 +114,11 @@ shinyUI(
     
   
   mainPanel(
-    tabsetPanel(
-      
+    tabsetPanel(  
       tabPanel(h4("Plot"), 
-        plotOutput("Water.Plot"),
+        plotOutput("WaterPlot"),
         
-        conditionalPanel(condition = "input.ThreshLine &&  !(input['ParkIn']==null) &&
-            !(input.Stream==null) &&  !(input.Param==null)" , 
+        conditionalPanel(condition = "input.ThreshLine && !(output.WaterPlot==null)" , 
           h4("Threshold:"),
           textOutput ("ThresholdSummary"),
           textOutput ("ThresholdType")
@@ -129,9 +126,7 @@ shinyUI(
         
         br(),
         
-        conditionalPanel(condition = "input.Trends && !(input['Park.in']==null) && input['Park.in']!=='Choose a Park' &&
-            input.Stream!=='Choose a Stream' && !(input.Stream==null) && input.Param!=='Choose Water Parameter' &&
-            !(input.Param==null)" , 
+        conditionalPanel(condition = "input.Trends && !(output.WaterPlot==null)" , 
         h4("Trend Analysis"),
         textOutput("TrendsOut"),
         textOutput("SeasonOut")
@@ -139,11 +134,10 @@ shinyUI(
         
         br(),
         
-  #     conditionalPanel(condition = "input.ThreshLine && !(input['ParkIn']==null) &&
-  #          !(input.Stream==null) && !(input.Parameter==null)", 
+       conditionalPanel(condition = "input.ThreshLine && !(output.WaterPlot==null)" , 
           h4("Threshold Reference:"),
           textOutput("RefSummary")
-   #     )
+       )
         
       ),
       
@@ -158,7 +152,7 @@ shinyUI(
         includeHTML(paste0(getwd(),"/www/","citations.html"))
       )
       
-      )
+    )
     
   )
 

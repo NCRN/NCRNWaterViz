@@ -7,7 +7,7 @@ WaterCosinor<-function(DataIn, DateVar, Measure, Formula) {       #This function
   
    CosOut<-vector(mode="list", length=4)
    names(CosOut)<-c("Analysis","CDates","PredLine","Outliers")            #CosOut is the output of the function - a list
-   #DataIn[,DateVar]<-as.Date(strftime(DataIn[,DateVar],"%Y/%m/%d"))
+  
    
 # if(sum(!is.na(DataIn[eval(Measure)]))<24)  #this checks to make sure there is enough data - 24 measurememnts
 if(sum(!is.na(DataIn[[Measure]]))<24)

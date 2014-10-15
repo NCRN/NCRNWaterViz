@@ -5,8 +5,8 @@ library(lubridate)
 
 source("Water_Cosinor.r")
 
-#setClass("NPSDate")
-#setAs("character","NPSDate", function(from) as.Date(from, format="%m/%d/%Y") )  #explains to read.csv the date format from NPStoret
+setClass("NPSDate")
+setAs("character","NPSDate", function(from) as.Date(from, format="%m/%d/%Y") )  #explains to read.csv the date format from NPStoret
 
 ############### get data
 WaterData<-tbl_df(
@@ -20,29 +20,20 @@ Thresholds<-tbl_df(read.csv("Thresholds.csv", header=TRUE, as.is =TRUE))
 
 ################ Shiny Server
 
-
 shinyServer(function(input,output,session){
 
   Parks<-unique(Thresholds$ParkName)
 
-  
-  W.Data<-reactiveFileReader(10000,session,"Water Data.csv",read.csv,  header=TRUE,
-                             col.names=c("Network","StationID","Station.Name","Visit.Date","Parameter","Result"),
-      colClasses=c("factor","charaTRcter","character","NPSDate","character","numeric" ),comment.char="")
-  Param.info<-reactiveFileReader(10000,session,"Parameters.csv",read.csv, header=TRUE, as.is=TRUE)
-  Thresh.in<-reactiveFileReader(10000,session,"Thresholds.csv", read.csv, header=TRUE, as.is=TRUE)
-
-  ##############Make UI controls###############################
-  
-  
-  ####### Park control
+##############Make UI controls###############################
+    
+####### Park control
   output$parkControl<-renderUI({
     selectizeInput(inputId="ParkIn",label="Park:", choices=Parks, 
       options = list(placeholder='Choose a Park', onInitialize = I('function() { this.setValue(""); }'))
     )
   })     
   
-  ############# Stream Control
+############# Stream Control
   output$streamControl<-renderUI({
     validate(
       need(input$ParkIn != "", message=FALSE)
@@ -52,7 +43,7 @@ shinyServer(function(input,output,session){
     )
   })
   
-  ############ Parameter control
+############ Parameter control
   
   output$ParameterControl<-renderUI({
     validate(
@@ -64,7 +55,7 @@ shinyServer(function(input,output,session){
     )
   })
   
-  ########## Year control  - NOTE - this control needs DataUse() below to be populated before it is created.
+########## Year control  - NOTE - this control needs DataUse() below to be populated before it is created.
   
   output$yearControl<-renderUI({
     validate(
@@ -79,24 +70,9 @@ shinyServer(function(input,output,session){
   })
   
 #####housekeeping of data
-  
-## Old
-  Data.Use<-reactive({
-    W.Data()[W.Data()$Station.Name==Thresh.in()[Thresh.in()$Display.Name==input$Stream,]$Station.Name &
-                                  W.Data()$Parameter==Param.info()[Param.info()$Display==input$Param,]$Parameter,]}) 
-  Data.Years<-reactive({   as.numeric(format(Data.Use()$Visit.Date, format="%Y"))    })
-  Data.Graph<-reactive({Data.Use()[Data.Years()>=input$YearsShow[1] & Data.Years()<=input$YearsShow[2],]})
-  Thresh.Use<-reactive({Thresh.in()[Thresh.in()$Display.Name==input$Stream,]})
-#  Trends.Out<-reactive({W.Cosinor(Df.In=Data.Use(), DateVar="Visit.Date", Measure="Result", Formula=Result~Visit.Date)})
 
-  Data.Missing<-reactive({!is.na(Data.Use()$Result)})
-  Data.Out<-reactive({setNames( data.frame(as.character(Data.Use()$Visit.Date),Data.Use()$Result), c("Date",input$Param))})
- 
-
-  
-### New
   DataUse<-reactive({ data.frame(
-  #  WaterData %>% filter (StationName== filter(Thresholds, DisplayName == input$Stream)$StationName &
+  #  WaterData %>% filter (StationName== filter(Thresholds, DisplayName == input$Stream)$StationName &  ###dplyr and season are not friends
   #                       Parameter==filter(Parameters, Display == input$Parameter)$Parameter)
     WaterData[WaterData$StationName==Thresholds[Thresholds$DisplayName==input$Stream,]$StationName &
                WaterData$Parameter==Parameters[Parameters$Display==input$Parameter,]$Parameter,]
@@ -104,21 +80,22 @@ shinyServer(function(input,output,session){
   DataGraph<-reactive({DataUse()[DataUse()$Year>=input$YearsShow[1] & DataUse()$Year<=input$YearsShow[2],]})
   ThreshUse<-reactive({Thresholds[Thresholds$DisplayName==input$Stream,]})
   TrendsOut<-reactive({WaterCosinor(DataIn=DataUse(), DateVar="VisitDate", Measure="Result", Formula=Result~VisitDate)})
-############## ShowGraph switch
+  DataMissing<-reactive({!is.na(DataUse()$Result)})
+  DataOut<-reactive({setNames( data.frame(as.character(DataUse()$VisitDate),DataUse()$Result), c("Date",input$Parameter))})
 
- #ShowGraph<-reactive(!(is.null(input$ParkIn) || is.null(input$Stream)  ||        
-#          is.null(input$Parameter) ||is.null(input$YearsShow) ) ) #if all the conditions are true than the whole thing is true
-
-
-
-
- #####################           Make Plot #####################
+ 
+#### Get Colors from user inputs
  BadCol<-reactive({GraphColors[GraphColors$DisplayColor==input$BadColor,]$Rcolor})
  GoodCol<-reactive({GraphColors[GraphColors$DisplayColor==input$GoodColor,]$Rcolor})
  OutCol<-reactive({GraphColors[GraphColors$DisplayColor==input$OutColor,]$Rcolor})
  ThCol<-reactive({GraphColors[GraphColors$DisplayColor==input$ThColor,]$Rcolor})
  TrCol<-reactive({GraphColors[GraphColors$DisplayColor==input$TrColor,]$Rcolor})
       
+##### PlotElements determines what is being plotted and is used in the key= argument of lattice 
+  PlotElements=reactive({                         
+    c(input$ThreshPoint, input$ThreshLine, input$Trends, input$Outliers)
+  })
+
  OutPlot<-reactive({
 
    validate(
@@ -128,47 +105,25 @@ shinyServer(function(input,output,session){
      need(input$YearsShow !="", message="Choose the Years to Display")
     )
     
-    xyplot(Result~VisitDate, data=DataGraph(), cex=input$PointSize, pch=16,col=GoodCol(),
-        ylim=c(min(Parameters[Parameters$Display==input$Parameter,]$Ymin, min(0.98*DataGraph()$Result, na.rm=TRUE)), 
-            max(Parameters[Parameters$Display==input$Parameter,]$Ymax,1.03*DataGraph()$Result,na.rm=T)),
-        main=list(paste(input$Stream,input$Parameter,sep=": "),cex=input$FontSize),
-        ylab=list(label=Parameters[Parameters$Display==input$Parameter,]$Units,cex=input$FontSize),
-        xlab=list(label="Sample Date",cex=input$FontSize),
-        scales=list(cex=input$FontSize, alternating=1, tck=c(1,0)),
-        key=if(input$Legend==TRUE) {
-          key=list(border=FALSE, cex=input$PointSize, space="top",columns=3,                           
+    xyplot(Result~VisitDate, data=DataGraph(), 
+      cex=input$PointSize, 
+      pch=16,col=GoodCol(),
+      ylim=c(min(Parameters[Parameters$Display==input$Parameter,]$Ymin, min(0.98*DataGraph()$Result, na.rm=TRUE)), 
+        max(Parameters[Parameters$Display==input$Parameter,]$Ymax,1.03*DataGraph()$Result,na.rm=T)),
+      main=list(paste(input$Stream,input$Parameter,sep=": "),cex=input$FontSize),
+      ylab=list(label=Parameters[Parameters$Display==input$Parameter,]$Units,cex=input$FontSize),
+      xlab=list(label="Sample Date",cex=input$FontSize),
+      scales=list(cex=input$FontSize, alternating=1, tck=c(1,0)),
+      key=if(input$Legend==TRUE) {
+        key=list(border=FALSE, cex=input$PointSize, space="top",columns=min(3,1+sum(PlotElements())),                           
           lines=list(
-                pch=c(16,
-                    if(input$ThreshPoint==T){16},
-                    if(input$ThreshLine==T){16},
-                    if(input$Trends==T){16},
-                    if(input$Outliers==T){1}
-                ),
-                type=c("p",
-                    if(input$ThreshPoint==T){"p"},
-                    if(input$ThreshLine==T){"l"},
-                    if(input$Trends==T){"l"},
-                    if(input$Outliers==T){"p"}
-                ),
-                col=c(GoodCol(),
-                  if(input$ThreshPoint==T){BadCol()},
-                  if(input$ThreshLine==T){ThCol()},
-                  if(input$Trends==T) {TrCol()},
-                  if(input$Outliers==T) {OutCol()}
-                ),
-                 lwd=c(input$LineWidth,
-                  if(input$ThreshPoint==T){input$LineWidth},
-                  if(input$ThreshLine==T){input$LineWidth},
-                  if(input$Trends==T) {input$LineWidth},
-                  if(input$Outliers==T) {input$LineWidth}
-                )
+            pch=c(16,c(16,16,16,1)[PlotElements()]),
+            type=c("p",c("p","l","l","p")[PlotElements()] ),
+            col=c(GoodCol(),c(BadCol(),ThCol(),TrCol(),OutCol())[PlotElements()]),
+            lwd=c(input$LineWidth,c(rep(input$LineWidth,4))[PlotElements()])
           ),
-          text=list(c("Measurement",
-            if (input$ThreshPoint==T){"Fails Threshold"},
-            if (input$ThreshLine==T){"Threshold"},
-            if(input$Trends==T){"Trend Line"},
-            if(input$Outliers==T){"Outliers"}
-            )
+          text=list(
+            c("Measurement",c("Fails Threshold","Threshold","Trend Line","Outliers")[PlotElements()])
           )
          ) #end Key
         },
@@ -178,18 +133,17 @@ shinyServer(function(input,output,session){
  #######Threshold lines 
         if(input$ThreshLine==TRUE) {
           switch(Parameters[Parameters$Display==input$Parameter,]$Parameter,
-        
-          ANC =                     panel.abline(h=ThreshUse()$ANCt, col=ThCol(),lwd=input$LineWidth),
-          "DO (mg/L)" =             panel.abline(h=ThreshUse()$DOmgt, col=ThCol(), lwd=input$LineWidth),
-          pH={                      panel.abline(h=ThreshUse()$pHmint, col=ThCol(), lwd=input$LineWidth)
+            ANC =                     panel.abline(h=ThreshUse()$ANCt, col=ThCol(),lwd=input$LineWidth),
+            "DO (mg/L)" =             panel.abline(h=ThreshUse()$DOmgt, col=ThCol(), lwd=input$LineWidth),
+            pH={                      panel.abline(h=ThreshUse()$pHmint, col=ThCol(), lwd=input$LineWidth)
                                     panel.abline(h=ThreshUse()$pHmaxt, col=ThCol(), lwd=input$LineWidth)
-              },
-          "Specific conductance"=   panel.abline(h=ThreshUse()$SCt, col=ThCol(), lwd=input$LineWidth),
-          "Water Temperature" =     panel.abline(h=ThreshUse()$Tempt,col=ThCol(), lwd=input$LineWidth),
-          "Nitrate 2007" =          panel.abline(h=ThreshUse()$Nt,col=ThCol(), lwd=input$LineWidth),
-          "Total Phosphorus 2009" = panel.abline(h=ThreshUse()$Pt,col=ThCol(), lwd=input$LineWidth)
-      )
-    }
+            },
+            "Specific conductance"=   panel.abline(h=ThreshUse()$SCt, col=ThCol(), lwd=input$LineWidth),
+            "Water Temperature" =     panel.abline(h=ThreshUse()$Tempt,col=ThCol(), lwd=input$LineWidth),
+            "Nitrate 2007" =          panel.abline(h=ThreshUse()$Nt,col=ThCol(), lwd=input$LineWidth),
+            "Total Phosphorus 2009" = panel.abline(h=ThreshUse()$Pt,col=ThCol(), lwd=input$LineWidth)
+          )
+        }
    
  #######Threshold Points
         if(input$ThreshPoint==TRUE) {
@@ -237,7 +191,7 @@ shinyServer(function(input,output,session){
 
 ##################################### Plot Output
  
-output$Water.Plot<-renderPlot({
+output$WaterPlot<-renderPlot({
   print(OutPlot())
 }) 
 
@@ -245,33 +199,43 @@ output$Water.Plot<-renderPlot({
 
 
 output$SeasonOut<-renderText({
-  if(input$Trends==FALSE )   {invisible()}
-  else{
-  switch(class(Trends.Out()$Analysis),
+    validate(
+      need (input$Trends==TRUE, message=FALSE),
+      need(is.atomic(TrendsOut())==FALSE, message=FALSE)
+    )
+  switch(class(TrendsOut()$Analysis),
     "lm" =      c("There is no seasonal pattern in the data."),
-    "Cosinor" = c("There is a seasonal pattern in the data. The peak is", strsplit(summary(Trends.Out()$Analysis)$phase," ")[[1]][3] ,strsplit(summary(Trends.Out()$Analysis)$phase," ")[[1]][7], "and the low point is ",
-        strsplit(summary(Trends.Out()$Analysis)$lphase," ")[[1]][3],paste0(strsplit(summary(Trends.Out()$Analysis)$lphase," ")[[1]][7] ,".")),
+    "Cosinor" = c("There is a seasonal pattern in the data. The peak is", strsplit(summary(TrendsOut()$Analysis)$phase," ")[[1]][3],
+                  strsplit(summary(TrendsOut()$Analysis)$phase," ")[[1]][7], "and the low point is ",
+        strsplit(summary(TrendsOut()$Analysis)$lphase," ")[[1]][3],paste0(strsplit(summary(TrendsOut()$Analysis)$lphase," ")[[1]][7] ,".")),
     NULL)
-    }
 })
 
 output$TrendsOut<-renderText({
-  if (input$Trends==FALSE  ) {invisible()} else{
-  switch(class(Trends.Out()$Analysis),
-  "lm" =  {if(summary(Trends.Out()$Analysis)$coefficients[2,4]>.05) {("There is no significant trend in the data.")} 
-          else {
-            c("There is a significant", 
-            ifelse (summary(Trends.Out()$Analysis)$coefficients[2,1] > 0, "increasing", "decreasing"),
-            "trend of",c(signif(summary(Trends.Out()$Analysis)$coefficients[2,1]*365.24, digits=3)),Param.info()[Param.info()$Display==input$Param,]$Units, "per year.")
-          }}, 
-  "Cosinor"=  {if(summary(Trends.Out()$Analysis$glm)$coefficients[2,4]>.05){("There is no significant trend in the data")}
-              else {
-                c("There is a significant",
-                ifelse (summary(Trends.Out()$Analysis$glm)$coefficients[2,1]>0,"increasing","decreasing"), 
-                "trend of",c(signif(summary(Trends.Out()$Analysis$glm)$coefficients[2,1]*365.24,digits=3)),Param.info()[Param.info()$Display==input$Param,]$Units, "per year.")
-              }},
+  validate(
+    need (input$Trends==TRUE, message=FALSE),
+    need(is.atomic(TrendsOut())==FALSE, message=FALSE)
+  )
+    switch(class(TrendsOut()$Analysis),
+      "lm" =  {
+        if(summary(TrendsOut()$Analysis)$coefficients[2,4]>.05) {("There is no significant trend in the data.")} 
+        else {
+          c("There is a significant", 
+          ifelse (summary(TrendsOut()$Analysis)$coefficients[2,1] > 0, "increasing", "decreasing"),
+            "trend of",c(signif(summary(TrendsOut()$Analysis)$coefficients[2,1]*365.24, digits=3)),
+            Parameters[Parameters$Display==input$Parameter,]$Units, "per year.")
+        }
+    }, 
+    "Cosinor"=  {
+      if(summary(TrendsOut()$Analysis$glm)$coefficients[2,4]>.05){("There is no significant trend in the data")}
+      else {
+        c("There is a significant",
+        ifelse (summary(TrendsOut()$Analysis$glm)$coefficients[2,1]>0,"increasing","decreasing"), 
+        "trend of",c(signif(summary(TrendsOut()$Analysis$glm)$coefficients[2,1]*365.24,digits=3)),
+        Parameters[Parameters$Display==input$Parameter,]$Units, "per year.")
+      }
+    },
   NULL) 
-  }
 })
 
 ###################### Threshold Summary
@@ -279,18 +243,18 @@ output$TrendsOut<-renderText({
 
 output$ThresholdSummary<-renderText({
   if(input$ThreshLine==TRUE ){
-    c(Parameters[Parameters$Display==input$Param,]$ThreshText)
+    c(Parameters[Parameters$Display==input$Parameter,]$ThreshText)
   }
 })
     
 output$ThresholdType<-renderText({  
     if(input$ThreshLine==TRUE  ){ 
-      switch(Param.info()[Param.info()$Display==input$Param,]$Parameter,
-        "ANC" =                   c(input$Stream,"is in",Thresh.Use()$Karst,"terrain."),
-        "DO (mg/L)" =             c(input$Stream,"is a",Thresh.Use()$Water,"water stream."),
-        "Water Temperature" =     c(input$Stream,"is a",Thresh.Use()$Water,"water stream."),
-        "Nitrate 2007" =          c(input$Stream,"is in nutrient ecoregion ",paste0(Thresh.Use()$Ecoregion,".")),
-        "Total Phosphorus 2009" = c(input$Stream,"is in nutrient ecoregion ",paste0(Thresh.Use()$Ecoregion,".")),
+      switch(Parameters[Parameters$Display==input$Parameter,"Parameter"], #$Parameter,
+        "ANC" =                   c(input$Stream,"is in",ThreshUse()$Karst,"terrain."),
+        "DO (mg/L)" =             c(input$Stream,"is a",ThreshUse()$Water,"water stream."),
+        "Water Temperature" =     c(input$Stream,"is a",ThreshUse()$Water,"water stream."),
+        "Nitrate 2007" =          c(input$Stream,"is in nutrient ecoregion ",paste0(ThreshUse()$Ecoregion,".")),
+        "Total Phosphorus 2009" = c(input$Stream,"is in nutrient ecoregion ",paste0(ThreshUse()$Ecoregion,".")),
      NULL)
   
     }
@@ -306,26 +270,27 @@ output$RefSummary<-renderText({
  
 ###########Raw data table   ##################################
  output$WaterTable <-renderDataTable({
-  if(!ShowGraph()){
-   return()
-  }
-  else{
-   Data.Out()[Data.Missing(),]
-  }    
+   validate(
+     need(input$ParkIn !="", message="Choose a Park"),
+     need(input$Stream !="", message="Choose a Stream"),
+     need(input$Parameter !="", message="Choose a Water Quality Parameter"),
+     need(input$YearsShow !="", message="Choose the Years to Display")
+   )   
+   DataOut()[DataMissing(),]
 })
 
 #############Data download   #########################
  output$Data.Download<-downloadHandler(
-  filename=function(){paste(input$Stream, "_", input$Param, ".csv", sep="")},
+  filename=function(){paste(input$Stream, "_", input$Parameter, ".csv", sep="")},
   content=function(file){ 
-    write.csv(Data.Out(),file)
+    write.csv(DataOut(),file)
     }
  )   
 
 ########Plot downloads   ############################
 
 output$Plot.PNG<-downloadHandler(
-  filename=function(){paste(input$Stream, "_", input$Param, ".png", sep="")}, 
+  filename=function(){paste(input$Stream, "_", input$Parameter, ".png", sep="")}, 
   content=function (file){
   png(file,width=960, height=480)
   print(OutPlot())
@@ -334,7 +299,7 @@ output$Plot.PNG<-downloadHandler(
 )
 
 output$Plot.JPG<-downloadHandler(
-  filename=function(){paste(input$Stream, "_", input$Param, ".jpeg", sep="")}, 
+  filename=function(){paste(input$Stream, "_", input$Parameter, ".jpeg", sep="")}, 
   content=function (file){
   jpeg(file,width=960, height=480,quality=100)
   print(OutPlot())

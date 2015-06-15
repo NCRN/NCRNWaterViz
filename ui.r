@@ -11,7 +11,8 @@ shinyUI(
         windowTitle="NCRN Water Quality",
         list(
           tags$head(
-            includeScript("./www/water-analytics.js"),
+            #includeScript("./www/water-analytics.js"),
+            includeScript ("http://www.nps.gov/common/commonspot/templates/js/federated-analytics.js"),
             tags$script(
               'type = "text/javascript"',' var ss = document.createElement("link"); ss.type="text/css"; ss.rel="stylesheet"; 
               ss.href = window.self === window.top ? "NCRN.css" : "NCRNframe.css"; document.getElementsByTagName("head")[0].appendChild(ss);'

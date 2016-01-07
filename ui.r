@@ -4,30 +4,28 @@ ColorNames<-GraphColors$DisplayColor
 
 
 shinyUI(
-  pageWithSidebar(
+  fluidPage( theme="http://www.nps.gov/lib/bootstrap/3.3.2/css/nps-bootstrap.min.css", style="padding: 0px",
+             title="NCRN Water Quality",
     
-    div(id="NPSBanner",
-      headerPanel(
-        windowTitle="NCRN Water Quality",
-        list(
-          tags$head(
-            #includeScript("./www/water-analytics.js"),
-            includeScript ("http://www.nps.gov/common/commonspot/templates/js/federated-analytics.js"),
-            tags$script(
+    column(12, id="NPSBanner", style="margin: 0px",
+      tags$head(includeScript ("http://www.nps.gov/common/commonspot/templates/js/federated-analytics.js")),
+      tags$head(tags$script(
               'type = "text/javascript"',' var ss = document.createElement("link"); ss.type="text/css"; ss.rel="stylesheet"; 
               ss.href = window.self === window.top ? "NCRN.css" : "NCRNframe.css"; document.getElementsByTagName("head")[0].appendChild(ss);'
-            ),
-            HTML('<link rel="icon", href="AH_small_flat_4C_12x16.png", type="image/png" />')
-          ),
-          HTML('<img src="ah_large_black.gif", style="float:right; padding-right:25px"/>',
-            '<p>  National Capital Region Network <br> Stream Water Quality </p>'
+            )),
+      tags$head(HTML( '<link rel="icon", href="AH_small_flat_4C_12x16.png", type="image/png" />')),
+          
+      div(
+        h1(style="background-color: black; color: white; height: 125px; padding: 10px; margin: 0px",
+            
+            HTML('<img src="ah_large_black.gif", style="float:right; padding-right:25px"/>',
+            'National Capital Region Network <br> Stream Water Quality'
+            ))
           )
-        )
-      )
-    ),
+        ),
   
-  sidebarPanel(
-    h4("Select Stream Data"),
+  column(3, wellPanel(
+    h3("Select Stream Data"),
          
     uiOutput("parkControl"),
       
@@ -47,7 +45,7 @@ shinyUI(
 
     HTML('<hr>'),
         
-    h4(id="TrendHeader","Trends and Seasonal Patterns"),
+    h3(id="TrendHeader","Trends and Seasonal Patterns"),
      
     checkboxInput("Trends","Show Seasonal Patterns and Trends",FALSE),
      
@@ -55,31 +53,32 @@ shinyUI(
      
     HTML('<hr>'),
      
-    h4(id="DownloadHeader","Downloads"),
+    h3(id="DownloadHeader","Downloads"),
      
-    downloadButton("Data.Download","Save Data (.csv)") ,
+    downloadButton("Data.Download","Save Data (.csv)", class="btn btn-primary") ,
      
-    downloadButton("Plot.PNG","Save Plot (.png)"),
+    downloadButton("Plot.PNG","Save Plot (.png)", class="btn btn-primary"),
        
-    downloadButton("Plot.JPG","Save Plot (.jpg)"),
+    downloadButton("Plot.JPG","Save Plot (.jpg)", class="btn btn-primary"),
      
     HTML('<hr>'),
     
     ############### Graphics options
     
-    h4(id="GraphOptHead","Graphics Options"),
+    h3(id="GraphOptHead","Graphics Options"),
     
     div(id="GraphBox",checkboxInput("GraphOptions","Show Graphics Options",FALSE)),
   
     conditionalPanel(condition = "input.GraphOptions",
+              
 
       div(id="LegCheck",checkboxInput("Legend","Show Legend",TRUE)),
       
-      div(id="FontSli",sliderInput("FontSize", "Change Font Size", min=1, max=2.5,value=1.5, step=.25)),
+      div(id="FontSli", sliderInput("FontSize", "Change Font Size", min=1, max=2.5,value=1.5, step=.25)),
       
       HTML('<hr>'),
       
-      h5("Points"),
+      h4("Points"),
       
       div(id="GoodC",selectInput("GoodColor","Measurement Color:",choices=ColorNames, selected="Blue")),
   
@@ -111,7 +110,7 @@ shinyUI(
         sliderInput("LineWidth", "Change Width", min=.5, max=4,value=1, step=.5)
       )    
     )
-  ),
+  )),
     
   
   mainPanel(

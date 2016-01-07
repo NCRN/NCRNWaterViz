@@ -1,37 +1,5 @@
-.container-fluid{
-  padding: 0px
-}
-
-.row-fluid{
-  font-family: 'Frutiger, Arial, Verdana, Helvetica, sans-serif'
-}
-
-.shiny-text-output{
-  font-size:18px
-}
-
-.span12{
-  background-color: black
-}
-
-.span12 p{
-  color: white;
-  font-family: Arial;
-  padding-left:20px
-}
-
-label.control-label {
-  display: inline
-}
-
-.shiny-bound-input {
-  margin-left: 10px
-}
-
-.jslider{
-  max-width: 220px;
-  display: inline-block;
-  margin-left: 10px
+.col-sm-12, .col-sm-3, .col-sm-9{
+  padding: 0
 }
 
 hr{
@@ -39,6 +7,31 @@ hr{
   height: 1px;
   margin: 5px
 }
+
+#GoodC, #GoodColor, #TheshPColor, #BadColor, #OutC, #OutColor, #ThreshLCol,#ThColor, #TrendLCol, #TrColor, #PointSli, #LineSliPan, #LegCheck {
+  display: inline-block;
+  width: 130px
+}
+
+.control-label {
+  display: inline
+}
+
+
+
+
+/*
+.shiny-text-output{
+  font-size:18px
+}
+
+
+
+
+.shiny-bound-input {
+  margin-left: 10px
+}
+
 
 h5{
   margin: 5px 0px
@@ -48,15 +41,11 @@ h5{
   font-size: 16px
 }
 
-#GoodC, #GoodColor, #TheshPColor, #BadColor, #OutC, #OutColor, #ThreshLCol,#ThColor, #TrendLCol, #TrColor, #PointSli, #LineSliPan, #LegCheck {
-  display: inline-block;
-  width: 130px
-}
 
 #WaterTable{
   width: 650px
 }
 
-
+*/
 
 

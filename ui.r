@@ -71,46 +71,47 @@ shinyUI(
   
     conditionalPanel(condition = "input.GraphOptions",
               
-
-      div(id="LegCheck",checkboxInput("Legend","Show Legend",TRUE)),
+    column(6,
+      div(id="LegCheck",checkboxInput("Legend","Show Legend",TRUE))),
       
-      div(id="FontSli", sliderInput("FontSize", "Change Font Size", min=1, max=2.5,value=1.5, step=.25)),
+      column(6,div(id="FontSli", sliderInput("FontSize", "Change Font Size", min=1, max=2.5,value=1.5, step=.25))),
       
       HTML('<hr>'),
       
       h4("Points"),
       
-      div(id="GoodC",selectInput("GoodColor","Measurement Color:",choices=ColorNames, selected="Blue")),
+      column(6,div(id="GoodC",selectInput("GoodColor","Measurement Color:",choices=ColorNames, selected="Blue")),
   
       conditionalPanel(id="TheshPColor", condition = "input.ThreshPoint",
         selectInput("BadColor","Poor Quality Color:",choices=ColorNames,selected="Orange") 
-      ),
+      )),
     
       
-      conditionalPanel(id="OutC", condition = "input.Outliers",
+      column(6,conditionalPanel(id="OutC", condition = "input.Outliers",
         selectInput("OutColor","Outlier Color:",choices=ColorNames,selected="Vermillion")   
       ),
     
-      div(id="PointSli",sliderInput("PointSize", "Change Size", min=.5, max=2.5,value=1.5, step=.25)),
+      div(id="PointSli",sliderInput("PointSize", "Change Size", min=.5, max=2.5,value=1.5, step=.25))),
       
       HTML('<hr>'),
      
       conditionalPanel(condition = "input.ThreshLine || input.Trends",
-        h5("Lines")),
+        h4("Lines")),
       
-      conditionalPanel(id="ThreshLCol",condition = "input.ThreshLine",
+      column(6,conditionalPanel(id="ThreshLCol",condition = "input.ThreshLine",
         selectInput("ThColor","Threshold Color:",choices=ColorNames,selected="Orange") 
       ),
     
       conditionalPanel(id="TrendLCol",condition = "input.Trends", 
         selectInput("TrColor","Trend Color:",choices=ColorNames,selected="Green") 
-      ),
+      )),
       
-      conditionalPanel(id="LineSliPan",condition = "input.ThreshLine || input.Trends",
-        sliderInput("LineWidth", "Change Width", min=.5, max=4,value=1, step=.5)
+      column(6,conditionalPanel(id="LineSliPan",condition = "input.ThreshLine || input.Trends",
+        sliderInput("LineWidth", "Change Width", min=.5, max=4,value=1, step=.5))
       )    
     )
-  )),
+  )
+  ),
     
   
   mainPanel(

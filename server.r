@@ -65,7 +65,7 @@ shinyServer(function(input,output,session){
     )
 
     sliderInput(inputId="YearsShow", label= "Years to Display:", min=min(DataUse()$Year, na.rm=T),  max=max(DataUse()$Year, na.rm=T),
-      value=c( min(DataUse()$Year,na.rm=T), max=max(DataUse()$Year,na.rm=T) ), format="####"
+      value=c( min(DataUse()$Year,na.rm=T), max=max(DataUse()$Year,na.rm=T) ), sep=""
     )
   })
   

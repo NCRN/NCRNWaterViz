@@ -1,4 +1,5 @@
 library(shiny)
+library(shinyjs)
 
 ColorNames<-GraphColors$DisplayColor
 
@@ -8,6 +9,7 @@ shinyUI(
              title="NCRN Water Quality",
     
     column(12, id="NPSBanner", style="margin: 0px",
+      useShinyjs(),
       tags$head(includeScript ("http://www.nps.gov/common/commonspot/templates/js/federated-analytics.js")),
       tags$head(tags$script(
               'type = "text/javascript"',' var ss = document.createElement("link"); ss.type="text/css"; ss.rel="stylesheet"; 
@@ -24,7 +26,7 @@ shinyUI(
           )
         ),
   
-  column(3, wellPanel(
+  column(3, wellPanel(style='overflow: hidden',
     h3("Select Stream Data"),
          
     uiOutput("parkControl"),
@@ -68,49 +70,38 @@ shinyUI(
     h3(id="GraphOptHead","Graphics Options"),
     
     div(id="GraphBox",checkboxInput("GraphOptions","Show Graphics Options",FALSE)),
-  
-    conditionalPanel(condition = "input.GraphOptions",
-              
+    
     column(6,
-      div(id="LegCheck",checkboxInput("Legend","Show Legend",TRUE))),
+      checkboxInput("Legend","Show Legend",TRUE)
+    ),
       
-      column(6,div(id="FontSli", sliderInput("FontSize", "Change Font Size", min=1, max=2.5,value=1.5, step=.25))),
+    column(6,
+      sliderInput("FontSize", "Change Font Size", min=1, max=2.5,value=1.5, step=.25, width='130px')
+    ),
       
-      HTML('<hr>'),
+   column(12, h4("Points", style="text-align: center",id="PointHeader")),
       
-      h4("Points"),
-      
-      column(6,div(id="GoodC",selectInput("GoodColor","Measurement Color:",choices=ColorNames, selected="Blue")),
-  
-      conditionalPanel(id="TheshPColor", condition = "input.ThreshPoint",
-        selectInput("BadColor","Poor Quality Color:",choices=ColorNames,selected="Orange") 
-      )),
+    column(6,
+      selectInput("GoodColor","Measurement Color:",choices=ColorNames, selected="Blue", width='130px'),
+      selectInput("BadColor","Poor Quality Color:",choices=ColorNames,selected="Orange", width='130px') 
+    ),
     
+    column(6,
+      selectInput("OutColor","Outlier Color:",choices=ColorNames,selected="Vermillion", width='130px'),   
+      sliderInput("PointSize", "Change Size", min=.5, max=2.5,value=1.5, step=.25, width='130px')
+    ),
       
-      column(6,conditionalPanel(id="OutC", condition = "input.Outliers",
-        selectInput("OutColor","Outlier Color:",choices=ColorNames,selected="Vermillion")   
-      ),
+    column(12,h4("Lines",style="text-align: center", id="LineHeader")),
     
-      div(id="PointSli",sliderInput("PointSize", "Change Size", min=.5, max=2.5,value=1.5, step=.25))),
+   column(6,
+        selectInput("ThColor","Threshold Color:",choices=ColorNames,selected="Orange", width='130px'), 
+        selectInput("TrColor","Trend Color:",choices=ColorNames,selected="Green", width='130px')
+    ),
       
-      HTML('<hr>'),
-     
-      conditionalPanel(condition = "input.ThreshLine || input.Trends",
-        h4("Lines")),
-      
-      column(6,conditionalPanel(id="ThreshLCol",condition = "input.ThreshLine",
-        selectInput("ThColor","Threshold Color:",choices=ColorNames,selected="Orange") 
-      ),
-    
-      conditionalPanel(id="TrendLCol",condition = "input.Trends", 
-        selectInput("TrColor","Trend Color:",choices=ColorNames,selected="Green") 
-      )),
-      
-      column(6,conditionalPanel(id="LineSliPan",condition = "input.ThreshLine || input.Trends",
-        sliderInput("LineWidth", "Change Width", min=.5, max=4,value=1, step=.5))
-      )    
-    )
-  )
+    column(6,
+      sliderInput("LineWidth", "Change Width", min=.5, max=4,value=1, step=.5, width='130px')
+    )    
+  ) #end well panel
   ),
     
   

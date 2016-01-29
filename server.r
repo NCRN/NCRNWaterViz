@@ -2,6 +2,7 @@ library(shiny)
 library(lattice)
 library(dplyr)
 library(lubridate)
+library(shinyjs)
 
 source("Water_Cosinor.r")
 
@@ -23,6 +24,22 @@ Thresholds<-tbl_df(read.csv("Thresholds.csv", header=TRUE, as.is =TRUE))
 shinyServer(function(input,output,session){
 
   Parks<-unique(Thresholds$ParkName)
+
+#### shinyjs toggles
+  
+  observe ({
+    toggle(id="Legend", condition = input$GraphOptions)
+    toggle(id="FontSize", condition = input$GraphOptions)
+    toggle(id="PointHeader", condition = input$GraphOptions)
+    toggle(id="GoodColor", condition = input$GraphOptions)  
+    toggle(id="BadColor", condition = input$GraphOptions && input$ThreshPoint)
+    toggle(id="OutColor", condition = input$GraphOptions && input$Outliers)
+    toggle(id="PointSize", condition = input$GraphOptions)
+    toggle(id="LineHeader", condition = input$GraphOptions && (input$ThreshLine || input$Trends) )
+    toggle(id="ThColor", condition = input$GraphOptions && input$ThreshLine )
+    toggle(id="TrColor", condition = input$GraphOptions && input$Trends )
+    toggle(id="LineWidth", condition = input$GraphOptions && (input$ThreshLine || input$Trends) )
+  })
 
 ##############Make UI controls###############################
     

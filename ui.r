@@ -5,12 +5,12 @@ ColorNames<-GraphColors$DisplayColor
 
 
 shinyUI(
-  fluidPage( theme="http://www.nps.gov/lib/bootstrap/3.3.2/css/nps-bootstrap.min.css", style="padding: 0px",
+  fluidPage( theme="https://www.nps.gov/lib/bootstrap/3.3.2/css/nps-bootstrap.min.css", style="padding: 0px",
              title="NCRN Water Quality",
     
     column(12, id="NPSBanner", style="margin: 0px",
       useShinyjs(),
-      tags$head(includeScript ("http://www.nps.gov/common/commonspot/templates/js/federated-analytics.js")),
+      tags$head(includeScript ("https://www.nps.gov/common/commonspot/templates/js/federated-analytics.js")),
       tags$head(tags$script(
               'type = "text/javascript"',' var ss = document.createElement("link"); ss.type="text/css"; ss.rel="stylesheet"; 
               ss.href = window.self === window.top ? "NCRN.css" : "NCRNframe.css"; document.getElementsByTagName("head")[0].appendChild(ss);'

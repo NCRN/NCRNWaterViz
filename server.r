@@ -9,7 +9,7 @@ source("Water_Cosinor.r")
 setClass("NPSDate")
 setAs("character","NPSDate", function(from) as.Date(from, format="%m/%d/%Y") )  #explains to read.csv the date format from NPStoret
 
-############### get data
+#### get data ####
 WaterData<-tbl_df(
   read.csv("Water Data.csv", header=TRUE, col.names=c("Network","StationID","StationName","VisitDate","Parameter","Result"),
                     colClasses=c("factor","character","character","NPSDate","character","numeric" ),comment.char="")
@@ -19,7 +19,7 @@ Parameters<-tbl_df(read.csv("Parameters.csv", header=TRUE, as.is=TRUE))
 Thresholds<-tbl_df(read.csv("Thresholds.csv", header=TRUE, as.is =TRUE))
 
 
-################ Shiny Server
+##### Shiny Server ####
 
 shinyServer(function(input,output,session){
 

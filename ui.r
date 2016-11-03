@@ -27,6 +27,8 @@ shinyUI(
         ),
   
   column(3, wellPanel(style='overflow: hidden',
+             
+#   textOutput("Test"),
     h3("Select Stream Data"),
          
     uiOutput("parkControl"),
@@ -65,7 +67,7 @@ shinyUI(
      
     HTML('<hr>'),
     
-    ############### Graphics options
+    #### Graphics options ####
     
     h3(id="GraphOptHead","Graphics Options"),
     
@@ -133,7 +135,7 @@ shinyUI(
         
       ),
       
-      tabPanel(h4("Raw Data"),dataTableOutput("WaterTable")),
+      tabPanel(h4("Raw Data"),DT::dataTableOutput("WaterTable")),
       
       tabPanel(h4("Project Information"),
         

@@ -2,14 +2,8 @@ library(shiny)
 library(lattice)
 library(dplyr)
 library(lubridate)
-library(shinyjs)
 library(NCRNWater)
 library(DT)
-
-source("Water_Cosinor.r")
-
-setClass("NPSDate")
-setAs("character","NPSDate", function(from) as.Date(from, format="%m/%d/%Y") )  #explains to read.csv the date format from NPStoret
 
 #### Get data ####
 WaterData<-importNCRNWater("./Data/")
@@ -18,38 +12,29 @@ WaterData<-importNCRNWater("./Data/")
 
 shinyServer(function(input,output,session){
 
-#### shinyjs toggles ####
-  observe ({
-    toggle(id="Legend", condition = input$GraphOptions)
-    toggle(id="FontSize", condition = input$GraphOptions)
-    toggle(id="PointHeader", condition = input$GraphOptions)
-    toggle(id="GoodColor", condition = input$GraphOptions)  
-    toggle(id="BadColor", condition = input$GraphOptions && input$ThreshPoint)
-    toggle(id="OutColor", condition = input$GraphOptions && input$Outliers)
-    toggle(id="PointSize", condition = input$GraphOptions)
-    toggle(id="LineHeader", condition = input$GraphOptions && (input$ThreshLine || input$Trends) )
-    toggle(id="ThColor", condition = input$GraphOptions && input$ThreshLine )
-    toggle(id="TrColor", condition = input$GraphOptions && input$Trends )
-    toggle(id="LineWidth", condition = input$GraphOptions && (input$ThreshLine || input$Trends) )
-  })
 
  # output$Test<-renderText(input$ParamIn)   #For debugging purposes
+
+#### Reactive Values for Graphics Optiions with Defaults ####
+  
+  GraphOpts<-reactiveValues(Legend=TRUE, FontSize=1.5, GoodColor="Blue", BadColor="Orange",OutColor="Vermillion",PointSize=1.5,
+                            ThColor="Orange", TrColor="Green", LineWidth=1)
+  
+  
 #### Make UI controls ####
     
-#### Park control ####
-  output$parkControl<-renderUI({
-    selectizeInput(inputId="ParkIn",label="Park:", choices=c("Choose a Park"="",
-                  c(`names<-`(getParkInfo(WaterData, info="ParkCode"),getParkInfo(WaterData, info="ParkShortName"))
-                  )))
-  })     
+#### Park control update ####
+  observe({
+    updateSelectizeInput(session, inputId="ParkIn", choices=c("Choose a Park"="", 
+      c(`names<-`(getParkInfo(WaterData, info="ParkCode"),getParkInfo(WaterData, info="ParkShortName")))))
+  })
   
 #### Stream Control ####
-  output$streamControl<-renderUI({
+  observe({
     req(input$ParkIn)
-    selectizeInput(inputId = "SiteIn", label="Stream:", 
-        choices=c("Choose a Site"="",c(`names<-`(getSiteInfo(WaterData, parkcode=input$ParkIn, info="SiteCode"), 
-                                                getSiteInfo(WaterData, parkcode=input$ParkIn, info="SiteName")  )))
-    )
+    updateSelectizeInput(session, inputId = "SiteIn",  choices=c("Choose a Site"="",
+      c(`names<-`(getSiteInfo(WaterData, parkcode=input$ParkIn, info="SiteCode"), 
+                  getSiteInfo(WaterData, parkcode=input$ParkIn, info="SiteName")  ))))
   })
   
 #### Parameter Choices ####
@@ -59,24 +44,60 @@ shinyServer(function(input,output,session){
         getCharInfo(WaterData, parkcode=input$ParkIn, sitecode=input$SiteIn,info="Units") %>% iconv("","UTF-8"))
    names(Choice)<-ChoiceName
    return(Choice)
-})
+  })
   
 #### Parameter control ####
   
-  output$ParameterControl<-renderUI({
+  observe({
     req(input$ParkIn, input$SiteIn)
-    selectizeInput(inputId="ParamIn", label="Water Parameter:",
-      choices=c("Choose a Parameter"="",as.list(PChoices())))
+    updateSelectizeInput(session, inputId="ParamIn",choices=c("Choose a Parameter"="",as.list(PChoices())))
   })
   
 #### Year control  - NOTE - this control needs DataUse() below to be populated before it is created. ####
   
-  output$yearControl<-renderUI({
+observe({
     req(input$ParkIn,input$SiteIn, input$ParamIn)
-    sliderInput(inputId="YearsShow", label= "Years to Display:", min=min(year(DataUse()$Date), na.rm=T),  
-      max=max(year(DataUse()$Date), na.rm=T), value=c(min(year(DataUse()$Date), na.rm=T),  
-                max=max(year(DataUse()$Date), na.rm=T)), sep="",ticks=F)
+    updateSliderInput(session=session, inputId="YearsShow",min=min(year(DataUse()$Date), na.rm=T),  
+      max=max(year(DataUse()$Date), na.rm=T), value=c(min(year(DataUse()$Date), na.rm=T), max=max(year(DataUse()$Date), na.rm=T)))
   })
+  
+#### Graphics Modal Control ####
+  
+  observeEvent(input$GraphicsModal,
+    showModal(modalDialog(title="Graphics Options", footer=tagAppendAttributes( modalButton(tags$div("Close")), class="btn btn-primary"),
+      column(12,hr()),
+      column(12,h4("General:"),
+        column(3,checkboxInput("Legend","Show Legend",GraphOpts$Legend)),
+        column(3,sliderInput("FontSize", "Font Size", min=1, max=2.5,value=GraphOpts$FontSize, step=.25, width='130px'))
+      
+      ),
+      column(12,hr()),
+      column(12, h4("Points:"),
+        column(3,selectInput("GoodColor","Measurement Color:",choices=GraphColors$DisplayColor, 
+                           selected=GraphOpts$GoodColor, width='130px')),
+        column(3,selectInput("BadColor","Poor Quality Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$BadColor,
+                             width='130px') ),
+        column(3,selectInput("OutColor","Outlier Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$OutColor, width='130px')),   
+        column(3,sliderInput("PointSize", "Change Size", min=.5, max=2.5,value=GraphOpts$PointSize, step=.25, width='130px'))
+      ),
+      column(12,hr()),
+      column(12, h4("Lines:"),
+        column(3,selectInput("ThColor","Threshold Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$ThColor, width='130px')), 
+        column(3,selectInput("TrColor","Trend Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$TrColor, width='130px')),
+        column(3,sliderInput("LineWidth", "Change Width", min=.5, max=4,value=GraphOpts$LineWidth, step=.5, width='130px'))
+      )
+    ))
+  )
+  
+  observeEvent(input$Legend, GraphOpts$Legend<-input$Legend)
+  observeEvent(input$FontSize, GraphOpts$FontSize<-input$FontSize)
+  observeEvent(input$GoodColor, GraphOpts$GoodColor<-input$GoodColor)
+  observeEvent(input$BadColor, GraphOpts$BadColor<-input$BadColor)
+  observeEvent(input$OutColor, GraphOpts$OutColor<-input$OutColor)
+  observeEvent(input$PointSize, GraphOpts$PointSize<-input$PointSize)
+  observeEvent(input$ThColor, GraphOpts$ThColor<-input$ThColor)
+  observeEvent(input$TrColor, GraphOpts$TrColor<-input$TrColor)
+  observeEvent(input$LineWidth, GraphOpts$LineWidth<-input$LineWidth)
   
 #### Housekeeping of data ####
   DataUse<-reactive({ getCharInfo(WaterData, parkcode=input$ParkIn, sitecode=input$SiteIn, charname=input$ParamIn, info="Data")[[1]] })
@@ -99,11 +120,11 @@ shinyServer(function(input,output,session){
         getCharInfo(WaterData, parkcode=input$ParkIn, sitecode=input$SiteIn, charname=input$ParamIn, info="DisplayName"),sep=": ")})
  
 #### Get Colors from user inputs ####
-  BadCol<-reactive({GraphColors[GraphColors$DisplayColor==input$BadColor,]$Rcolor})
-  GoodCol<-reactive({GraphColors[GraphColors$DisplayColor==input$GoodColor,]$Rcolor})
-  OutCol<-reactive({GraphColors[GraphColors$DisplayColor==input$OutColor,]$Rcolor})
-  ThCol<-reactive({GraphColors[GraphColors$DisplayColor==input$ThColor,]$Rcolor})
-  TrCol<-reactive({GraphColors[GraphColors$DisplayColor==input$TrColor,]$Rcolor})
+  BadCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$BadColor,]$Rcolor})
+  GoodCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$GoodColor,]$Rcolor})
+  OutCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$OutColor,]$Rcolor})
+  ThCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$ThColor,]$Rcolor})
+  TrCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$TrColor,]$Rcolor})
       
 #### PlotElements determines what is being plotted and is used in the key= argument of lattice  ####
   PlotElements=reactive({                         
@@ -119,21 +140,21 @@ shinyServer(function(input,output,session){
     )
     
     xyplot(Value~Date, data=DataUse() %>% filter(between(year(Date), input$YearsShow[1],input$YearsShow[2])), 
-      cex=input$PointSize, 
+      cex=GraphOpts$PointSize, 
       pch=16,col=GoodCol(),
       prepanel=function(x,y,...){
         list(ylim=range(y, if(input$ThreshLine) Thresholds() else NA ,na.rm=T))},
-      main=list(Title(),cex=input$FontSize),
-      ylab=list(label=Units(),cex=input$FontSize),
-      xlab=list(label="Sample Date",cex=input$FontSize),
-      scales=list(cex=input$FontSize, alternating=1, tck=c(1,0)),
-      key=if(input$Legend==TRUE) {
-        key=list(border=FALSE, cex=input$PointSize, space="top",columns=min(3,1+sum(PlotElements())),                           
+      main=list(Title(),cex=GraphOpts$FontSize),
+      ylab=list(label=Units(),cex=GraphOpts$FontSize),
+      xlab=list(label="Sample Date",cex=GraphOpts$FontSize),
+      scales=list(cex=GraphOpts$FontSize, alternating=1, tck=c(1,0)),
+      key=if(GraphOpts$Legend==TRUE) {
+        key=list(border=FALSE, cex=GraphOpts$PointSize, space="top",columns=min(3,1+sum(PlotElements())),                           
           lines=list(
             pch=c(16,c(16,16,16,1)[PlotElements()]),
             type=c("p",c("p","l","l","p")[PlotElements()] ),
             col=c(GoodCol(),c(BadCol(),ThCol(),TrCol(),OutCol())[PlotElements()]),
-            lwd=c(input$LineWidth,c(rep(input$LineWidth,4))[PlotElements()])
+            lwd=c(GraphOpts$LineWidth,c(rep(GraphOpts$LineWidth,4))[PlotElements()])
           ),
           text=list(
             c("Measurement",c("Fails Threshold","Threshold","Trend Line","Outliers")[PlotElements()])
@@ -145,36 +166,36 @@ shinyServer(function(input,output,session){
        
  #### Threshold lines  ####
         if(input$ThreshLine==TRUE & !is.na(Thresholds()[1])) {
-          panel.abline(Thresholds()[1],col=ThCol(), lwd=input$LineWidth)
+          panel.abline(Thresholds()[1],col=ThCol(), lwd=GraphOpts$LineWidth)
         }
         if(input$ThreshLine==TRUE & !is.na(Thresholds()[2])) {      
-          panel.abline(Thresholds()[2],col=ThCol(), lwd=input$LineWidth)
+          panel.abline(Thresholds()[2],col=ThCol(), lwd=GraphOpts$LineWidth)
         }
    
  #### Threshold Points ####
         if(input$ThreshPoint==TRUE & !is.na(Thresholds()[1])) {
           panel.points(x=DataUse()$Date[DataUse()$Value<Thresholds()[1]], y=DataUse()$Value[DataUse()$Value<Thresholds()[1]],
-                       col=BadCol(), pch=16, cex=input$PointSize)
+                       col=BadCol(), pch=16, cex=GraphOpts$PointSize)
         }  
           
         if(input$ThreshPoint==TRUE & !is.na(Thresholds()[2])) {
           panel.points(x=DataUse()$Date[DataUse()$Value>Thresholds()[2]], y=DataUse()$Value[DataUse()$Value>Thresholds()[2]],
-                     col=BadCol(), pch=16, cex=input$PointSize)
+                     col=BadCol(), pch=16, cex=GraphOpts$PointSize)
         } 
           
 #### Trend lines ####
         if(input$Trends==TRUE){
           if(class(TrendsOut()$Analysis)=="lm"){
-            panel.lines(TrendsOut()$Analysis$fitted.values~TrendsOut()$CDates, col=TrCol(), lwd=input$LineWidth)
+            panel.lines(TrendsOut()$Analysis$fitted.values~TrendsOut()$CDates, col=TrCol(), lwd=GraphOpts$LineWidth)
           }
           if(class(TrendsOut()$Analysis)=="Cosinor"){
-            panel.lines(TrendsOut()$PredLine$Preds~TrendsOut()$PredLine$PreDates.Date, col=TrCol(), lwd=input$LineWidth)
+            panel.lines(TrendsOut()$PredLine$Preds~TrendsOut()$PredLine$PreDates.Date, col=TrCol(), lwd=GraphOpts$LineWidth)
           }
         }     
 #### Outlier Points ####
         if(input$Outliers==TRUE){
           if(nrow(TrendsOut()$Outliers) > 0){
-            panel.points(x=TrendsOut()$Outliers$Date, y=TrendsOut()$Outliers$Value, col=OutCol(), pch=1, cex=1.5+input$PointSize,lwd=2)
+            panel.points(x=TrendsOut()$Outliers$Date, y=TrendsOut()$Outliers$Value, col=OutCol(), pch=1, cex=1.5+GraphOpts$PointSize,lwd=2)
           }
         }  
       } #ends panel funciton

@@ -1,5 +1,4 @@
 library(shiny)
-library(shinyjs)
 
 ColorNames<-GraphColors$DisplayColor
 
@@ -9,39 +8,39 @@ shinyUI(
              title="NCRN Water Quality",
     
     column(12, id="NPSBanner", style="margin: 0px",
-      useShinyjs(),
       tags$head(includeScript ("https://www.nps.gov/common/commonspot/templates/js/federated-analytics.js")),
       tags$head(tags$script(
-              'type = "text/javascript"',' var ss = document.createElement("link"); ss.type="text/css"; ss.rel="stylesheet"; 
-              ss.href = window.self === window.top ? "NCRN.css" : "NCRNframe.css"; document.getElementsByTagName("head")[0].appendChild(ss);'
-            )),
+        'type = "text/javascript"',' var ss = document.createElement("link"); ss.type="text/css"; ss.rel="stylesheet"; 
+        ss.href = window.self === window.top ? "NCRN.css" : "NCRNframe.css"; document.getElementsByTagName("head")[0].appendChild(ss);'
+      )),
       tags$head(HTML( '<link rel="icon", href="AH_small_flat_4C_12x16.png", type="image/png" />')),
           
       div(
         h1(style="background-color: black; color: white; height: 125px; padding: 10px; margin: 0px",
-            
             HTML('<img src="ah_large_black.gif", style="float:right; padding-right:25px"/>',
             'National Capital Region Network <br> Stream Water Quality'
-            ))
-          )
-        ),
+        ))
+      )
+    ),
   
   column(3, wellPanel(style='overflow: hidden',
              
 #   textOutput("Test"),
     h3("Select Stream Data"),
-         
-    uiOutput("parkControl"),
+
+    selectizeInput(inputId="ParkIn",label="1. Park:", choices=NULL),     
       
-    uiOutput("streamControl"), 
-    
-    uiOutput("ParameterControl"),
+    selectizeInput(inputId = "SiteIn", label="2. Stream:", choices=NULL),
+
+    selectizeInput(inputId="ParamIn", label="3. Water Parameter:", choices=NULL),
+
+    sliderInput(inputId="YearsShow", label= "4. Years to Display:", min=1900, max=2100, value=c(1900,2100),sep="",ticks=F),
     
     uiOutput("yearControl"),
        
     HTML('<hr >'),
      
-    h4(id="ThreshHeader","Thresholds"),
+    h3(id="ThreshHeader","Thresholds"),
       
     checkboxInput("ThreshLine","Show Water Quality Threshold Line",FALSE),
      
@@ -70,39 +69,9 @@ shinyUI(
     #### Graphics options ####
     
     h3(id="GraphOptHead","Graphics Options"),
+
+    actionButton(inputId="GraphicsModal", label='Graphics Options', class="btn btn-primary")
     
-    div(id="GraphBox",checkboxInput("GraphOptions","Show Graphics Options",FALSE)),
-    
-    column(6,
-      checkboxInput("Legend","Show Legend",TRUE)
-    ),
-      
-    column(6,
-      sliderInput("FontSize", "Change Font Size", min=1, max=2.5,value=1.5, step=.25, width='130px')
-    ),
-      
-   column(12, h4("Points", style="text-align: center",id="PointHeader")),
-      
-    column(6,
-      selectInput("GoodColor","Measurement Color:",choices=ColorNames, selected="Blue", width='130px'),
-      selectInput("BadColor","Poor Quality Color:",choices=ColorNames,selected="Orange", width='130px') 
-    ),
-    
-    column(6,
-      selectInput("OutColor","Outlier Color:",choices=ColorNames,selected="Vermillion", width='130px'),   
-      sliderInput("PointSize", "Change Size", min=.5, max=2.5,value=1.5, step=.25, width='130px')
-    ),
-      
-    column(12,h4("Lines",style="text-align: center", id="LineHeader")),
-    
-   column(6,
-        selectInput("ThColor","Threshold Color:",choices=ColorNames,selected="Orange", width='130px'), 
-        selectInput("TrColor","Trend Color:",choices=ColorNames,selected="Green", width='130px')
-    ),
-      
-    column(6,
-      sliderInput("LineWidth", "Change Width", min=.5, max=4,value=1, step=.5, width='130px')
-    )    
   ) #end well panel
   ),
     
@@ -145,10 +114,6 @@ shinyUI(
       
         includeHTML(paste0(getwd(),"/www/","citations.html"))
       )
-      
     )
-    
   )
-
-
 ))

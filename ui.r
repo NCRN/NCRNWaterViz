@@ -58,7 +58,7 @@ shinyUI(
      
     h3(id="DownloadHeader","Downloads"),
      
-    downloadButton("Data.Download","Save Data (.csv)", class="btn btn-primary") ,
+   # downloadButton("Data.Download","Save Data (.csv)", class="btn btn-primary") ,
      
     downloadButton("Plot.PNG","Save Plot (.png)", class="btn btn-primary"),
        
@@ -103,6 +103,8 @@ shinyUI(
        )
         
       ),
+      
+      tabPanel(h4("Plot2"), plotOutput("Plot2")),
       
       tabPanel(h4("Raw Data"),DT::dataTableOutput("WaterTable")),
       

@@ -4,6 +4,9 @@ library(dplyr)
 library(lubridate)
 library(NCRNWater)
 library(DT)
+library(htmltools)
+library(colourpicker)
+
 
 #### Get data ####
 WaterData<-importNCRNWater("./Data/")
@@ -17,7 +20,7 @@ shinyServer(function(input,output,session){
 
 #### Reactive Values for Graphics Optiions with Defaults ####
   
-  GraphOpts<-reactiveValues(Legend=TRUE, FontSize=1.5, GoodColor="Blue", BadColor="Orange",OutColor="Vermillion",PointSize=1.5,
+  GraphOpts<-reactiveValues(Legend=TRUE, FontSize=1.5, GoodColor="blue", BadColor="Orange",OutColor="Vermillion",PointSize=1.5,
                             ThColor="Orange", TrColor="Green", LineWidth=1)
   
   
@@ -73,8 +76,10 @@ observe({
       ),
       column(12,hr()),
       column(12, h4("Points:"),
-        column(3,selectInput("GoodColor","Measurement Color:",choices=GraphColors$DisplayColor, 
-                           selected=GraphOpts$GoodColor, width='130px')),
+        column(3,#selectInput("GoodColor","Measurement Color:",choices=GraphColors$DisplayColor, 
+                           #selected=GraphOpts$GoodColor, width='130px')
+               colourInput(inputId="GoodColor", label="Measurement Color", value=GraphOpts$GoodColor, showColour = "background")
+        ),
         column(3,selectInput("BadColor","Poor Quality Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$BadColor,
                              width='130px') ),
         column(3,selectInput("OutColor","Outlier Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$OutColor, width='130px')),   
@@ -100,7 +105,14 @@ observe({
   observeEvent(input$LineWidth, GraphOpts$LineWidth<-input$LineWidth)
   
 #### Housekeeping of data ####
-  DataUse<-reactive({ getCharInfo(WaterData, parkcode=input$ParkIn, sitecode=input$SiteIn, charname=input$ParamIn, info="Data")[[1]] })
+  DataUse<-reactive({ 
+     validate(
+       need(input$ParkIn !="", message="Choose a Park"),
+       need(input$SiteIn !="", message="Choose a Stream"),
+       need(input$ParamIn !="", message="Choose a Water Quality Parameter")
+      # need(input$YearsShow !="", message="Choose the Years to Display")
+     )  
+    getCharInfo(WaterData, parkcode=input$ParkIn, sitecode=input$SiteIn, charname=input$ParamIn, info="Data")[[1]] })
   
   Thresholds<-reactive({
     c(getCharInfo(WaterData,parkcode=input$ParkIn, sitecode=input$SiteIn, charname=input$ParamIn, info="LowerPoint"),
@@ -121,7 +133,7 @@ observe({
  
 #### Get Colors from user inputs ####
   BadCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$BadColor,]$Rcolor})
-  GoodCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$GoodColor,]$Rcolor})
+  GoodCol<-reactive({GraphOpts$GoodColor})#reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$GoodColor,]$Rcolor})
   OutCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$OutColor,]$Rcolor})
   ThCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$ThColor,]$Rcolor})
   TrCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$TrColor,]$Rcolor})
@@ -132,13 +144,6 @@ observe({
   })
 
  OutPlot<-reactive({
-   validate(
-     need(input$ParkIn !="", message="Choose a Park"),
-     need(input$SiteIn !="", message="Choose a Stream"),
-     need(input$ParamIn !="", message="Choose a Water Quality Parameter"),
-     need(input$YearsShow !="", message="Choose the Years to Display")
-    )
-    
     xyplot(Value~Date, data=DataUse() %>% filter(between(year(Date), input$YearsShow[1],input$YearsShow[2])), 
       cex=GraphOpts$PointSize, 
       pch=16,col=GoodCol(),
@@ -265,23 +270,20 @@ observe({
   })      
 
 #### Raw data table   #####
- output$WaterTable <-renderDataTable({
-    validate(
-      need(input$ParkIn !="", message="Choose a Park"),
-      need(input$SiteIn !="", message="Choose a Stream"),
-      need(input$ParamIn !="", message="Choose a Water Quality Parameter"),
-      need(input$YearsShow !="", message="Choose the Years to Display")
-    )   
-   DataUse()
-  })
+ output$WaterTable <-DT::renderDataTable(
+   expr=datatable(DataUse(), extensions=c("Buttons","KeyTable"),caption=htmltools::tags$caption(htmltools::h3(Title())),
+                  class="stripe hover order-column cell-border",filter="top",
+      rownames=F, options=list(autoWidth=TRUE, dom="Bftirp", buttons=c("copy","csv","excel","pdf","print"), keys=TRUE)
+                  ),server=F
+  )
 
 #### Data download ####
-  output$Data.Download<-downloadHandler(
-    filename=function(){paste(Title(),".csv",sep="")},
-    content=function(file){ 
-      write.csv(DataUse(),file) #DataOut()
-    }
-   )   
+  # output$Data.Download<-downloadHandler(
+  #   filename=function(){paste(Title(),".csv",sep="")},
+  #   content=function(file){ 
+  #     write.csv(DataUse(),file) #DataOut()
+  #   }
+  #  )   
 
 #### Plot downloads ####
   output$Plot.PNG<-downloadHandler(

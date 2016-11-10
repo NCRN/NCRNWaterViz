@@ -28,7 +28,7 @@ shinyUI(
 #   textOutput("Test"),
     h3("Select Stream Data"),
 
-    selectizeInput(inputId="ParkIn",label="1. Park:", choices=NULL),     
+    selectizeInput(inputId="ParkIn",label="1. Park:" , choices=NULL),     
       
     selectizeInput(inputId = "SiteIn", label="2. Stream:", choices=NULL),
 
@@ -104,7 +104,7 @@ shinyUI(
         
       ),
       
-      tabPanel(h4("Plot2"), plotOutput("Plot2")),
+      tabPanel(h4("Time Series Plot"), plotOutput("Plot2")),
       
       tabPanel(h4("Raw Data"),DT::dataTableOutput("WaterTable")),
       

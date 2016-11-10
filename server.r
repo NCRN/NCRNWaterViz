@@ -5,7 +5,9 @@ library(lubridate)
 library(NCRNWater)
 library(DT)
 library(htmltools)
+library(ggplot2)
 library(colourpicker)
+
 
 
 #### Get data ####
@@ -83,7 +85,7 @@ observe({
         column(3,selectInput("BadColor","Poor Quality Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$BadColor,
                              width='130px') ),
         column(3,selectInput("OutColor","Outlier Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$OutColor, width='130px')),   
-        column(3,sliderInput("PointSize", "Change Size", min=.5, max=2.5,value=GraphOpts$PointSize, step=.25, width='130px'))
+        column(3,sliderInput("PointSize", "Change Size", min=1, max=5,value=GraphOpts$PointSize, step=.5, width='130px'))
       ),
       column(12,hr()),
       column(12, h4("Lines:"),
@@ -268,7 +270,21 @@ observe({
     req(input$ThreshLine | input$ThreshPoint) 
     getCharInfo(WaterData,parkcode=input$ParkIn, sitecode=input$SiteIn, charname=input$ParamIn, info="AssessmentDetails")
   })      
+  
+#### Plot2 ####
+    WaterSeriesOut<-reactive({waterseries(WaterData, parkcode=input$ParkIn, sitecode=input$SiteIn, char=input$ParamIn, 
+                          years=input$YearsShow[1]:input$YearsShow[2],layers=c("points"),assessment=input$ThreshLine, title=Title(),
+                          colors=c(GoodCol(), "black", ThCol())) +
+        geom_point(size=GraphOpts$PointSize)
+  })
 
+
+  
+  output$Plot2<-renderPlot({
+    WaterSeriesOut()
+  })
+  
+  
 #### Raw data table   #####
  output$WaterTable <-DT::renderDataTable(
    expr=datatable(DataUse(), extensions=c("Buttons","KeyTable"),caption=htmltools::tags$caption(htmltools::h3(Title())),
@@ -277,13 +293,6 @@ observe({
                   ),server=F
   )
 
-#### Data download ####
-  # output$Data.Download<-downloadHandler(
-  #   filename=function(){paste(Title(),".csv",sep="")},
-  #   content=function(file){ 
-  #     write.csv(DataUse(),file) #DataOut()
-  #   }
-  #  )   
 
 #### Plot downloads ####
   output$Plot.PNG<-downloadHandler(

@@ -18,11 +18,11 @@ WaterData<-importNCRNWater("./Data/")
 shinyServer(function(input,output,session){
 
 
- # output$Test<-renderText(input$ParamIn)   #For debugging purposes
+  #output$Test<-renderText(class(TrendsOut()$Analysis))   #For debugging purposes
 
 #### Reactive Values for Graphics Optiions with Defaults ####
   
-  GraphOpts<-reactiveValues(Legend=TRUE, FontSize=1.5, GoodColor="blue", BadColor="Orange",OutColor="Vermillion",PointSize=1.5,
+  GraphOpts<-reactiveValues(Legend=TRUE, FontSize=1.5, GoodColor="blue", BadColor="Orange",OutColor="Vermillion",PointSize=2.5,
                             ThColor="Orange", TrColor="Green", LineWidth=1)
   
   
@@ -126,7 +126,6 @@ observe({
   })
   
   TrendsOut<-reactive({
-    req(input$Trends | input$Outliers)
     wcosinor(WaterData, parkcode=input$ParkIn, sitecode=input$SiteIn, charname=input$ParamIn)
   })
   
@@ -272,13 +271,29 @@ observe({
   })      
   
 #### Plot2 ####
-    WaterSeriesOut<-reactive({waterseries(WaterData, parkcode=input$ParkIn, sitecode=input$SiteIn, char=input$ParamIn, 
-                          years=input$YearsShow[1]:input$YearsShow[2],layers=c("points"),assessment=input$ThreshLine, title=Title(),
-                          colors=c(GoodCol(), "black", ThCol())) +
-        geom_point(size=GraphOpts$PointSize)
+    WaterSeriesOut<-reactive({
+      SeriesPlot<-waterseries(WaterData, parkcode=input$ParkIn, sitecode=input$SiteIn, char=input$ParamIn, 
+            years=input$YearsShow[1]:input$YearsShow[2],layers=c("points"),assessment=input$ThreshLine, title=Title(),
+            colors=c(GoodCol(), "black", ThCol()), sizes=c(GraphOpts$PointSize, GraphOpts$LineWidth, GraphOpts$LineWidth )) +
+      #geom_point(size=GraphOpts$PointSize, color=GoodCol(), pch=16)+
+      #{if(input$ThreshLine) geom_hline(size=GraphOpts$LineWidth)}+
+      theme(text=element_text(size=GraphOpts$FontSize*10))+
+        
+      {if(input$Outliers) geom_point(data=TrendsOut()[["Outliers"]], aes(Date,Value),pch=1,size=GraphOpts$PointSize+2,
+                  color=OutCol(),stroke=1.5)} +
+        
+      {if(input$ThreshPoint & !is.na(Thresholds()[1])) geom_point(data=DataUse()[DataUse()$Value<Thresholds()[1],], 
+                   aes(Date,Value), pch=16,size=GraphOpts$PointSize, color=BadCol()) } +
+        
+      {if(input$ThreshPoint & !is.na(Thresholds()[2])) geom_point(data=DataUse()[DataUse()$Value>Thresholds()[2],], 
+                  aes(Date,Value), pch=16, size=GraphOpts$PointSize, color=BadCol())} +
+      
+      {if(input$Trends & class(TrendsOut()$Analysis)=="lm") geom_line(data=data.frame(Value=TrendsOut()$Analysis$fitted.values,
+                Date=TrendsOut()$CDates), aes(Date,Value), color=TrCol(), lwd=GraphOpts$LineWidth) } +
+      {if(input$Trends & class(TrendsOut()$Analysis)=="Cosinor") geom_line(data=data.frame(Value=TrendsOut()$PredLine$Preds,
+               Date=TrendsOut()$PredLine$PreDates.Date),  aes(Date,Value), col=TrCol(), lwd=GraphOpts$LineWidth)}
+     SeriesPlot  #forces ggplot to draw graph after all the conditionals
   })
-
-
   
   output$Plot2<-renderPlot({
     WaterSeriesOut()

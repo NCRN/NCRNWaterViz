@@ -25,7 +25,7 @@ shinyUI(
   
   column(3, wellPanel(style='overflow: hidden',
              
-#   textOutput("Test"),
+   #textOutput("Test"),  # For debugging purposes
     h3("Select Stream Data"),
 
     selectizeInput(inputId="ParkIn",label="1. Park:" , choices=NULL),     

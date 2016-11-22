@@ -25,7 +25,7 @@ shinyUI(
   
   column(3, wellPanel(style='overflow: hidden',
              
-   #textOutput("Test"),  # For debugging purposes
+  #textOutput("Test"),  # For debugging purposes
     h3("Select Stream Data"),
 
     selectizeInput(inputId="ParkIn",label="1. Park:" , choices=NULL),     
@@ -34,7 +34,7 @@ shinyUI(
 
     selectizeInput(inputId="ParamIn", label="3. Water Parameter:", choices=NULL),
 
-    sliderInput(inputId="YearsShow", label= "4. Years to Display:", min=1900, max=2100, value=c(1900,2100),sep="",ticks=F),
+    sliderInput(inputId="YearsShow", label= "4. Years to Display:", min=1900, max=2100, step=1, value=c(1900,2100),sep="",ticks=F),
     
     uiOutput("yearControl"),
        
@@ -78,33 +78,34 @@ shinyUI(
   
   mainPanel(
     tabsetPanel(  
-      tabPanel(h4("Plot"), 
-        plotOutput("WaterPlot"),
-        
-        conditionalPanel(condition = "input.ThreshLine && !(output.WaterPlot==null)" , 
+      tabPanel(h4("Time Series Plot"),
+               
+         plotOutput("Plot2"),
+      
+        conditionalPanel(condition = "input.ThreshLine && !(output.Plot2==null)" , 
           h4("Threshold:"),
           textOutput ("ThresholdSummary"),
           textOutput ("ThresholdType")
         ),
-        
+               
         br(),
-        
-        conditionalPanel(condition = "input.Trends && !(output.WaterPlot==null)" , 
-        h4("Trend Analysis"),
-        textOutput("TrendsOut"),
-        textOutput("SeasonOut")
+               
+        conditionalPanel(condition = "input.Trends && !(output.Plot2==null)" , 
+          h4("Trend Analysis"),
+          textOutput("TrendsOut"),
+          textOutput("SeasonOut")
         ),
         
         br(),
-        
-       conditionalPanel(condition = "input.ThreshLine && !(output.WaterPlot==null)" , 
+         
+        conditionalPanel(condition = "input.ThreshLine && !(output.Plot2==null)" , 
           h4("Threshold Reference:"),
           textOutput("RefSummary")
-       )
-        
+        )
+               
       ),
       
-      tabPanel(h4("Time Series Plot"), plotOutput("Plot2")),
+      tabPanel(h4("Box Plot")),
       
       tabPanel(h4("Raw Data"),DT::dataTableOutput("WaterTable")),
       

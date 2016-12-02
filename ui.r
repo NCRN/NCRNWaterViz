@@ -80,7 +80,7 @@ shinyUI(
     tabsetPanel(  
       tabPanel(h4("Time Series Plot"),
                
-         plotOutput("Plot2"),
+         plotOutput("TimeSeries"),
       
         conditionalPanel(condition = "input.ThreshLine && !(output.Plot2==null)" , 
           h4("Threshold:"),
@@ -105,7 +105,7 @@ shinyUI(
                
       ),
       
-      tabPanel(h4("Box Plot")),
+      tabPanel(h4("Box Plot"), plotOutput("BoxPlot")),
       
       tabPanel(h4("Raw Data"),DT::dataTableOutput("WaterTable")),
       

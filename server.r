@@ -80,7 +80,8 @@ observe({
       column(12, h4("Points:"),
         column(3,#selectInput("GoodColor","Measurement Color:",choices=GraphColors$DisplayColor, 
                            #selected=GraphOpts$GoodColor, width='130px')
-               colourInput(inputId="GoodColor", label="Measurement Color", value=GraphOpts$GoodColor, showColour = "background")
+              colourInput(inputId="GoodColor", label="Measurement Color", value=GraphOpts$GoodColor, palette="limited",showColour = "background")
+              
         ),
         column(3,selectInput("BadColor","Poor Quality Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$BadColor,
                              width='130px') ),
@@ -234,12 +235,23 @@ observe({
       SeriesPlot  #forces ggplot to draw graph after all the conditionals
   })
   
-  output$Plot2<-renderPlot({
+  output$TimeSeries<-renderPlot({
     WaterSeriesOut()
   })
 
   
-#### Raw data table   #####
+#### Box Plot ####
+  
+  output$BoxPlot<-renderPlot({
+    req(input$ParkIn, input$SiteIn, input$ParamIn)
+    waterbox(object=WaterData, parkcode=input$ParkIn, sitecode=input$SiteIn, charname = input$ParamIn, 
+             years=input$YearsShow[1]:input$YearsShow[2], assessment=input$ThreshLine,assesscolor=ThCol(), outliercolor = BadCol(),
+             sizes=c(GraphOpts$PointSize, GraphOpts$LineWidth, GraphOpts$LineWidth))
+    
+  })
+  
+  
+#### Raw data table ####
  output$WaterTable <-DT::renderDataTable(
    expr=datatable(DataUse(), extensions=c("Buttons","KeyTable"),caption=htmltools::tags$caption(htmltools::h3(Title())),
                   class="stripe hover order-column cell-border",filter="top",

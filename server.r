@@ -18,54 +18,23 @@ WaterData<-importNCRNWater("./Data/")
 shinyServer(function(input,output,session){
 
 
-#output$Test<-renderText(TrendsOut()$Analysis)   #For debugging purposes
+output$Test<-renderText(DataUse()$Date)   #For debugging purposes
 
 #### Reactive Values for Graphics Optiions with Defaults ####
   
-  GraphOpts<-reactiveValues(Legend=TRUE, FontSize=1.5, GoodColor="blue", BadColor="Orange",OutColor="Vermillion",PointSize=2.5,
+GraphOpts<-reactiveValues(Legend=TRUE, FontSize=1.5, GoodColor="blue", BadColor="Orange",OutColor="Vermillion",PointSize=2.5,
                             ThColor="Orange", TrColor="Green", LineWidth=1)
   
-  
-#### Make UI controls ####
-    
-#### Park control update ####
-  observe({
-    updateSelectizeInput(session, inputId="ParkIn", choices=c("Choose a Park"="", 
-      c(`names<-`(getParkInfo(WaterData, info="ParkCode"),getParkInfo(WaterData, info="ParkShortName")))))
-  })
-  
-#### Stream Control ####
-  observe({
-    req(input$ParkIn)
-    updateSelectizeInput(session, inputId = "SiteIn",  choices=c("Choose a Site"="",
-      c(`names<-`(getSiteInfo(WaterData, parkcode=input$ParkIn, info="SiteCode"), 
-                  getSiteInfo(WaterData, parkcode=input$ParkIn, info="SiteName")  ))))
-  })
-  
-#### Parameter Choices ####
-  PChoices<-reactive({
-    req(input$ParkIn, input$SiteIn)
-    Choice<-getCharInfo(WaterData, parkcode=input$ParkIn, sitecode=input$SiteIn, info="CharName")
-    ChoiceName<-paste(getCharInfo(WaterData, parkcode=input$ParkIn, sitecode=input$SiteIn, info="DisplayName"),
-         getCharInfo(WaterData, parkcode=input$ParkIn, sitecode=input$SiteIn, info="Units") %>% iconv("","UTF-8"))
-    if(isTruthy(Choice) & isTruthy(ChoiceName)) { names(Choice)<-ChoiceName }
-   return(Choice)
-  })
-  
-#### Parameter control ####
-  
-  observe(
-    updateSelectizeInput(session, inputId="ParamIn",choices=c("Choose a Parameter"="",as.list(PChoices())))
-  )
-  
-#### Year control  - NOTE - this control needs DataUse() below to be populated before it is created. ####
-  
-observe({
-    req( DataUse()$Date)
-    updateSliderInput(session=session, inputId="YearsShow",min=min(year(DataUse()$Date), na.rm=T),
-      max=max(year(DataUse()$Date), na.rm=T), value=c(min(year(DataUse()$Date), na.rm=T), max(year(DataUse()$Date), na.rm=T)))
-  })
-  
+ 
+
+#### UI Controls ####  
+
+#### Time Series Controls ####
+TimePark<-callModule(parkChooser, id="TimePark", WaterData)  
+TimeSite<-callModule(siteChooser, id="TimeSite", data=WaterData, park=TimePark)
+TimeParam<-callModule(paramChooser, id="TimeParam",data=WaterData, park=TimePark, site=TimeSite)
+TimeYears<-callModule(yearChooser, id="TimeYears", data=DataUse) 
+
 #### Graphics Modal Control ####
   
   observeEvent(input$GraphicsModal,
@@ -110,11 +79,11 @@ observe({
 #### Housekeeping of data ####
   DataUse<-reactive({ 
      validate(
-       need(input$ParkIn, message="Choose a Park"),
-       need(input$SiteIn, message="Choose a Stream"),
-       need(input$ParamIn, message="Choose a Water Quality Parameter")
+       need(TimePark(), message="Choose a Park"),
+       need(TimeSite(), message="Choose a Stream"),
+       need(TimeParam(), message="Choose a Water Quality Parameter")
      )  
-    getWData(WaterData, parkcode=input$ParkIn, sitecode=input$SiteIn, charname=input$ParamIn)
+    getWData(WaterData, parkcode=TimePark(), sitecode=TimeSite(), charname=TimeParam())
   })
   
   Thresholds<-reactive({

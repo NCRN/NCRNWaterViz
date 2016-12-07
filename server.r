@@ -18,22 +18,32 @@ WaterData<-importNCRNWater("./Data/")
 shinyServer(function(input,output,session){
 
 
-output$Test<-renderText(DataUse()$Date)   #For debugging purposes
+#output$Test<-renderText(TimeSite())   #For debugging purposes
 
 #### Reactive Values for Graphics Optiions with Defaults ####
   
-GraphOpts<-reactiveValues(Legend=TRUE, FontSize=1.5, GoodColor="blue", BadColor="Orange",OutColor="Vermillion",PointSize=2.5,
+GraphOpts<-reactiveValues(Legend=TRUE, FontSize=1.5, GoodColor="blue", BadColor="Orange",OutColor="Vermillion",PointSize=3,
                             ThColor="Orange", TrColor="Green", LineWidth=1)
   
  
+#### Reactive Values for Choosing Data ####
+
+DataOpts<-reactiveValues(Park=NA, Site=NA, Param=NA, Years=NA)
 
 #### UI Controls ####  
 
 #### Time Series Controls ####
-TimePark<-callModule(parkChooser, id="TimePark", WaterData)  
-TimeSite<-callModule(siteChooser, id="TimeSite", data=WaterData, park=TimePark)
-TimeParam<-callModule(paramChooser, id="TimeParam",data=WaterData, park=TimePark, site=TimeSite)
-TimeYears<-callModule(yearChooser, id="TimeYears", data=DataUse) 
+TimePark<-callModule(parkChooser, id="TimePark", data=WaterData, chosen=reactive(DataOpts$Park))
+TimeSite<-callModule(siteChooser, id="TimeSite", data=WaterData, park=reactive(DataOpts$Park), chosen=reactive(DataOpts$Site))
+TimeParam<-callModule(paramChooser, id="TimeParam",data=WaterData, park=reactive(DataOpts$Park), site=reactive(DataOpts$Site), 
+                      chosen=reactive(DataOpts$Param))
+TimeYears<-callModule(yearChooser, id="TimeYears", data=DataUse, chosen=reactive(DataOpts$Years) )
+
+
+observeEvent(TimePark(), DataOpts$Park<-TimePark() )
+observeEvent(TimeSite(), DataOpts$Site<-TimeSite() )
+observeEvent(TimeParam(), DataOpts$Param<-TimeParam() )
+observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 
 #### Graphics Modal Control ####
   
@@ -55,7 +65,7 @@ TimeYears<-callModule(yearChooser, id="TimeYears", data=DataUse)
         column(3,selectInput("BadColor","Poor Quality Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$BadColor,
                              width='130px') ),
         column(3,selectInput("OutColor","Outlier Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$OutColor, width='130px')),   
-        column(3,sliderInput("PointSize", "Change Size", min=1, max=5,value=GraphOpts$PointSize, step=.5, width='130px'))
+        column(3,sliderInput("PointSize", "Change Size", min=1, max=6,value=GraphOpts$PointSize, step=.5, width='130px'))
       ),
       column(12,hr()),
       column(12, h4("Lines:"),
@@ -79,30 +89,30 @@ TimeYears<-callModule(yearChooser, id="TimeYears", data=DataUse)
 #### Housekeeping of data ####
   DataUse<-reactive({ 
      validate(
-       need(TimePark(), message="Choose a Park"),
-       need(TimeSite(), message="Choose a Stream"),
-       need(TimeParam(), message="Choose a Water Quality Parameter")
+       need(DataOpts$Park, message="Choose a Park"),
+       need(DataOpts$Site, message="Choose a Stream"),
+       need(DataOpts$Param, message="Choose a Water Quality Parameter")
      )  
-    getWData(WaterData, parkcode=TimePark(), sitecode=TimeSite(), charname=TimeParam())
+    getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
   })
   
   Thresholds<-reactive({
-    c(getCharInfo(WaterData,parkcode=input$ParkIn, sitecode=input$SiteIn, charname=input$ParamIn, info="LowerPoint"),
-      getCharInfo(WaterData,parkcode=input$ParkIn, sitecode=input$SiteIn, charname=input$ParamIn, info="UpperPoint"))
+    c(getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="LowerPoint"),
+      getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="UpperPoint"))
   })
   
-  Units<-reactive({getCharInfo(WaterData,parkcode=input$ParkIn, sitecode=input$SiteIn, charname=input$ParamIn, info="Units") %>% 
+  Units<-reactive({getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="Units") %>% 
     iconv("","UTF-8") 
   })
   
   TrendsOut<-reactive({
-    req(input$ParkIn, input$SiteIn, input$ParamIn)
-    wcosinor(WaterData, parkcode=input$ParkIn, sitecode=input$SiteIn, charname=input$ParamIn)
+    req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
+    wcosinor(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
   })
   
   Title<-reactive({
-    paste(getSiteInfo(WaterData, parkcode=input$ParkIn, sitecode=input$SiteIn, info="SiteName"),
-        getCharInfo(WaterData, parkcode=input$ParkIn, sitecode=input$SiteIn, charname=input$ParamIn, info="DisplayName"),sep=": ")
+    paste(getSiteInfo(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, info="SiteName"),
+        getCharInfo(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="DisplayName"),sep=": ")
     })
  
 #### Get Colors from user inputs ####
@@ -111,14 +121,6 @@ TimeYears<-callModule(yearChooser, id="TimeYears", data=DataUse)
   OutCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$OutColor,]$Rcolor})
   ThCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$ThColor,]$Rcolor})
   TrCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$TrColor,]$Rcolor})
-      
-
-
-#### Plot Output ####
- 
-  output$WaterPlot<-renderPlot({
-    print(OutPlot())
-  }) 
 
 #### Summaries of Seaonality and Trends ####
   output$SeasonOut<-renderText({
@@ -166,21 +168,21 @@ TimeYears<-callModule(yearChooser, id="TimeYears", data=DataUse)
   output$ThresholdSummary<-renderText({
     req(input$ThreshLine | input$ThreshPoint)
     paste(
-      c(getCharInfo(WaterData,parkcode=input$ParkIn, sitecode=input$SiteIn, charname=input$ParamIn, info="LowerDescription"),
-      getCharInfo(WaterData,parkcode=input$ParkIn, sitecode=input$SiteIn, charname=input$ParamIn, 
+      c(getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="LowerDescription"),
+      getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, 
                   info="UpperDescription"))[!is.na(Thresholds())])
   })
 
   output$RefSummary<-renderText({
     req(input$ThreshLine | input$ThreshPoint) 
-    getCharInfo(WaterData,parkcode=input$ParkIn, sitecode=input$SiteIn, charname=input$ParamIn, info="AssessmentDetails")
+    getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="AssessmentDetails")
   })      
   
 #### Time Series Plot ####
     WaterSeriesOut<-reactive({
       req( DataUse()$Date, DataUse()$Value)
-      SeriesPlot<-waterseries(WaterData, parkcode=input$ParkIn, sitecode=input$SiteIn, char=input$ParamIn, 
-            years=input$YearsShow[1]:input$YearsShow[2],layers=c("points"),assessment=input$ThreshLine, title=Title(),
+      SeriesPlot<-waterseries(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, char=DataOpts$Param, 
+            years=DataOpts$Years[1]:DataOpts$Years[2],layers=c("points"),assessment=input$ThreshLine, title=Title(),
             colors=(GoodCol()),assesscolor=ThCol(), sizes=c(GraphOpts$PointSize, GraphOpts$LineWidth, GraphOpts$LineWidth),
             legend=if(GraphOpts$Legend) "bottom" else "none") +
       theme(text=element_text(size=GraphOpts$FontSize*10))+
@@ -209,18 +211,44 @@ TimeYears<-callModule(yearChooser, id="TimeYears", data=DataUse)
   })
 
   
+#### Box Plot Controls ####
+  BoxPark<-callModule(parkChooser, id="BoxPark", data=WaterData, chosen=reactive(DataOpts$Park))
+  BoxSite<-callModule(siteChooser, id="BoxSite", data=WaterData, park=reactive(DataOpts$Park), chosen=reactive(DataOpts$Site))
+  BoxParam<-callModule(paramChooser, id="BoxParam",data=WaterData, park=reactive(DataOpts$Park), site=reactive(DataOpts$Site), 
+                        chosen=reactive(DataOpts$Param))
+  BoxYears<-callModule(yearChooser, id="BoxYears", data=DataUse, chosen=reactive(DataOpts$Years) )
+  
+  
+  observeEvent(BoxPark(), DataOpts$Park<-BoxPark() )
+  observeEvent(BoxSite(), DataOpts$Site<-BoxSite() )
+  observeEvent(BoxParam(), DataOpts$Param<-BoxParam() )
+  observeEvent(BoxYears(), DataOpts$Years<-BoxYears() )
+  
 #### Box Plot ####
   
   output$BoxPlot<-renderPlot({
-    req(input$ParkIn, input$SiteIn, input$ParamIn)
-    waterbox(object=WaterData, parkcode=input$ParkIn, sitecode=input$SiteIn, charname = input$ParamIn, 
-             years=input$YearsShow[1]:input$YearsShow[2], assessment=input$ThreshLine,assesscolor=ThCol(), outliercolor = BadCol(),
+    req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
+    waterbox(object=WaterData, parkcode=DataOpts$Park, sitecode=if(input$BoxBy !="site") DataOpts$Site else NA, 
+             charname = DataOpts$Param, by=input$BoxBy,
+             years=DataOpts$Years[1]:DataOpts$Years[2], assessment=input$ThreshLine,assesscolor=ThCol(), outliercolor = BadCol(),
              sizes=c(GraphOpts$PointSize, GraphOpts$LineWidth, GraphOpts$LineWidth))
     
   })
   
+#### Data table controls #### 
+  DataPark<-callModule(parkChooser, id="DataPark", data=WaterData, chosen=reactive(DataOpts$Park))
+  DataSite<-callModule(siteChooser, id="DataSite", data=WaterData, park=reactive(DataOpts$Park), chosen=reactive(DataOpts$Site))
+  DataParam<-callModule(paramChooser, id="DataParam",data=WaterData, park=reactive(DataOpts$Park), site=reactive(DataOpts$Site), 
+                       chosen=reactive(DataOpts$Param))
+  DataYears<-callModule(yearChooser, id="DataYears", data=DataUse, chosen=reactive(DataOpts$Years) )
   
-#### Raw data table ####
+  
+  observeEvent(DataPark(), DataOpts$Park<-DataPark() )
+  observeEvent(DataSite(), DataOpts$Site<-DataSite() )
+  observeEvent(DataParam(), DataOpts$Param<-DataParam() )
+  observeEvent(DataYears(), DataOpts$Years<-DataYears() )
+  
+### Data table output ####
  output$WaterTable <-DT::renderDataTable(
    expr=datatable(DataUse(), extensions=c("Buttons","KeyTable"),caption=htmltools::tags$caption(htmltools::h3(Title())),
                   class="stripe hover order-column cell-border",filter="top",

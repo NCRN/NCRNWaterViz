@@ -8,8 +8,8 @@ parkChooserUI<-function(id){
   selectizeInput(inputId=ns("ParkIn"),label="1. Park:" , choices=NULL)
 }
 
-parkChooser<-function(input,output,session,data){
-  observe({updateSelectizeInput(session, "ParkIn",
+parkChooser<-function(input,output,session,data, chosen){
+  observe({updateSelectizeInput(session, "ParkIn", selected=chosen(),
     choices=c("Choose a Park"="", c(`names<-`(getParkInfo(data, info="ParkCode"), getParkInfo(data, info="ParkShortName"))))
   )})
   return(reactive(input$ParkIn))
@@ -23,14 +23,14 @@ siteChooserUI<-function(id){
   selectizeInput(inputId = ns("SiteIn"), label="2. Stream:", choices=NULL)
 }
 
-siteChooser<-function(input, output, session, data, park){
-  observe({
-    updateSelectizeInput(session, inputId = "SiteIn",  
-      choices=c("Choose a Site"="",
-      c(`names<-`(getSiteInfo(data, parkcode=park(), info="SiteCode"), 
-        getSiteInfo(data, parkcode=park(), info="SiteName")  )))
-    )
-  })
+siteChooser<-function(input, output, session, data, park, chosen){
+   observe({
+     updateSelectizeInput(session, inputId = "SiteIn", selected=chosen(), 
+       choices=c("Choose a Site"="",
+       c(`names<-`(getSiteInfo(data, parkcode=park(), info="SiteCode"), 
+         getSiteInfo(data, parkcode=park(), info="SiteName")  )))
+     )
+   })
   return(reactive(input$SiteIn))
 }
 
@@ -42,7 +42,7 @@ paramChooserUI<-function(id){
 }
 
 
-paramChooser<-function(input, output, session, data, park, site){
+paramChooser<-function(input, output, session, data, park, site, chosen){
   PChoices<-reactive({
     req(park(), site())
     Choice<-getCharInfo(data, parkcode=park(), sitecode=site(), info="CharName")
@@ -53,7 +53,7 @@ paramChooser<-function(input, output, session, data, park, site){
    })
   
   observe(
-    updateSelectizeInput(session, inputId="ParamIn",choices=c("Choose a Parameter"="",as.list(PChoices())))
+    updateSelectizeInput(session, inputId="ParamIn",selected=chosen(), choices=c("Choose a Parameter"="",as.list(PChoices())))
   )
   
   return(reactive(input$ParamIn))
@@ -66,13 +66,16 @@ yearChooserUI<-function(id){
 }
 
 
-yearChooser<-function(input,output,session,data)  {
+yearChooser<-function(input,output,session,data,chosen)  {
   
 observe({
-  #req( data() )
-  YrMax<-reactive(max(year(data()$Date), na.rm=T))
-  YrMin<-reactive(min(year(data()$Date), na.rm=T))
-  updateSliderInput(session, inputId="YearsShow", min=YrMin(),max=YrMax(), value=c(YrMin(), YrMax() ) )
+  req( data() )
+  if(class(data()$Date)=="Date"){
+    YrMax<-reactive(max(year(data()$Date), na.rm=T))
+    YrMin<-reactive(min(year(data()$Date), na.rm=T))
+    updateSliderInput(session, inputId="YearsShow", min=YrMin(),max=YrMax(),val=c(YrMin(),YrMax()) )
+                      #value=chosen())
+  }
 })
   
 return(reactive(input$YearsShow))

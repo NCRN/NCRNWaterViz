@@ -25,27 +25,16 @@ shinyUI(
  # mainPanel(
     tabsetPanel(  
       tabPanel(h4("Time Series Plot"),
-        column(3, div(style='overflow: hidden; padding: 5px 10px',class="panel panel-default", 
+        column(3, div(style='padding: 5px 10px',class="panel panel-default", 
           
-          textOutput("Test"),  # For debugging purposes
+          #textOutput("Test"),  # For debugging purposes
           
           h3("Select Stream Data"),
           
-          #selectizeInput(inputId="ParkIn",label="1. Park:" , choices=NULL),  
-          
           parkChooserUI("TimePark"),
-           
-          #selectizeInput(inputId = "SiteIn", label="2. Stream:", choices=NULL),
           siteChooserUI("TimeSite"),
-           
-          #selectizeInput(inputId="ParamIn", label="3. Water Parameter:", choices=NULL),
-          
           paramChooserUI("TimeParam"),
-           
-          #sliderInput(inputId="YearsShow", label= "4. Years to Display:", min=1900, max=2100, step=1, value=c(1900,2100),sep="",ticks=F),
           yearChooserUI("TimeYears"), 
-          
-          uiOutput("yearControl"),
           
           HTML('<hr >'),
              
@@ -79,13 +68,13 @@ shinyUI(
           
           actionButton(inputId="GraphicsModal", label='Graphics Options', class="btn btn-primary")
           
-          ) #end controls divl
+          ) #end controls div
         ),         
         
         column(9, 
          plotOutput("TimeSeries"),
       
-          conditionalPanel(condition = "input.ThreshLine && !(output.Plot2==null)" , 
+          conditionalPanel(condition = "input.ThreshLine && !(output.TimeSeries==null)" , 
             h4("Threshold:"),
             textOutput ("ThresholdSummary"),
             textOutput ("ThresholdType")
@@ -93,7 +82,7 @@ shinyUI(
           
           br(),
           
-          conditionalPanel(condition = "input.Trends && !(output.Plot2==null)" , 
+          conditionalPanel(condition = "input.Trends && !(output.TimeSeries==null)" , 
             h4("Trend Analysis"),
             textOutput("TrendsOut"),
             textOutput("SeasonOut")
@@ -101,7 +90,7 @@ shinyUI(
           
           br(),
           
-          conditionalPanel(condition = "input.ThreshLine && !(output.Plot2==null)" , 
+          conditionalPanel(condition = "input.ThreshLine && !(output.TimeSeries==null)" , 
             h4("Threshold Reference:"),
             textOutput("RefSummary")
           )
@@ -109,13 +98,38 @@ shinyUI(
         )
       ),
       
-      tabPanel(h4("Box Plot"), plotOutput("BoxPlot")),
+      tabPanel(h4("Box Plot"),
+        column(3, div(style='padding: 5px 10px',class="panel panel-default", 
+                             
+          h3("Select Stream Data"),
+           
+          parkChooserUI("BoxPark"),
+          siteChooserUI("BoxSite"),
+          paramChooserUI("BoxParam"),
+          yearChooserUI("BoxYears"),
+          radioButtons(inputId="BoxBy", label="5. Plot data by:", choices=c('year', "month", "site"), selected = "year", inline = T)
+        )),
+        
+        column(9,
+          plotOutput("BoxPlot")
+        )
+      ),
       
-      tabPanel(h4("Raw Data"),DT::dataTableOutput("WaterTable")),
+      tabPanel(h4("Raw Data"),
+               column(3, div(style='padding: 5px 10px',class="panel panel-default", 
+                             
+                             h3("Select Stream Data"),
+                             
+                             parkChooserUI("DataPark"),
+                             siteChooserUI("DataSite"),
+                             paramChooserUI("DataParam"),
+                             yearChooserUI("DataYears")
+               )),
+               column(9,               DT::dataTableOutput("WaterTable"))),
       
       tabPanel(h4("Project Information"),
-        
-               includeHTML(paste0(getwd(),"/www/","projectintro.html"))),
+      
+        includeHTML(paste0(getwd(),"/www/","projectintro.html"))),
       
       tabPanel(h4("Citations & References"),
       

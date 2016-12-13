@@ -1,4 +1,5 @@
 library(shiny)
+library(leaflet)
 
 ColorNames<-GraphColors$DisplayColor
 
@@ -40,7 +41,7 @@ shinyUI(
              
           h3(id="ThreshHeader","Thresholds"),
           
-          checkboxInput("ThreshLine","Show Water Quality Threshold Line",FALSE),
+          checkboxInput("SeriesThreshLine","Show Water Quality Threshold Line",FALSE),
            
           checkboxInput("ThreshPoint","Indicate Points with Poor Water Quality",FALSE),
            
@@ -72,28 +73,19 @@ shinyUI(
         ),         
         
         column(9, 
-         plotOutput("TimeSeries"),
-      
-          conditionalPanel(condition = "input.ThreshLine && !(output.TimeSeries==null)" , 
-            h4("Threshold:"),
-            textOutput ("ThresholdSummary"),
-            textOutput ("ThresholdType")
-          ),
-          
+          plotOutput("TimeSeries"),
+          htmlOutput("SeriesThresholdSummary"),
           br(),
+          htmlOutput("SeriesTrendsOut"),
+          br(),
+          htmlOutput("SeriesRefSummary"),
           
           conditionalPanel(condition = "input.Trends && !(output.TimeSeries==null)" , 
             h4("Trend Analysis"),
-            textOutput("TrendsOut"),
+           # textOutput("TrendsOut"),
             textOutput("SeasonOut")
-          ),
-          
-          br(),
-          
-          conditionalPanel(condition = "input.ThreshLine && !(output.TimeSeries==null)" , 
-            h4("Threshold Reference:"),
-            textOutput("RefSummary")
           )
+
            
         )
       ),
@@ -107,7 +99,8 @@ shinyUI(
           siteChooserUI("BoxSite"),
           paramChooserUI("BoxParam"),
           yearChooserUI("BoxYears"),
-          radioButtons(inputId="BoxBy", label="5. Plot data by:", choices=c('year', "month", "site"), selected = "year", inline = T)
+          radioButtons(inputId="BoxBy", label="5. Plot data by:", choices=c('year', "month", "site"), selected = "year", inline = T),
+          checkboxInput("BoxThreshLine","Show Water Quality Threshold Line",FALSE)
         )),
         
         column(9,
@@ -116,16 +109,27 @@ shinyUI(
       ),
       
       tabPanel(h4("Raw Data"),
-               column(3, div(style='padding: 5px 10px',class="panel panel-default", 
+        column(3, div(style='padding: 5px 10px',class="panel panel-default", 
                              
-                             h3("Select Stream Data"),
+          h3("Select Stream Data"),
                              
-                             parkChooserUI("DataPark"),
-                             siteChooserUI("DataSite"),
-                             paramChooserUI("DataParam"),
-                             yearChooserUI("DataYears")
-               )),
-               column(9,               DT::dataTableOutput("WaterTable"))),
+          parkChooserUI("DataPark"),
+          siteChooserUI("DataSite"),
+          paramChooserUI("DataParam")#,
+          #yearChooserUI("DataYears")
+        )),
+        column(9,              
+          DT::dataTableOutput("WaterTable"))
+        ),
+      
+      tabPanel(h4("Map"),
+        column(2, div(style='padding: 5px 10px',class="panel panel-default",
+          h3("Data to map or something")
+        )),
+        column(10, style="padding: 0",
+               leafletOutput("WaterMap",width = "100%", height="900px")
+        ) 
+      ),
       
       tabPanel(h4("Project Information"),
       

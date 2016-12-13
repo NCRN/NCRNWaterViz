@@ -7,7 +7,7 @@ library(DT)
 library(htmltools)
 library(ggplot2)
 library(colourpicker)
-
+library(leaflet)
 
 
 #### Get data ####
@@ -137,52 +137,61 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     NULL)
   })
 
-  output$TrendsOut<-renderText({
-    req(input$Trends)
-    req(is.atomic(TrendsOut())==FALSE)
-  
-    switch(class(TrendsOut()$Analysis),
-      "lm" =  {
-        if(summary(TrendsOut()$Analysis)$coefficients[2,4]>.05) {("There is no significant trend in the data.")} 
-        else {
-          paste("There is a significant", 
-          ifelse (summary(TrendsOut()$Analysis)$coefficients[2,1] > 0, "increasing", "decreasing"),
+  SeriesTrendsOut<-reactive({
+    req(input$Trends, is.atomic(TrendsOut())==FALSE)
+    
+    paste(h4("Trend Analysis:"),"/n",
+      switch(class(TrendsOut()$Analysis),
+        "lm" =  {
+          if(summary(TrendsOut()$Analysis)$coefficients[2,4]>.05) {("There is no significant trend in the data.")} 
+          else {
+            paste("There is a significant", 
+            ifelse (summary(TrendsOut()$Analysis)$coefficients[2,1] > 0, "increasing", "decreasing"),
             "trend of",c(signif(summary(TrendsOut()$Analysis)$coefficients[2,1]*365.24, digits=3)),
             Units(), "per year.")
-        }
-      }, 
-      "Cosinor"=  {
-        if(summary(TrendsOut()$Analysis$glm)$coefficients[2,4]>.05){("There is no significant trend in the data")}
-        else {
-          c("There is a significant",
+          }
+        }, 
+        "Cosinor"=  {
+          if(summary(TrendsOut()$Analysis$glm)$coefficients[2,4]>.05){("There is no significant trend in the data")}
+          else {
+            c("There is a significant",
             ifelse (summary(TrendsOut()$Analysis$glm)$coefficients[2,1]>0,"increasing","decreasing"), 
             "trend of",c(signif(summary(TrendsOut()$Analysis$glm)$coefficients[2,1]*365.24,digits=3)),
             Units(), "per year."
-          )
-        }
-      },
-    NULL) 
+            )
+          }
+        },
+      NULL))
   })
-
+  
+  output$TrendsOut<-renderUI(HTML(SeriesTrendsOut() ))
+  
 #### Threshold Summary ####
-  output$ThresholdSummary<-renderText({
-    req(input$ThreshLine | input$ThreshPoint)
-    paste(
+  ThresholdSummary<-reactive({
+    req(input$SeriesThreshLine | input$ThreshPoint)
+    paste(h4("Threshold:"),"\n",
       c(getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="LowerDescription"),
       getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, 
                   info="UpperDescription"))[!is.na(Thresholds())])
   })
-
-  output$RefSummary<-renderText({
-    req(input$ThreshLine | input$ThreshPoint) 
-    getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="AssessmentDetails")
+  
+  output$SeriesThresholdSummary<-renderUI(HTML(ThresholdSummary()))
+  
+  
+  RefSummary<-reactive({
+    req(input$SeriesThreshLine | input$ThreshPoint) 
+    paste(h4("Threshold Reference:"),"\n",
+    getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="AssessmentDetails")) 
   })      
+  
+  output$SeriesRefSummary<-renderUI(HTML(RefSummary()))
+  
   
 #### Time Series Plot ####
     WaterSeriesOut<-reactive({
       req( DataUse()$Date, DataUse()$Value)
       SeriesPlot<-waterseries(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, char=DataOpts$Param, 
-            years=DataOpts$Years[1]:DataOpts$Years[2],layers=c("points"),assessment=input$ThreshLine, title=Title(),
+            years=DataOpts$Years[1]:DataOpts$Years[2],layers=c("points"),assessment=input$SeriesThreshLine, title=Title(),
             colors=(GoodCol()),assesscolor=ThCol(), sizes=c(GraphOpts$PointSize, GraphOpts$LineWidth, GraphOpts$LineWidth),
             legend=if(GraphOpts$Legend) "bottom" else "none") +
       theme(text=element_text(size=GraphOpts$FontSize*10))+
@@ -229,8 +238,8 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   output$BoxPlot<-renderPlot({
     req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
     waterbox(object=WaterData, parkcode=DataOpts$Park, sitecode=if(input$BoxBy !="site") DataOpts$Site else NA, 
-             charname = DataOpts$Param, by=input$BoxBy,
-             years=DataOpts$Years[1]:DataOpts$Years[2], assessment=input$ThreshLine,assesscolor=ThCol(), outliercolor = BadCol(),
+             charname = DataOpts$Param, by=input$BoxBy, title=Title(),
+             years=DataOpts$Years[1]:DataOpts$Years[2], assessment=input$BoxThreshLine, assesscolor=ThCol(), outliercolor = BadCol(),
              sizes=c(GraphOpts$PointSize, GraphOpts$LineWidth, GraphOpts$LineWidth))
     
   })
@@ -240,24 +249,53 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   DataSite<-callModule(siteChooser, id="DataSite", data=WaterData, park=reactive(DataOpts$Park), chosen=reactive(DataOpts$Site))
   DataParam<-callModule(paramChooser, id="DataParam",data=WaterData, park=reactive(DataOpts$Park), site=reactive(DataOpts$Site), 
                        chosen=reactive(DataOpts$Param))
-  DataYears<-callModule(yearChooser, id="DataYears", data=DataUse, chosen=reactive(DataOpts$Years) )
+  #DataYears<-callModule(yearChooser, id="DataYears", data=DataUse, chosen=reactive(DataOpts$Years) )
   
   
   observeEvent(DataPark(), DataOpts$Park<-DataPark() )
   observeEvent(DataSite(), DataOpts$Site<-DataSite() )
   observeEvent(DataParam(), DataOpts$Param<-DataParam() )
-  observeEvent(DataYears(), DataOpts$Years<-DataYears() )
+  #observeEvent(DataYears(), DataOpts$Years<-DataYears() )
   
 ### Data table output ####
  output$WaterTable <-DT::renderDataTable(
    expr=datatable(DataUse(), extensions=c("Buttons","KeyTable"),caption=htmltools::tags$caption(htmltools::h3(Title())),
                   class="stripe hover order-column cell-border",filter="top",
-      rownames=F, options=list(autoWidth=TRUE, dom="Bftirp", buttons=c("copy","csv","excel","pdf","print"), keys=TRUE)
+      rownames=F, options=list(autoWidth=TRUE, dom="Bltirp", buttons=c("copy","csv","excel","pdf","print"), keys=TRUE)
                   ),server=F
   )
 
+  
+  
+#### Mapping ####
+  output$WaterMap<-renderLeaflet({ 
+    leaflet() %>%
+    setView(lng=-77, lat=39.25, zoom=9) %>% 
+      
+      addTiles(group="Map", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.2yxv8n84,nps.jhd2e8lb/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q",attribution=NPSAttrib, options=tileOptions(minZoom=8))%>% 
+      addTiles(group="Imagery", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.2c589204,nps.25abf75b,nps.7531d30a/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q",attribution=NPSAttrib, options=tileOptions(minZoom=8)) %>% 
+      addTiles(group="Slate", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.68926899,nps.502a840b/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q", attribution=NPSAttrib, options=tileOptions(minZoom=8) ) %>% 
+      addLayersControl(map=., baseGroups=c("Map","Imagery","Slate"), options=layersControlOptions(collapsed=F))  
+      
+         #lng=mean(c(ParkBounds[ParkBounds$ParkCode==Network,]$LongE,ParkBounds[ParkBounds$ParkCode==Network,]$LongW)), 
+      #         lat=mean(c(ParkBounds[ParkBounds$ParkCode==Network,]$LatN,ParkBounds[ParkBounds$ParkCode==Network,]$LatS)),
+      #         zoom=8 ) %>% 
+     # setMaxBounds(#lng1=ParkBounds[ParkBounds$ParkCode==Network,]$LongE,lng2=ParkBounds[ParkBounds$ParkCode==Network,]$LongW, 
+                   #lat1=ParkBounds[ParkBounds$ParkCode==Network,]$LatN, lat2=ParkBounds[ParkBounds$ParkCode==Network,]$LatS)
+       # lng1=-79.5,lng2=-76.1, lat1=37.7, lat2=40.36)
+  })
+  
+  NPSAttrib<-HTML("<a href='https://www.nps.gov/npmap/disclaimer' target='_blank'>Disclaimer</a>
+     &copy; <a href='http://mapbox.com/about/maps' target='_blank'>Mapbox</a> 
+    &copy; <a href='http://openstreetmap.org/copyright' target='_blank'>OpenStreetMap</a> contributors | 
+    <a class='improve-park-tiles' href='http://insidemaps.nps.gov/places/editor/#background=mapbox-satellite&map=4.00/-95.98/39.03'
+    target='_blank'>Improve Park Tiles</a>")
 
-#### Plot downloads ####
+#### Get USGS Data ####
+  #http://waterservices.usgs.gov/nwis/iv/?StateCd=MD&format=json
+  
+  
+  #### Plot downloads ####
   output$Plot.PNG<-downloadHandler(
     filename=function(){paste(Title(), ".png", sep="")}, 
     content=function (file){

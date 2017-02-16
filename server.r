@@ -6,12 +6,13 @@ library(NCRNWater)
 library(DT)
 library(htmltools)
 library(ggplot2)
-library(colourpicker)
 library(leaflet)
+library(jsonlite)
+library(purrr)
 
 
 #### Get data ####
-WaterData<-importNCRNWater("./Data/")
+WaterData<-importNCRNWater("./Data/", MetaData = "VizMetaData.csv")
 
 ##### Shiny Server ####
 
@@ -22,7 +23,7 @@ shinyServer(function(input,output,session){
 
 #### Reactive Values for Graphics Optiions with Defaults ####
   
-GraphOpts<-reactiveValues(Legend=TRUE, FontSize=1.5, GoodColor="blue", BadColor="Orange",OutColor="Vermillion",PointSize=3,
+GraphOpts<-reactiveValues(Legend=TRUE, FontSize=1.5, GoodColor="Blue", BadColor="Orange",OutColor="Vermillion",PointSize=3,
                             ThColor="Orange", TrColor="Green", LineWidth=1)
   
  
@@ -47,7 +48,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 
 #### Graphics Modal Control ####
   
-  observeEvent(input$GraphicsModal,
+  observeEvent(eventExpr = c( input$GraphicsModal,input$GraphicsModal2), ignoreInit = TRUE,
     showModal(modalDialog(title="Graphics Options", footer=tagAppendAttributes( modalButton(tags$div("Close")), class="btn btn-primary"),
       column(12,hr()),
       column(12,h4("General:"),
@@ -57,10 +58,8 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       ),
       column(12,hr()),
       column(12, h4("Points:"),
-        column(3,#selectInput("GoodColor","Measurement Color:",choices=GraphColors$DisplayColor, 
-                           #selected=GraphOpts$GoodColor, width='130px')
-              colourInput(inputId="GoodColor", label="Measurement Color", value=GraphOpts$GoodColor, palette="limited",showColour = "background")
-              
+        column(3,selectInput("GoodColor","Measurement Color:",choices=GraphColors$DisplayColor, 
+                           selected=GraphOpts$GoodColor, width='130px')
         ),
         column(3,selectInput("BadColor","Poor Quality Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$BadColor,
                              width='130px') ),
@@ -88,7 +87,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   
 #### Housekeeping of data ####
   DataUse<-reactive({ 
-     validate(
+     shiny::validate(
        need(DataOpts$Park, message="Choose a Park"),
        need(DataOpts$Site, message="Choose a Stream"),
        need(DataOpts$Param, message="Choose a Water Quality Parameter")
@@ -117,14 +116,14 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
  
 #### Get Colors from user inputs ####
   BadCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$BadColor,]$Rcolor})
-  GoodCol<-reactive({GraphOpts$GoodColor})#reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$GoodColor,]$Rcolor})
+  GoodCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$GoodColor,]$Rcolor})
   OutCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$OutColor,]$Rcolor})
   ThCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$ThColor,]$Rcolor})
   TrCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$TrColor,]$Rcolor})
 
 #### Summaries of Seaonality and Trends ####
   output$SeasonOut<-renderText({
-    validate(
+    shiny::validate(
       need (input$Trends==TRUE, message=FALSE),
       need(is.atomic(TrendsOut())==FALSE, message=FALSE)
     )
@@ -140,8 +139,8 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   SeriesTrendsOut<-reactive({
     req(input$Trends, is.atomic(TrendsOut())==FALSE)
     
-    paste(h4("Trend Analysis:"),"/n",
-      switch(class(TrendsOut()$Analysis),
+    paste(h4("Trend Analysis:"),"\n",
+      paste(switch(class(TrendsOut()$Analysis),
         "lm" =  {
           if(summary(TrendsOut()$Analysis)$coefficients[2,4]>.05) {("There is no significant trend in the data.")} 
           else {
@@ -154,20 +153,20 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
         "Cosinor"=  {
           if(summary(TrendsOut()$Analysis$glm)$coefficients[2,4]>.05){("There is no significant trend in the data")}
           else {
-            c("There is a significant",
+            paste("There is a significant",
             ifelse (summary(TrendsOut()$Analysis$glm)$coefficients[2,1]>0,"increasing","decreasing"), 
             "trend of",c(signif(summary(TrendsOut()$Analysis$glm)$coefficients[2,1]*365.24,digits=3)),
             Units(), "per year."
             )
           }
         },
-      NULL))
+      NULL)))
   })
   
-  output$TrendsOut<-renderUI(HTML(SeriesTrendsOut() ))
+  output$SeriesTrendsOut<-renderUI(HTML(SeriesTrendsOut() ))
   
 #### Threshold Summary ####
-  ThresholdSummary<-reactive({
+  ThresholdSummary<-reactive({    
     req(input$SeriesThreshLine | input$ThreshPoint)
     paste(h4("Threshold:"),"\n",
       c(getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="LowerDescription"),
@@ -175,7 +174,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
                   info="UpperDescription"))[!is.na(Thresholds())])
   })
   
-  output$SeriesThresholdSummary<-renderUI(HTML(ThresholdSummary()))
+  output$SeriesThresholdSummary<-renderUI( HTML(ThresholdSummary()) )
   
   
   RefSummary<-reactive({
@@ -220,6 +219,26 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   })
 
   
+  #### Plot downloads ####
+  output$Plot.PNG<-downloadHandler(
+    filename=function(){paste(Title(), ".png", sep="")}, 
+    content=function (file){
+      png(file,width=960, height=480)
+      print(WaterSeriesOut())
+      dev.off()
+    }
+  )
+  
+  output$Plot.JPG<-downloadHandler(
+    filename=function(){paste(Title(), ".jpeg", sep="")}, 
+    content=function (file){
+      jpeg(file,width=960, height=480,quality=100)
+      print(WaterSeriesOut())
+      dev.off()
+    }
+  )
+  
+  
 #### Box Plot Controls ####
   BoxPark<-callModule(parkChooser, id="BoxPark", data=WaterData, chosen=reactive(DataOpts$Park))
   BoxSite<-callModule(siteChooser, id="BoxSite", data=WaterData, park=reactive(DataOpts$Park), chosen=reactive(DataOpts$Site))
@@ -235,14 +254,59 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   
 #### Box Plot ####
   
-  output$BoxPlot<-renderPlot({
+  BoxPlotOut<-reactive({
     req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
     waterbox(object=WaterData, parkcode=DataOpts$Park, sitecode=if(input$BoxBy !="site") DataOpts$Site else NA, 
              charname = DataOpts$Param, by=input$BoxBy, title=Title(),
              years=DataOpts$Years[1]:DataOpts$Years[2], assessment=input$BoxThreshLine, assesscolor=ThCol(), outliercolor = BadCol(),
-             sizes=c(GraphOpts$PointSize, GraphOpts$LineWidth, GraphOpts$LineWidth))
-    
+             sizes=c(GraphOpts$PointSize, GraphOpts$LineWidth, GraphOpts$LineWidth),
+             labels=if(input$BoxBy=="site") getSiteInfo(WaterData, parkcode= DataOpts$Park, info="SiteName") else NA) +
+              theme(text=element_text(size=GraphOpts$FontSize*10))
   })
+   
+  output$BoxPlot<-renderPlot({   BoxPlotOut() })
+  
+  #### BoxThreshold Summary ####
+  
+  BoxThresholdSummary<-reactive({    
+    req(input$BoxThreshLine)
+    paste(h4("Threshold:"),"\n",
+          c(getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="LowerDescription"),
+            getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, 
+                        info="UpperDescription"))[!is.na(Thresholds())])
+  })
+  
+  output$BoxThresholdSummary<-renderUI( HTML(BoxThresholdSummary()) )
+  
+  
+  BoxRefSummary<-reactive({
+    req(input$BoxThreshLine) 
+    paste(h4("Threshold Reference:"),"\n",
+          getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="AssessmentDetails")) 
+  })      
+  
+  output$BoxRefSummary<-renderUI(HTML(BoxRefSummary()))
+
+  
+  #### Plot downloads ####
+  output$BoxPlot.PNG<-downloadHandler(
+    filename=function(){paste(Title(), ".png", sep="")}, 
+    content=function (file){
+      png(file,width=960, height=480)
+      print(BoxPlotOut())
+      dev.off()
+    }
+  )
+  
+  output$BoxPlot.JPG<-downloadHandler(
+    filename=function(){paste(Title(), ".jpeg", sep="")}, 
+    content=function (file){
+      jpeg(file,width=960, height=480,quality=100)
+      print(BoxPlotOut())
+      dev.off()
+    }
+  )
+  
   
 #### Data table controls #### 
   DataPark<-callModule(parkChooser, id="DataPark", data=WaterData, chosen=reactive(DataOpts$Park))
@@ -267,52 +331,37 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 
   
   
+  
 #### Mapping ####
+  
+  #USGSdata<-fromJSON("http://waterservices.usgs.gov/nwis/site/?bBox=-79.2,38.1,-76.3,39.8&format=json&siteStatus=active&siteType=ST")
+  USGSdata<-read.table(("http://waterservices.usgs.gov/nwis/site/?bBox=-79.2,38.1,-76.3,39.8&format=rdb&siteStatus=active&siteType=ST&hasDataTypeCd=iv"), sep="\t", header=TRUE)[-1,] %>% rename(lat=dec_lat_va, long=dec_long_va)
+  
+  USGSSiteURL<-paste0("'https://waterdata.usgs.gov/nwis/uv?",USGSdata$site_no,"'")
+  
+
   output$WaterMap<-renderLeaflet({ 
-    leaflet() %>%
+    req(USGSdata)
+    leaflet() %>% 
     setView(lng=-77, lat=39.25, zoom=9) %>% 
       
-      addTiles(group="Map", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.2yxv8n84,nps.jhd2e8lb/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q",attribution=NPSAttrib, options=tileOptions(minZoom=8))%>% 
+      addTiles(group="Map", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.2yxv8n84,nps.jhd2e8lb/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q",attribution=NPSAttrib, options=tileOptions(minZoom=8)) %>% 
       addTiles(group="Imagery", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.2c589204,nps.25abf75b,nps.7531d30a/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q",attribution=NPSAttrib, options=tileOptions(minZoom=8)) %>% 
       addTiles(group="Slate", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.68926899,nps.502a840b/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q", attribution=NPSAttrib, options=tileOptions(minZoom=8) ) %>% 
-      addLayersControl(map=., baseGroups=c("Map","Imagery","Slate"), options=layersControlOptions(collapsed=F))  
-      
-         #lng=mean(c(ParkBounds[ParkBounds$ParkCode==Network,]$LongE,ParkBounds[ParkBounds$ParkCode==Network,]$LongW)), 
-      #         lat=mean(c(ParkBounds[ParkBounds$ParkCode==Network,]$LatN,ParkBounds[ParkBounds$ParkCode==Network,]$LatS)),
-      #         zoom=8 ) %>% 
-     # setMaxBounds(#lng1=ParkBounds[ParkBounds$ParkCode==Network,]$LongE,lng2=ParkBounds[ParkBounds$ParkCode==Network,]$LongW, 
-                   #lat1=ParkBounds[ParkBounds$ParkCode==Network,]$LatN, lat2=ParkBounds[ParkBounds$ParkCode==Network,]$LatS)
-       # lng1=-79.5,lng2=-76.1, lat1=37.7, lat2=40.36)
+      addLayersControl(map=., baseGroups=c("Map","Imagery","Slate"), options=layersControlOptions(collapsed=T))  %>% 
+      addMarkers(data=USGSdata, group="USGS", layerId=USGSdata$site_no, 
+                 popup=paste("<b><a href=",USGSSiteURL,">",USGSdata$station_nm, "</a></b>")
+                 ) 
   })
   
-  NPSAttrib<-HTML("<a href='https://www.nps.gov/npmap/disclaimer' target='_blank'>Disclaimer</a>
-     &copy; <a href='http://mapbox.com/about/maps' target='_blank'>Mapbox</a> 
-    &copy; <a href='http://openstreetmap.org/copyright' target='_blank'>OpenStreetMap</a> contributors | 
-    <a class='improve-park-tiles' href='http://insidemaps.nps.gov/places/editor/#background=mapbox-satellite&map=4.00/-95.98/39.03'
-    target='_blank'>Improve Park Tiles</a>")
+  NPSAttrib<-HTML("<a href='https://www.nps.gov/npmap/disclaimer/'>Disclaimer</a> | 
+      &copy; <a href='http://mapbox.com/about/maps' target='_blank'>Mapbox</a>
+      &copy; <a href='http://openstreetmap.org/copyright' target='_blank'>OpenStreetMap</a> contributors |
+      <a class='improve-park-tiles' 
+      href='http://insidemaps.nps.gov/places/editor/#background=mapbox-satellite&map=4/-95.97656/39.02772&overlays=park-tiles-overlay'
+      target='_blank'>Improve Park Tiles</a>")
 
-#### Get USGS Data ####
-  #http://waterservices.usgs.gov/nwis/iv/?StateCd=MD&format=json
   
-  
-  #### Plot downloads ####
-  output$Plot.PNG<-downloadHandler(
-    filename=function(){paste(Title(), ".png", sep="")}, 
-    content=function (file){
-      png(file,width=960, height=480)
-      print(OutPlot())
-      dev.off()
-    }
-  )
-
-  output$Plot.JPG<-downloadHandler(
-    filename=function(){paste(Title(), ".jpeg", sep="")}, 
-    content=function (file){
-      jpeg(file,width=960, height=480,quality=100)
-      print(OutPlot())
-      dev.off()
-    }
-  )
 
 }) #End of Shiny Server function
     

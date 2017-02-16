@@ -42,31 +42,22 @@ shinyUI(
           h3(id="ThreshHeader","Thresholds"),
           
           checkboxInput("SeriesThreshLine","Show Water Quality Threshold Line",FALSE),
-           
           checkboxInput("ThreshPoint","Indicate Points with Poor Water Quality",FALSE),
-           
           HTML('<hr>'),
            
           h3(id="TrendHeader","Trends and Seasonal Patterns"),
-           
           checkboxInput("Trends","Show Seasonal Patterns and Trends",FALSE),
-           
           checkboxInput("Outliers","Indicate Outliers Not Used in Analysis",FALSE),    
-          
           HTML('<hr>'),
            
           h3(id="DownloadHeader","Downloads"),
-           
           downloadButton("Plot.PNG","Save Plot (.png)", class="btn btn-primary"),
-          
           downloadButton("Plot.JPG","Save Plot (.jpg)", class="btn btn-primary"),
-           
           HTML('<hr>'),
            
           #### Graphics options ####
           
           h3(id="GraphOptHead","Graphics Options"),
-          
           actionButton(inputId="GraphicsModal", label='Graphics Options', class="btn btn-primary")
           
           ) #end controls div
@@ -77,51 +68,44 @@ shinyUI(
           htmlOutput("SeriesThresholdSummary"),
           br(),
           htmlOutput("SeriesTrendsOut"),
+          textOutput("SeasonOut"),
           br(),
-          htmlOutput("SeriesRefSummary"),
-          
-          conditionalPanel(condition = "input.Trends && !(output.TimeSeries==null)" , 
-            h4("Trend Analysis"),
-           # textOutput("TrendsOut"),
-            textOutput("SeasonOut")
-          )
-
-           
+          htmlOutput("SeriesRefSummary")
         )
       ),
       
-      tabPanel(h4("Box Plot"),
+      tabPanel(h4("Comparisons"),
         column(3, div(style='padding: 5px 10px',class="panel panel-default", 
                              
+          h3("Comparison:"),
+          radioButtons(inputId="BoxBy", label="Compare by:", choices=c('year', "month", "site"), selected = "year", inline = T),
+          
           h3("Select Stream Data"),
            
           parkChooserUI("BoxPark"),
           siteChooserUI("BoxSite"),
           paramChooserUI("BoxParam"),
           yearChooserUI("BoxYears"),
-          radioButtons(inputId="BoxBy", label="5. Plot data by:", choices=c('year', "month", "site"), selected = "year", inline = T),
-          checkboxInput("BoxThreshLine","Show Water Quality Threshold Line",FALSE)
+          
+          checkboxInput("BoxThreshLine","Show Water Quality Threshold Line",FALSE),
+          
+          HTML('<hr>'),
+          h3(id="DownloadHeader","Downloads"),
+          downloadButton("BoxPlot.PNG","Save Plot (.png)", class="btn btn-primary"),
+          downloadButton("BoxPlot.JPG","Save Plot (.jpg)", class="btn btn-primary"),
+          HTML('<hr>'),
+          h3(id="GraphOptHead","Graphics Options"),
+          actionButton(inputId="GraphicsModal2", label='Graphics Options', class="btn btn-primary")
         )),
         
         column(9,
-          plotOutput("BoxPlot")
+          plotOutput("BoxPlot"),
+          htmlOutput("BoxThresholdSummary"),
+          br(),
+          htmlOutput("BoxRefSummary")
         )
       ),
-      
-      tabPanel(h4("Raw Data"),
-        column(3, div(style='padding: 5px 10px',class="panel panel-default", 
-                             
-          h3("Select Stream Data"),
-                             
-          parkChooserUI("DataPark"),
-          siteChooserUI("DataSite"),
-          paramChooserUI("DataParam")#,
-          #yearChooserUI("DataYears")
-        )),
-        column(9,              
-          DT::dataTableOutput("WaterTable"))
-        ),
-      
+
       tabPanel(h4("Map"),
         column(2, div(style='padding: 5px 10px',class="panel panel-default",
           h3("Data to map or something")
@@ -129,6 +113,17 @@ shinyUI(
         column(10, style="padding: 0",
                leafletOutput("WaterMap",width = "100%", height="900px")
         ) 
+      ),
+      tabPanel(h4("Raw Data"),
+               column(3, div(style='padding: 5px 10px',class="panel panel-default", 
+                             
+                             h3("Select Stream Data"),
+                             parkChooserUI("DataPark"),
+                             siteChooserUI("DataSite"),
+                             paramChooserUI("DataParam")
+               )),
+               column(9,              
+                      DT::dataTableOutput("WaterTable"))
       ),
       
       tabPanel(h4("Project Information"),

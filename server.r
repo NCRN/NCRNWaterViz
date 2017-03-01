@@ -9,6 +9,7 @@ library(ggplot2)
 library(leaflet)
 library(jsonlite)
 library(purrr)
+library(magrittr)
 
 
 #### Get data ####
@@ -25,11 +26,10 @@ shinyServer(function(input,output,session){
   
 GraphOpts<-reactiveValues(Legend=TRUE, FontSize=1.5, GoodColor="Blue", BadColor="Orange",OutColor="Vermillion",PointSize=3,
                             ThColor="Orange", TrColor="Green", LineWidth=1)
-  
  
 #### Reactive Values for Choosing Data ####
 
-DataOpts<-reactiveValues(Park=NA, Site=NA, Param=NA, Years=NA)
+DataOpts<-reactiveValues(Park=NA, Site=NA, Param=NA, Years=NA, USGSload=FALSE, USGSdata=NA)
 
 #### UI Controls ####  
 
@@ -328,30 +328,94 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       rownames=F, options=list(autoWidth=TRUE, dom="Bltirp", buttons=c("copy","csv","excel","pdf","print"), keys=TRUE)
                   ),server=F
   )
-
-  
   
   
 #### Mapping ####
   
-  #USGSdata<-fromJSON("http://waterservices.usgs.gov/nwis/site/?bBox=-79.2,38.1,-76.3,39.8&format=json&siteStatus=active&siteType=ST")
-  USGSdata<-read.table(("http://waterservices.usgs.gov/nwis/site/?bBox=-79.2,38.1,-76.3,39.8&format=rdb&siteStatus=active&siteType=ST&hasDataTypeCd=iv"), sep="\t", header=TRUE)[-1,] %>% rename(lat=dec_lat_va, long=dec_long_va)
+#### USGS Functions ####
   
-  USGSSiteURL<-paste0("'https://waterdata.usgs.gov/nwis/uv?",USGSdata$site_no,"'")
+  getUSGSVal<-function(x){
+    read.table(x, sep="\t", header=T)[-1,] %>% select(Site=site_no, Discharge=5)
+  }
   
+  getUSGSDaily<-function(x) {read.table(x, sep="\t", header=T)[-1,]  %>% 
+      filter(month_nu==month(Sys.Date()) & day_nu==day(Sys.Date())) %>% 
+      dplyr::select(Site=site_no, P05=p05_va, P25=p25_va, P50=p50_va, P75=p75_va, P95=p95_va )
+  }
+  
+  
+  USGScut<-function (value, p05, p25,p50,p75,p95) {
+    if (!is.na(p05) & value<=p05) return("<5th percentile") 
+    if ( (is.na(p05) & value <=p25) | (!is.na (p05) & value > p05 & value<=p25)) return("5th - 25th percentile")
+    if (value > p25 & value <= p50) return("25th - 50th percentile")
+    if (value > p50 & value <= p75) return ("50th - 75th percentile")
+    if ( (value > p75 & is.na(p95)) | (!is.na(p95) & value > p75 & value <=p95))  return("75th - 95th percentile")
+    if(!is.na(p95) & value > p95 ) return ("> 95th percentile")
+  }
+  
+  observeEvent(input$MapUSGS, ignoreInit = TRUE, {if (!DataOpts$USGSload) {
+      withProgress(message="Loading USGS data, please be patient.", expr={
+        USGSCodes<-read.csv("./Data/USGSSites.csv", header=T, as.is=T, colClasses = "character")$Code %>% paste(collapse=",")
+        
+        USGSdata<-read.table(paste0("http://waterservices.usgs.gov/nwis/site/?sites=",USGSCodes,
+                                    "&format=rdb&siteStatus=active&siteType=ST&hasDataTypeCd=iv&parameterCD=00060"), 
+                             sep="\t", header=TRUE)[-1,] %>% select(Site=site_no, Station=station_nm, lat=dec_lat_va, long=dec_long_va)
+        
+        incProgress(1/3)
+        
+        USGSdata<-USGSdata %>% mutate(CurrentURL=paste0("http://waterservices.usgs.gov/nwis/iv/?site=",Site,
+                                                        "&format=rdb&siteStatus=active&siteType=ST&parameterCd=00060"),
+                                      StatURL=paste0("http://waterservices.usgs.gov/nwis/stat/?sites=",USGSdata$Site,
+                                                     "&format=rdb&parameterCd=00060&statType=P05,P25,P50,P75,P95&statReportType=daily"), 
+                                      SiteURL=USGSSiteURL<-paste0("'https://waterdata.usgs.gov/nwis/uv?",USGSdata$Site,"'"))
+        
+        USGSdata<-USGSdata %>% left_join(map_df(USGSdata$CurrentURL, possibly(getUSGSVal, otherwise=NULL)), by="Site")
+        
+        incProgress(1/3)
+        
+        USGSdata<-USGSdata %>% left_join(map_df(USGSdata$StatURL, possibly(getUSGSDaily, otherwise=NULL)), by="Site") %>%
+          mutate(lat=lat %>% as.character %>% as.numeric(), long = long %>% as.character %>% as.numeric, 
+                 Discharge=Discharge %>% as.numeric,P05=P05 %>% as.numeric, P25=P25 %>% as.numeric, P50=P50 %>% as.numeric, 
+                 P75=P75 %>% as.numeric, P95=P95 %>% as.numeric ) %>% 
+          rowwise %>%  mutate(DLevel=USGScut(Discharge,P05,P25,P50,P75,P95))
+      })
+      
+      DataOpts$USGSload<-TRUE
+      
+      DataOpts$USGSdata<-USGSdata
+  }
+  })
+  
+ #### NPS Data ####
+  NPSGeoData<-data.frame(SiteCode=getSiteInfo(WaterData, info="SiteCode"), SiteName=getSiteInfo(WaterData, info= "SiteName"), 
+                         latitude=getSiteInfo(WaterData, info="lat"), longitude=getSiteInfo(WaterData, info="long"))
+  
+  #CharIndex is a true/false of characters that have thresholds
+  CharIndex<-{getCharInfo(WaterData,info="LowerPoint") %>% is.na %>% not} | {getCharInfo(WaterData,info="UpperPoint") %>% is.na %>% not} 
+  NPSchars<-getCharInfo(WaterData, info="CharName")[CharIndex] %>% unique
+  names(NPSchars)<-getCharInfo(WaterData, info="DisplayName")[CharIndex] %>% unique
+  output$MapChars<-renderUI( selectizeInput(inputId="MapChar",label="Charactersitic to Map", choices=NPSchars ))
+  
+  #coloring
+  MapColors<-colorNumeric(palette="viridis", domain=c(0,1)) # NPS % meets threshol
+  MapColors2<-colorFactor(palette="viridis", domain=c("<5th percentile","5th - 25th percentile", 
+          "25th - 50th percentile", "50th - 75th percentile", "75th - 95th percentile", "> 95th percentile" ), ordered = T )  # USGS percentile category for discharge
+  
+  ExceedData<-reactive({
+    req(input$MapChar)
+    exceed(WaterData, charname=input$MapChar)
+  })
 
+  #### the Map ####
   output$WaterMap<-renderLeaflet({ 
-    req(USGSdata)
+
     leaflet() %>% 
     setView(lng=-77, lat=39.25, zoom=9) %>% 
       
-      addTiles(group="Map", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.2yxv8n84,nps.jhd2e8lb/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q",attribution=NPSAttrib, options=tileOptions(minZoom=8)) %>% 
-      addTiles(group="Imagery", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.2c589204,nps.25abf75b,nps.7531d30a/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q",attribution=NPSAttrib, options=tileOptions(minZoom=8)) %>% 
-      addTiles(group="Slate", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.68926899,nps.502a840b/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q", attribution=NPSAttrib, options=tileOptions(minZoom=8) ) %>% 
-      addLayersControl(map=., baseGroups=c("Map","Imagery","Slate"), options=layersControlOptions(collapsed=T))  %>% 
-      addMarkers(data=USGSdata, group="USGS", layerId=USGSdata$site_no, 
-                 popup=paste("<b><a href=",USGSSiteURL,">",USGSdata$station_nm, "</a></b>")
-                 ) 
+    addTiles(group="Map", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.2yxv8n84,nps.jhd2e8lb/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q",attribution=NPSAttrib, options=tileOptions(minZoom=8)) %>% 
+    addTiles(group="Imagery", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.2c589204,nps.25abf75b,nps.7531d30a/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q",attribution=NPSAttrib, options=tileOptions(minZoom=8)) %>% 
+    addTiles(group="Slate", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.68926899,nps.502a840b/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q", attribution=NPSAttrib, options=tileOptions(minZoom=8) ) %>% 
+    addLayersControl(map=., baseGroups=c("Map","Imagery","Slate"), options=layersControlOptions(collapsed=T))
   })
   
   NPSAttrib<-HTML("<a href='https://www.nps.gov/npmap/disclaimer/'>Disclaimer</a> | 
@@ -361,7 +425,37 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       href='http://insidemaps.nps.gov/places/editor/#background=mapbox-satellite&map=4/-95.97656/39.02772&overlays=park-tiles-overlay'
       target='_blank'>Improve Park Tiles</a>")
 
+  observe({
+    if(input$MapNPS){
+      leafletProxy("WaterMap") %>% 
+        clearGroup("NPS") %>% 
+        addCircleMarkers(data=NPSGeoData, group="NPS", layerId=NPSGeoData$SiteCode, 
+                   popup=paste0(NPSGeoData$SiteName,br(), input$MapChar,":",br(),
+                       round(100*ExceedData()$Acceptable/ExceedData()$Total,1),"% of measuremnts meet water quality standards"), 
+                   fillColor=MapColors(ExceedData()$Acceptable/ExceedData()$Total),fillOpacity=.8, stroke=FALSE) %>% 
+        addLegend(position="topright", pal=MapColors, values=c(0,1), layerId="npsLegend",title="NPS: % of Acceptable Measurements",
+                  labFormat=labelFormat(suffix="%", transform= function(x) 100*x))
+        } else {leafletProxy("WaterMap") %>% clearGroup("NPS") %>% removeControl(layerId="npsLegend")}
+  })
   
+  observe({
+    if(input$MapUSGS){
+      req(DataOpts$USGSdata)
+      leafletProxy("WaterMap") %>%
+      clearGroup("USGS") %>%
+      addCircleMarkers(data=DataOpts$USGSdata, group="USGS", layerId=DataOpts$USGSdata$Site,
+                 label=DataOpts$USGSdata$Site,
+                 color=MapColors2(DataOpts$USGSdata$DLevel),opacity=.8, fillOpacity=0, stroke=TRUE, weight=8,
+                 popup=paste("<b><a href=",DataOpts$USGSdata$SiteURL,"target='_blank'>",DataOpts$USGSdata$Station, "</a></b>",br(),
+                             "USGS: Current Discharge: ", DataOpts$USGSdata$Discharge,"cfs")) %>% 
+                 addLegend(position="topright", colors=MapColors2(c("<5th percentile","5th - 25th percentile", 
+                 "25th - 50th percentile", "50th - 75th percentile", "75th - 95th percentile", "> 95th percentile" )), 
+                 labels=c("<5th percentile","5th - 25th percentile", 
+                                     "25th - 50th percentile", "50th - 75th percentile", "75th - 95th percentile", "> 95th percentile" ),
+                 layerId="usgsLegend",title="USGS: Discharge" )
+    } else {leafletProxy("WaterMap") %>% clearGroup("USGS") %>% removeControl(layerId="usgsLegend")}
+  })
+
 
 }) #End of Shiny Server function
     

@@ -108,7 +108,10 @@ shinyUI(
 
       tabPanel(h4("Map"),
         column(2, div(style='padding: 5px 10px',class="panel panel-default",
-          h3("Data to map or something")
+          h3("Data to Map"),
+          checkboxInput(inputId="MapNPS", label="Map NPS Water Monitoring", value=T),
+          checkboxInput(inputId="MapUSGS", label="Map USGS Gaging Stations (slow)", value=F),
+          uiOutput("MapChars")
         )),
         column(10, style="padding: 0",
                leafletOutput("WaterMap",width = "100%", height="900px")

@@ -50,16 +50,20 @@ shinyUI(
           checkboxInput("Outliers","Indicate Outliers Not Used in Analysis",FALSE),    
           HTML('<hr>'),
            
-          h3(id="DownloadHeader","Downloads"),
-          downloadButton("Plot.PNG","Save Plot (.png)", class="btn btn-primary"),
-          downloadButton("Plot.JPG","Save Plot (.jpg)", class="btn btn-primary"),
-          HTML('<hr>'),
+          splitLayout(h3(id="DownloadHeader","Downloads:"), cellWidths=c("35%","35%","30%"),
+            downloadButton("Plot.PNG","Save Plot (.png)", class="btn btn-primary", style="margin-top: 15px"),
+            downloadButton("Plot.JPG","Save Plot (.jpg)", class="btn btn-primary", style="margin-top: 15px")
+          ),
            
-          #### Graphics options ####
-          
-          h3(id="GraphOptHead","Graphics Options"),
-          actionButton(inputId="GraphicsModal", label='Graphics Options', class="btn btn-primary")
-          
+          #### Graphics options and About ####
+          splitLayout( cellWidths="35%",
+            h3("Options:"),
+            actionButton(inputId="GraphicsModal", label='Graphics Options', class="btn btn-primary",style="margin-top: 15px")
+          ),
+          splitLayout(cellWidths="35%",
+            h3("About:"),
+            actionButton(inputId="AboutTimeSeries", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px")
+          )
           ) #end controls div
         ),         
         
@@ -90,12 +94,19 @@ shinyUI(
           checkboxInput("BoxThreshLine","Show Water Quality Threshold Line",FALSE),
           
           HTML('<hr>'),
-          h3(id="DownloadHeader","Downloads"),
-          downloadButton("BoxPlot.PNG","Save Plot (.png)", class="btn btn-primary"),
-          downloadButton("BoxPlot.JPG","Save Plot (.jpg)", class="btn btn-primary"),
-          HTML('<hr>'),
-          h3(id="GraphOptHead","Graphics Options"),
-          actionButton(inputId="GraphicsModal2", label='Graphics Options', class="btn btn-primary")
+          
+          splitLayout(h3(id="DownloadHeader","Downloads:"), cellWidths=c("35%","35%","30%"),
+            downloadButton("BoxPlot.PNG","Save Plot (.png)", class="btn btn-primary", style="margin-top: 15px"),
+            downloadButton("BoxPlot.JPG","Save Plot (.jpg)", class="btn btn-primary", style="margin-top: 15px")
+          ),
+          splitLayout( cellWidths="35%",
+            h3("Options:"),
+            actionButton(inputId="GraphicsModal2", label='Graphics Options', class="btn btn-primary",style="margin-top: 15px")
+          ),
+          splitLayout(cellWidths="35%",
+            h3("About:"),
+            actionButton(inputId="AboutComparisons", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px")
+          )
         )),
         
         column(9,
@@ -109,9 +120,16 @@ shinyUI(
       tabPanel(h4("Map"),
         column(2, div(style='padding: 5px 10px',class="panel panel-default",
           h3("Data to Map"),
+          br(),
+          strong("National Park Service Monitoring"),
           checkboxInput(inputId="MapNPS", label="Map NPS Water Monitoring", value=T),
+          uiOutput("MapChars"),
+          HTML('<hr >'),
+          br(),
+          strong("US Geological Survey Stream Gages"),
           checkboxInput(inputId="MapUSGS", label="Map USGS Gaging Stations (slow)", value=F),
-          uiOutput("MapChars")
+          actionButton(inputId="AboutMap", label="About this Map...", class="btn btn-primary",style="margin-top: 15px")
+          
         )),
         column(10, style="padding: 0",
                leafletOutput("WaterMap",width = "100%", height="900px")

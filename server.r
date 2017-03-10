@@ -15,6 +15,13 @@ library(magrittr)
 #### Get data ####
 WaterData<-importNCRNWater("./Data/", MetaData = "VizMetaData.csv")
 
+####getThresholdText Function
+getTresholdText<-function(object, parkcode,sitecode,charname){    
+ x<-c(getCharInfo(object, parkcode=parkcode, sitecode=sitecode, charname=charname, info="LowerDescription"),
+    getCharInfo(object, parkcode=parkcode, sitecode=sitecode, charname=charname, info="UpperDescription"))
+  return(x[!is.na(x)])
+}
+
 ##### Shiny Server ####
 
 shinyServer(function(input,output,session){
@@ -84,6 +91,27 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   observeEvent(input$ThColor, GraphOpts$ThColor<-input$ThColor)
   observeEvent(input$TrColor, GraphOpts$TrColor<-input$TrColor)
   observeEvent(input$LineWidth, GraphOpts$LineWidth<-input$LineWidth)
+  
+  
+  #### About this ... modals ####
+  
+  observeEvent(input$AboutTimeSeries, showModal(
+    modalDialog(title="About Time Series Graphs", footer=tagAppendAttributes( modalButton(tags$div("Close")), class="btn btn-primary"),
+      includeHTML("./www/AboutTimeSeries.html")                  
+    )
+  ))
+  
+  observeEvent(input$AboutComparisons, showModal(
+    modalDialog(title="About Comparison Graphs", footer=tagAppendAttributes( modalButton(tags$div("Close")), class="btn btn-primary"),
+                includeHTML("./www/AboutComparisons.html")                  
+    )
+  ))
+  
+  observeEvent(input$AboutMap, showModal(
+    modalDialog(title="About the Map", footer=tagAppendAttributes( modalButton(tags$div("Close")), class="btn btn-primary"),
+                includeHTML("./www/AboutMap.html")                  
+    )
+  ))
   
 #### Housekeeping of data ####
   DataUse<-reactive({ 
@@ -168,10 +196,12 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 #### Threshold Summary ####
   ThresholdSummary<-reactive({    
     req(input$SeriesThreshLine | input$ThreshPoint)
-    paste(h4("Threshold:"),"\n",
+    paste(h4("Threshold:"),"\n", 
+          if(all(is.na(Thresholds()))){ "There is no water quality threshold for this parameter." } else {
       c(getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="LowerDescription"),
       getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, 
-                  info="UpperDescription"))[!is.na(Thresholds())])
+                  info="UpperDescription"))[!is.na(Thresholds())] }
+    ) 
   })
   
   output$SeriesThresholdSummary<-renderUI( HTML(ThresholdSummary()) )
@@ -180,7 +210,9 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   RefSummary<-reactive({
     req(input$SeriesThreshLine | input$ThreshPoint) 
     paste(h4("Threshold Reference:"),"\n",
-    getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="AssessmentDetails")) 
+      if (all(is.na(Thresholds()))) {"None"} else {
+      getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="AssessmentDetails")}
+    ) 
   })      
   
   output$SeriesRefSummary<-renderUI(HTML(RefSummary()))
@@ -387,8 +419,8 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   })
   
  #### NPS Data ####
-  NPSGeoData<-data.frame(SiteCode=getSiteInfo(WaterData, info="SiteCode"), SiteName=getSiteInfo(WaterData, info= "SiteName"), 
-                         latitude=getSiteInfo(WaterData, info="lat"), longitude=getSiteInfo(WaterData, info="long"))
+  NPSGeoData<-data.frame(ParkCode=getSiteInfo(WaterData, info="ParkCode"), SiteCode=getSiteInfo(WaterData, info="SiteCode"), SiteName=getSiteInfo(WaterData, info= "SiteName"), 
+                         latitude=getSiteInfo(WaterData, info="lat"), longitude=getSiteInfo(WaterData, info="long"), stringsAsFactors = F)
   
   #CharIndex is a true/false of characters that have thresholds
   CharIndex<-{getCharInfo(WaterData,info="LowerPoint") %>% is.na %>% not} | {getCharInfo(WaterData,info="UpperPoint") %>% is.na %>% not} 
@@ -412,31 +444,33 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     leaflet() %>% 
     setView(lng=-77, lat=39.25, zoom=9) %>% 
       
-    addTiles(group="Map", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.2yxv8n84,nps.jhd2e8lb/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q",attribution=NPSAttrib, options=tileOptions(minZoom=8)) %>% 
+    addTiles(group="Map", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.397cfb9a,nps.3cf3d4ab,nps.b0add3e6/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q",attribution=NPSAttrib, options=tileOptions(minZoom=8)) %>% 
     addTiles(group="Imagery", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.2c589204,nps.25abf75b,nps.7531d30a/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q",attribution=NPSAttrib, options=tileOptions(minZoom=8)) %>% 
-    addTiles(group="Slate", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.68926899,nps.502a840b/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q", attribution=NPSAttrib, options=tileOptions(minZoom=8) ) %>% 
+    addTiles(group="Slate", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.9e521899,nps.17f575d9,nps.e091bdaf/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q", attribution=NPSAttrib, options=tileOptions(minZoom=8) ) %>% 
     addLayersControl(map=., baseGroups=c("Map","Imagery","Slate"), options=layersControlOptions(collapsed=T))
   })
-  
+
   NPSAttrib<-HTML("<a href='https://www.nps.gov/npmap/disclaimer/'>Disclaimer</a> | 
       &copy; <a href='http://mapbox.com/about/maps' target='_blank'>Mapbox</a>
       &copy; <a href='http://openstreetmap.org/copyright' target='_blank'>OpenStreetMap</a> contributors |
       <a class='improve-park-tiles' 
       href='http://insidemaps.nps.gov/places/editor/#background=mapbox-satellite&map=4/-95.97656/39.02772&overlays=park-tiles-overlay'
       target='_blank'>Improve Park Tiles</a>")
-
+  
   observe({
     if(input$MapNPS){
       leafletProxy("WaterMap") %>% 
         clearGroup("NPS") %>% 
-        addCircleMarkers(data=NPSGeoData, group="NPS", layerId=NPSGeoData$SiteCode, 
-                   popup=paste0(NPSGeoData$SiteName,br(), input$MapChar,":",br(),
-                       round(100*ExceedData()$Acceptable/ExceedData()$Total,1),"% of measuremnts meet water quality standards"), 
-                   fillColor=MapColors(ExceedData()$Acceptable/ExceedData()$Total),fillOpacity=.8, stroke=FALSE) %>% 
-        addLegend(position="topright", pal=MapColors, values=c(0,1), layerId="npsLegend",title="NPS: % of Acceptable Measurements",
+        addCircleMarkers(data=NPSGeoData, group="NPS", layerId=NPSGeoData$SiteCode, fillColor=MapColors(ExceedData()$Acceptable/ExceedData()$Total),fillOpacity=.8, stroke=FALSE) %>% 
+        
+        addLegend(position="topright", pal=MapColors, values=c(0,1), opacity=1,
+                    layerId="npsLegend",title=paste0("<svg height='15' width='20'>
+                    <circle cx='10' cy='10' r='5', stroke='black' fill='black'/></svg> NPS: % of Acceptable <br>Measurements"),
                   labFormat=labelFormat(suffix="%", transform= function(x) 100*x))
         } else {leafletProxy("WaterMap") %>% clearGroup("NPS") %>% removeControl(layerId="npsLegend")}
   })
+  
+
   
   observe({
     if(input$MapUSGS){
@@ -445,17 +479,43 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       clearGroup("USGS") %>%
       addCircleMarkers(data=DataOpts$USGSdata, group="USGS", layerId=DataOpts$USGSdata$Site,
                  label=DataOpts$USGSdata$Site,
-                 color=MapColors2(DataOpts$USGSdata$DLevel),opacity=.8, fillOpacity=0, stroke=TRUE, weight=8,
-                 popup=paste("<b><a href=",DataOpts$USGSdata$SiteURL,"target='_blank'>",DataOpts$USGSdata$Station, "</a></b>",br(),
-                             "USGS: Current Discharge: ", DataOpts$USGSdata$Discharge,"cfs")) %>% 
-                 addLegend(position="topright", colors=MapColors2(c("<5th percentile","5th - 25th percentile", 
+                 color=MapColors2(DataOpts$USGSdata$DLevel),opacity=.8, fillOpacity=0, stroke=TRUE, weight=8) %>% 
+                 addLegend(position="topright", opacity=1,colors=MapColors2(c("<5th percentile","5th - 25th percentile", 
                  "25th - 50th percentile", "50th - 75th percentile", "75th - 95th percentile", "> 95th percentile" )), 
                  labels=c("<5th percentile","5th - 25th percentile", 
                                      "25th - 50th percentile", "50th - 75th percentile", "75th - 95th percentile", "> 95th percentile" ),
-                 layerId="usgsLegend",title="USGS: Discharge" )
+                 layerId="usgsLegend",title=" <svg height='15' width='20'> <circle cx='10' cy='10' r='4' stroke='black' stroke-width='3'
+                            fill='transparent'/></svg>USGS: Discharge" )
     } else {leafletProxy("WaterMap") %>% clearGroup("USGS") %>% removeControl(layerId="usgsLegend")}
   })
 
+  
+  observeEvent(input$WaterMap_marker_click,{
+    MarkerClick<-input$WaterMap_marker_click
+    ClickData<-if(MarkerClick$group == "NPS") {NPSGeoData %>% filter(SiteCode==MarkerClick$id)} else {DataOpts$USGSdata %>% filter(Site==MarkerClick$id)}
+    
+    leafletProxy("WaterMap") %>%
+      clearPopups() %>% {
+       switch(MarkerClick$group[1],
+          NPS= addPopups(map=.,lat=MarkerClick$lat, lng=MarkerClick$lng,
+            popup= paste("<b>",ClickData$SiteName,"</b>", br(),
+            getCharInfo(WaterData, parkcode=ClickData$ParkCode, sitecode=ClickData$SiteCode,charname=input$MapChar, 
+            info="DisplayName"),":", br(), round(100*ExceedData()[ExceedData()$Site==ClickData$SiteCode,]$Acceptable/ExceedData()[ExceedData()$Site==ClickData$SiteCode,]$Total,1),"% of measurements meet water quality standards",br(),br(),
+            getTresholdText(WaterData, ClickData$ParkCode, ClickData$SiteCode, input$MapChar), br(),br(),
+            "<b>References:</b>",br(),
+            getCharInfo(WaterData, ClickData$ParkCode, ClickData$SiteCode, input$MapChar, info="AssessmentDetails")
+            )),
+          USGS=addPopups(map=.,lat=MarkerClick$lat, lng=MarkerClick$lng,
+              popup=paste("<b><a href=",ClickData$SiteURL,"target='_blank'>",ClickData$Station, "</a></b>",br(),
+                    "USGS: Current Discharge: ", ClickData$Discharge,"cfs",br(), ClickData$DLevel, br(), br(),
+                    "<a href=",ClickData$SiteURL,"target='_blank'>Click here</a> to visit USGS gage website"
+              )
+          )
+        )
+    }
+  })
+  
+  
 
 }) #End of Shiny Server function
     

@@ -14,7 +14,7 @@ WaterData<-tbl_df(
   read.csv("Water Data.csv", header=TRUE, col.names=c("Network","StationID","StationName","VisitDate","Parameter","Result"),
                     colClasses=c("factor","character","character","NPSDate","character","numeric" ),comment.char="")
 )
-WaterData<-WaterData %>% mutate(VistiDate=ymd(VisitDate), Year=year(VisitDate))
+WaterData<-WaterData %>% mutate(VisitDate=ymd(VisitDate), Year=year(VisitDate))
 Parameters<-tbl_df(read.csv("Parameters.csv", header=TRUE, as.is=TRUE))
 Thresholds<-tbl_df(read.csv("Thresholds.csv", header=TRUE, as.is =TRUE))
 

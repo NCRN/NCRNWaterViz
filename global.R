@@ -46,7 +46,7 @@ paramChooser<-function(input, output, session, data, park, site, chosen){
     req(park(), site())
     Choice<-getCharInfo(data, parkcode=park(), sitecode=site(), info="CharName")
     ChoiceName<-paste(getCharInfo(data, parkcode=park(), sitecode=site(), info="DisplayName"),
-                       getCharInfo(data, parkcode=park(), sitecode=site(), info="Units") %>% iconv("","UTF-8"))
+                       getCharInfo(data, parkcode=park(), sitecode=site(), info="Units")%>% iconv("","UTF-8"))#%>% iconv("","UTF-8"))
     if(isTruthy(Choice) & isTruthy(ChoiceName)) { names(Choice)<-ChoiceName }
     return(Choice)
    })

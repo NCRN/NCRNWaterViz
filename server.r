@@ -13,7 +13,7 @@ library(magrittr)
 
 
 #### Get data ####
-WaterData<-importNCRNWater("./Data/", MetaData = "VizMetaData.csv")
+WaterData<-suppressWarnings(importNCRNWater(paste0("./Data/", Network), Data="Water Data.csv", MetaData = "VizMetaData.csv"))
 
 ####getThresholdText Function
 getTresholdText<-function(object, parkcode,sitecode,charname){    
@@ -29,7 +29,7 @@ shinyServer(function(input,output,session){
 
 #output$Test<-renderText(TimeSite())   #For debugging purposes
 
-#### Reactive Values for Graphics Optiions with Defaults ####
+#### Reactive Values for Graphics Options with Defaults ####
   
 GraphOpts<-reactiveValues(Legend=TRUE, FontSize=1.5, GoodColor="Blue", BadColor="Orange",OutColor="Vermillion",PointSize=3,
                             ThColor="Orange", TrColor="Green", LineWidth=1)
@@ -42,8 +42,10 @@ DataOpts<-reactiveValues(Park=NA, Site=NA, Param=NA, Years=NA, USGSload=FALSE, U
 
 #### Time Series Controls ####
 TimePark<-callModule(parkChooser, id="TimePark", data=WaterData, chosen=reactive(DataOpts$Park))
-TimeSite<-callModule(siteChooser, id="TimeSite", data=WaterData, park=reactive(DataOpts$Park), chosen=reactive(DataOpts$Site))
-TimeParam<-callModule(paramChooser, id="TimeParam",data=WaterData, park=reactive(DataOpts$Park), site=reactive(DataOpts$Site), 
+TimeSite<-callModule(siteChooser, id="TimeSite", data=WaterData, park=reactive(DataOpts$Park), 
+                     chosen=reactive(DataOpts$Site))
+TimeParam<-callModule(paramChooser, id="TimeParam",data=WaterData, park=reactive(DataOpts$Park), 
+                      site=reactive(DataOpts$Site), 
                       chosen=reactive(DataOpts$Param))
 TimeYears<-callModule(yearChooser, id="TimeYears", data=DataUse, chosen=reactive(DataOpts$Years) )
 
@@ -117,11 +119,14 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   DataUse<-reactive({ 
      shiny::validate(
        need(DataOpts$Park, message="Choose a Park"),
-       need(DataOpts$Site, message="Choose a Stream"),
+       need(DataOpts$Site, message="Choose a Site"),
        need(DataOpts$Param, message="Choose a Water Quality Parameter")
      )  
-    getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
-  })
+    df <- getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
+    df <- suppressWarnings(df %>% mutate(year.dec = julian(Date)/365, month = as.factor(months(Date)))) 
+    return(df)
+    
+    })
   
   Thresholds<-reactive({
     c(getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="LowerPoint"),
@@ -132,16 +137,28 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     iconv("","UTF-8") 
   })
   
+  Cens <- reactive({
+    req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
+    suppressWarnings(ifelse(any(DataUse()$Censored) == TRUE, TRUE, FALSE))
+  })
+  
   TrendsOut<-reactive({
     req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
-    wcosinor(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
+    if(Cens() == FALSE){
+      wcosinor(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
+    } else if(Cens() == TRUE) {
+      nonparTrends(WaterData, parkcode = DataOpts$Park, 
+                   sitecode = DataOpts$Site, charname = DataOpts$Param, censored = T) %>% arrange(month)
+    }
+    
   })
   
   Title<-reactive({
     paste(getSiteInfo(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, info="SiteName"),
         getCharInfo(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="DisplayName"),sep=": ")
     })
- 
+  
+
 #### Get Colors from user inputs ####
   BadCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$BadColor,]$Rcolor})
   GoodCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$GoodColor,]$Rcolor})
@@ -152,23 +169,27 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 #### Summaries of Seaonality and Trends ####
   output$SeasonOut<-renderText({
     shiny::validate(
-      need (input$Trends==TRUE, message=FALSE),
+      need(input$Trends==TRUE, message=FALSE),
       need(is.atomic(TrendsOut())==FALSE, message=FALSE)
     )
+    
+    if(Cens() == FALSE){
     switch(class(TrendsOut()$Analysis),
       "lm" =      c("There is no seasonal pattern in the data."),
       "Cosinor" = c("There is a seasonal pattern in the data. The peak is", strsplit(summary(TrendsOut()$Analysis)$phase," ")[[1]][3],
                   strsplit(summary(TrendsOut()$Analysis)$phase," ")[[1]][7], "and the low point is ",
         strsplit(summary(TrendsOut()$Analysis)$lphase," ")[[1]][3],paste0(strsplit(summary(TrendsOut()$Analysis)$lphase," ")[[1]][7] ,"." 
-      )),
-    NULL)
+      )), NULL)
+      
+    }
   })
 
   SeriesTrendsOut<-reactive({
     req(input$Trends, is.atomic(TrendsOut())==FALSE)
     
     paste(h4("Trend Analysis:"),"\n",
-      paste(switch(class(TrendsOut()$Analysis),
+      if(Cens() == FALSE){
+        paste(switch(class(TrendsOut()$Analysis),
         "lm" =  {
           if(summary(TrendsOut()$Analysis)$coefficients[2,4]>.05) {("There is no significant trend in the data.")} 
           else {
@@ -187,11 +208,28 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
             Units(), "per year."
             )
           }
-        },
-      NULL)))
+          }, NULL))
+        } else if(Cens() == TRUE) {
+          message_notrend <- if(any(TrendsOut()$message=="no trend")){ 
+            paste("The following months were modeled and found no significant trends: ", 
+                  paste0(TrendsOut()$month[TrendsOut()$message=="no trend"], collapse=", "), ". ", sep = "")} 
+          
+          message_notmodeled <- if(any(TrendsOut()$modeled == FALSE)){ 
+            paste("The following months had too few non-censored measurements to analyze for trends and were not plotted: ", 
+                  paste0(TrendsOut()$month[TrendsOut()$modeled == FALSE], collapse=", "), ".", sep = "")} 
+          
+          message_signtrends<- if(any(grepl("There", TrendsOut()$message))){
+            paste(TrendsOut()$message[TrendsOut()$modeled==TRUE & grepl("There", TrendsOut()$message)], sep="")
+          } 
+
+          paste0("Data were separated by month for censored Mann-Kendall test.", br(),
+                message_notrend, br(), message_notmodeled, br(), message_signtrends)
+          
+          }
+      )
   })
   
-  output$SeriesTrendsOut<-renderUI(HTML(SeriesTrendsOut() ))
+  output$SeriesTrendsOut<-renderUI(HTML(SeriesTrendsOut()))
   
 #### Threshold Summary ####
   ThresholdSummary<-reactive({    
@@ -220,31 +258,89 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   
 #### Time Series Plot ####
     WaterSeriesOut<-reactive({
-      req( DataUse()$Date, DataUse()$Value)
-      SeriesPlot<-waterseries(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, char=DataOpts$Param, 
-            years=DataOpts$Years[1]:DataOpts$Years[2],layers=c("points"),assessment=input$SeriesThreshLine, title=Title(),
-            colors=(GoodCol()),assesscolor=ThCol(), sizes=c(GraphOpts$PointSize, GraphOpts$LineWidth, GraphOpts$LineWidth),
+      req(DataUse()$Date, DataUse()$Value)
+      
+      SeriesPlot<- if(Cens() == FALSE){ 
+          
+          waterseries(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, char=DataOpts$Param, 
+            years=DataOpts$Years[1]:DataOpts$Years[2],layers=c("points"),
+            assessment=input$SeriesThreshLine, title=Title(),
+            colors=(GoodCol()),assesscolor=ThCol(), 
+            sizes=c(GraphOpts$PointSize, GraphOpts$LineWidth, GraphOpts$LineWidth),
             legend=if(GraphOpts$Legend) "bottom" else "none") +
-      theme(text=element_text(size=GraphOpts$FontSize*10))+
+            theme(text=element_text(size=GraphOpts$FontSize*10))+
         
-      {if(input$Outliers && exists("TrendsOut")) geom_point(data=TrendsOut()[["Outliers"]], aes(Date,Value),pch=1,
+            {if(input$Outliers && exists("TrendsOut")) geom_point(data=TrendsOut()[["Outliers"]], aes(Date,Value),pch=1,
                   size=GraphOpts$PointSize+2,color=OutCol(),stroke=1.5)} +
         
-      {if(input$ThreshPoint && !is.na(Thresholds()[1])) geom_point(data=DataUse()[DataUse()$Value<Thresholds()[1],], 
+            {if(input$ThreshPoint && !is.na(Thresholds()[1])) geom_point(data=DataUse()[DataUse()$Value<Thresholds()[1],], 
                    aes(Date,Value), pch=16,size=GraphOpts$PointSize, color=BadCol()) } +
         
-      {if(input$ThreshPoint && !is.na(Thresholds()[2])) geom_point(data=DataUse()[DataUse()$Value>Thresholds()[2],], 
+            {if(input$ThreshPoint && !is.na(Thresholds()[2])) geom_point(data=DataUse()[DataUse()$Value>Thresholds()[2],], 
                   aes(Date,Value), pch=16, size=GraphOpts$PointSize, color=BadCol())} +
       
-      {if(input$Trends && exists("TrendsOut") && class(TrendsOut()$Analysis)=="lm") geom_line(data=data.frame(
-        Value=TrendsOut()$Analysis$fitted.values,Date=TrendsOut()$CDates), aes(Date,Value), color=TrCol(), lwd=GraphOpts$LineWidth) } +
+            {if(input$Trends && exists("TrendsOut") && class(TrendsOut()$Analysis)=="lm") geom_line(data=data.frame(
+            Value=TrendsOut()$Analysis$fitted.values,Date=TrendsOut()$CDates), aes(Date,Value), color=TrCol(), 
+            lwd=GraphOpts$LineWidth) } +
         
-      {if(input$Trends && exists("TrendsOut") && class(TrendsOut()$Analysis)=="Cosinor") geom_line(data=data.frame(
-        Value=TrendsOut()$PredLine$Preds,Date=TrendsOut()$PredLine$PreDates.Date),  aes(Date,Value), col=TrCol(), 
-        lwd=GraphOpts$LineWidth)}
-     
+            {if(input$Trends && exists("TrendsOut") && class(TrendsOut()$Analysis)=="Cosinor") geom_line(data=data.frame(
+            Value=TrendsOut()$PredLine$Preds,Date=TrendsOut()$PredLine$PreDates.Date),  aes(Date,Value), col=TrCol(), 
+            lwd=GraphOpts$LineWidth)}
+      
+      } else if (Cens() == TRUE) {
+        
+        if(input$Trends == TRUE){
+          df <- suppressWarnings(DataUse() %>% mutate(year.dec = julian(Date)/365, 
+                                                      month = as.factor(lubridate::month(Date, label = TRUE, abbr=FALSE))))
+ 
+          df2<- df %>% group_by(Category, Characteristic, Site, Park, month) %>% 
+            mutate(num_meas=length(ValueCen), 
+                   pct_true= sum(ifelse(Censored==FALSE,1,0))/num_meas,
+                   adjValueCen = ifelse(Censored==TRUE, max(ValueCen), Value)) %>% ungroup() %>% arrange(month)
+          
+          df2 <- df2 %>% arrange(month) %>% droplevels()
+          
+          waterseries(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, 
+                      char=DataOpts$Param, censored = TRUE, deseason = TRUE,
+                      years=DataOpts$Years[1]:DataOpts$Years[2],layers=c("points"),
+                      assessment=input$SeriesThreshLine, title=Title(),
+                      colors=(GoodCol()),assesscolor=ThCol(), 
+                      sizes=c(GraphOpts$PointSize, GraphOpts$LineWidth, GraphOpts$LineWidth),
+                      legend=if(GraphOpts$Legend) "bottom" else "none") +
+            theme(text=element_text(size=GraphOpts$FontSize*10)) +
+            
+            
+            {if(input$ThreshPoint && !is.na(Thresholds()[1])) geom_point(data=df2[df2$ValueCen<Thresholds()[1],],
+                                                                         aes(Date,Value), pch=16,size=GraphOpts$PointSize, color=BadCol()) } +
+            
+            {if(input$ThreshPoint && !is.na(Thresholds()[2])) geom_point(data=df2[df2$Value>Thresholds()[2],],
+                                                                         aes(Date,Value), pch=16, size=GraphOpts$PointSize, color=BadCol())}
+        
+          } else if(input$Trends == FALSE){
+            
+            waterseries(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, 
+                    char=DataOpts$Param, censored = TRUE, deseason = FALSE,
+                    years=DataOpts$Years[1]:DataOpts$Years[2],layers=c("points"),
+                    assessment=input$SeriesThreshLine, title=Title(),
+                    colors=(GoodCol()),assesscolor=ThCol(), 
+                    sizes=c(GraphOpts$PointSize, GraphOpts$LineWidth, GraphOpts$LineWidth),
+                    legend=if(GraphOpts$Legend) "bottom" else "none") +
+                    theme(text=element_text(size=GraphOpts$FontSize*10)) +
+              
+              
+              {if(input$ThreshPoint && !is.na(Thresholds()[1])) geom_point(data=DataUse()[DataUse()$Value<Thresholds()[1],],
+                                                                           aes(Date,Value), pch=16,size=GraphOpts$PointSize, color=BadCol()) } +
+              
+              {if(input$ThreshPoint && !is.na(Thresholds()[2])) geom_point(data=DataUse()[DataUse()$Value>Thresholds()[2],],
+                                                                           aes(Date,Value), pch=16, size=GraphOpts$PointSize, color=BadCol())}
+           
+        }
+
+      }
+
       SeriesPlot  #forces ggplot to draw graph after all the conditionals
-  })
+    
+        })
   
   output$TimeSeries<-renderPlot({
     WaterSeriesOut()
@@ -440,13 +536,20 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 
   #### the Map ####
   output$WaterMap<-renderLeaflet({ 
-
+    netlat<-dplyr::case_when(Network == "NCRN" ~ 39.25, 
+                             Network == "NETN" ~ 42.5)
+    netlon<-dplyr::case_when(Network == "NCRN" ~ -77,
+                             Network == "NETN" ~ -71.6)
+    
+    netzoom<-dplyr::case_when(Network == "NCRN" ~ 9,
+                              Network == "NETN" ~ 7)
+    
     leaflet() %>% 
-    setView(lng=-77, lat=39.25, zoom=9) %>% 
+    setView(lng = netlon, lat = netlat, zoom = netzoom) %>% 
       
-    addTiles(group="Map", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.397cfb9a,nps.3cf3d4ab,nps.b0add3e6/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q",attribution=NPSAttrib, options=tileOptions(minZoom=8)) %>% 
-    addTiles(group="Imagery", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.2c589204,nps.25abf75b,nps.7531d30a/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q",attribution=NPSAttrib, options=tileOptions(minZoom=8)) %>% 
-    addTiles(group="Slate", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.9e521899,nps.17f575d9,nps.e091bdaf/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q", attribution=NPSAttrib, options=tileOptions(minZoom=8) ) %>% 
+    addTiles(group="Map", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.397cfb9a,nps.3cf3d4ab,nps.b0add3e6/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q",attribution=NPSAttrib, options=tileOptions(minZoom=netzoom)) %>% 
+    addTiles(group="Imagery", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.2c589204,nps.25abf75b,nps.7531d30a/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q",attribution=NPSAttrib, options=tileOptions(minZoom=netzoom)) %>% 
+    addTiles(group="Slate", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.9e521899,nps.17f575d9,nps.e091bdaf/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q", attribution=NPSAttrib, options=tileOptions(minZoom=netzoom) ) %>% 
     addLayersControl(map=., baseGroups=c("Map","Imagery","Slate"), options=layersControlOptions(collapsed=T))
   })
 
@@ -461,7 +564,10 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     if(input$MapNPS){
       leafletProxy("WaterMap") %>% 
         clearGroup("NPS") %>% 
-        addCircleMarkers(data=NPSGeoData, group="NPS", layerId=NPSGeoData$SiteCode, fillColor=MapColors(ExceedData()$Acceptable/ExceedData()$Total),fillOpacity=.8, stroke=FALSE) %>% 
+        addCircleMarkers(data=NPSGeoData, group="NPS", 
+                         layerId=NPSGeoData$SiteCode, 
+                         fillColor=MapColors(ExceedData()$Acceptable/ExceedData()$Total),
+                         fillOpacity=.8, stroke=FALSE) %>% 
         
         addLegend(position="topright", pal=MapColors, values=c(0,1), opacity=1,
                     layerId="npsLegend",title=paste0("<svg height='15' width='20'>

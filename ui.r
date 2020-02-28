@@ -3,10 +3,9 @@ library(leaflet)
 
 ColorNames<-GraphColors$DisplayColor
 
-
 shinyUI(
   fluidPage( theme="https://www.nps.gov/lib/bootstrap/3.3.2/css/nps-bootstrap.min.css", style="padding: 0px",
-             title="NCRN Water Quality",
+             title=paste0(Network, " Water Quality"),
     
     column(12, id="NPSBanner", style="margin: 0px",
       tags$head(includeScript ("https://www.nps.gov/common/commonspot/templates/js/federated-analytics.js")),
@@ -19,7 +18,7 @@ shinyUI(
       div(
         h1(style="background-color: black; color: white; height: 125px; padding: 10px; margin: 0px",
             HTML('<img src="ah_large_black.gif", style="float:right; padding-right:25px"/>',
-            'National Capital Region Network <br> Stream Water Quality'
+            Network_long, '<br>', Viz_name
         ))
       )
     ),
@@ -30,7 +29,7 @@ shinyUI(
           
           #textOutput("Test"),  # For debugging purposes
           
-          h3("Select Stream Data"),
+          h3("Select Site Data"),
           
           parkChooserUI("TimePark"),
           siteChooserUI("TimeSite"),
@@ -84,7 +83,7 @@ shinyUI(
           h3("Comparison:"),
           radioButtons(inputId="BoxBy", label="Compare by:", choices=c('year', "month", "site"), selected = "year", inline = T),
           
-          h3("Select Stream Data"),
+          h3("Select Site Data"),
            
           parkChooserUI("BoxPark"),
           siteChooserUI("BoxSite"),
@@ -138,7 +137,7 @@ shinyUI(
       tabPanel(h4("Raw Data"),
                column(3, div(style='padding: 5px 10px',class="panel panel-default", 
                              
-                             h3("Select Stream Data"),
+                             h3("Select Site Data"),
                              parkChooserUI("DataPark"),
                              siteChooserUI("DataSite"),
                              paramChooserUI("DataParam")

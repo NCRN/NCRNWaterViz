@@ -1,3 +1,11 @@
+#-------------------------
+# Specify the network 
+Network <- "NETN" 
+Network_long <- "Northeast Temperate Network" # for navbar title
+Viz_name <- "Lake and Stream Water Quality"
+#Network <- "NCRN" # for leaflet map center 
+#Network_long <- "National Capital Region Network" # for navbar title
+#Viz_name <- "Stream Water Quality"
 GraphColors<-read.csv("colors.csv", header=T, as.is=T)
 
 #### Park Module ####
@@ -19,7 +27,7 @@ parkChooser<-function(input,output,session,data, chosen){
 
 siteChooserUI<-function(id){
   ns<-NS(id)
-  selectizeInput(inputId = ns("SiteIn"), label="2. Stream:", choices=NULL)
+  selectizeInput(inputId = ns("SiteIn"), label="2. Site:", choices=NULL)
 }
 
 siteChooser<-function(input, output, session, data, park, chosen){
@@ -46,13 +54,15 @@ paramChooser<-function(input, output, session, data, park, site, chosen){
     req(park(), site())
     Choice<-getCharInfo(data, parkcode=park(), sitecode=site(), info="CharName")
     ChoiceName<-paste(getCharInfo(data, parkcode=park(), sitecode=site(), info="DisplayName"),
-                       getCharInfo(data, parkcode=park(), sitecode=site(), info="Units")%>% iconv("","UTF-8"))#%>% iconv("","UTF-8"))
+                       getCharInfo(data, parkcode=park(), sitecode=site(), info="Units")%>% 
+                        iconv("","UTF-8"))#%>% iconv("","UTF-8"))
     if(isTruthy(Choice) & isTruthy(ChoiceName)) { names(Choice)<-ChoiceName }
     return(Choice)
    })
   
   observe(
-    updateSelectizeInput(session, inputId="ParamIn",selected=chosen(), choices=c("Choose a Parameter"="",as.list(PChoices())))
+    updateSelectizeInput(session, inputId="ParamIn",selected=chosen(), 
+                         choices=c("Choose a Parameter"="",as.list(sort(PChoices()))))
   )
   
   return(reactive(input$ParamIn))

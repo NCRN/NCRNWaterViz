@@ -1,159 +1,152 @@
 library(shiny)
-library(leaflet)
+library(shinyjs)
 
 ColorNames<-GraphColors$DisplayColor
 
+
 shinyUI(
   fluidPage( theme="https://www.nps.gov/lib/bootstrap/3.3.2/css/nps-bootstrap.min.css", style="padding: 0px",
-             title=paste0(Network, " Water Quality"),
+             title="NCRN Water Quality",
     
     column(12, id="NPSBanner", style="margin: 0px",
+      useShinyjs(),
       tags$head(includeScript ("https://www.nps.gov/common/commonspot/templates/js/federated-analytics.js")),
       tags$head(tags$script(
-        'type = "text/javascript"',' var ss = document.createElement("link"); ss.type="text/css"; ss.rel="stylesheet"; 
-        ss.href = window.self === window.top ? "NCRN.css" : "NCRNframe.css"; document.getElementsByTagName("head")[0].appendChild(ss);'
-      )),
+              'type = "text/javascript"',' var ss = document.createElement("link"); ss.type="text/css"; ss.rel="stylesheet"; 
+              ss.href = window.self === window.top ? "NCRN.css" : "NCRNframe.css"; document.getElementsByTagName("head")[0].appendChild(ss);'
+            )),
       tags$head(HTML( '<link rel="icon", href="AH_small_flat_4C_12x16.png", type="image/png" />')),
           
       div(
         h1(style="background-color: black; color: white; height: 125px; padding: 10px; margin: 0px",
+            
             HTML('<img src="ah_large_black.gif", style="float:right; padding-right:25px"/>',
-            Network_long, '<br>', Viz_name
-        ))
-      )
-    ),
- # mainPanel(
-    tabsetPanel(  
-      tabPanel(h4("Time Series Plot"),
-        column(3, div(style='padding: 5px 10px',class="panel panel-default", 
-          
-          #textOutput("Test"),  # For debugging purposes
-          
-          h3("Select Site Data"),
-          
-          parkChooserUI("TimePark"),
-          siteChooserUI("TimeSite"),
-          paramChooserUI("TimeParam"),
-          yearChooserUI("TimeYears"), 
-          
-          HTML('<hr >'),
-             
-          h3(id="ThreshHeader","Thresholds"),
-          
-          checkboxInput("SeriesThreshLine","Show Water Quality Threshold Line",FALSE),
-          checkboxInput("ThreshPoint","Indicate Points with Poor Water Quality",FALSE),
-          HTML('<hr>'),
-           
-          h3(id="TrendHeader","Trends and Seasonal Patterns"),
-          checkboxInput("Trends","Show Seasonal Patterns and Trends",FALSE),
-          checkboxInput("Outliers","Indicate Outliers Not Used in Analysis",FALSE),    
-          HTML('<hr>'),
-           
-          splitLayout(h3(id="DownloadHeader","Downloads:"), cellWidths=c("35%","35%","30%"),
-            downloadButton("Plot.PNG","Save Plot (.png)", class="btn btn-primary", style="margin-top: 15px"),
-            downloadButton("Plot.JPG","Save Plot (.jpg)", class="btn btn-primary", style="margin-top: 15px")
-          ),
-           
-          #### Graphics options and About ####
-          splitLayout( cellWidths="35%",
-            h3("Options:"),
-            actionButton(inputId="GraphicsModal", label='Graphics Options', class="btn btn-primary",style="margin-top: 15px")
-          ),
-          splitLayout(cellWidths="35%",
-            h3("About:"),
-            actionButton(inputId="AboutTimeSeries", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px")
+            'National Capital Region Network <br> Stream Water Quality'
+            ))
           )
-          ) #end controls div
-        ),         
+        ),
+  
+  column(3, wellPanel(style='overflow: hidden',
+    h3("Select Stream Data"),
+         
+    uiOutput("parkControl"),
+      
+    uiOutput("streamControl"), 
+    
+    uiOutput("ParameterControl"),
+    
+    uiOutput("yearControl"),
+       
+    HTML('<hr >'),
+     
+    h4(id="ThreshHeader","Thresholds"),
+      
+    checkboxInput("ThreshLine","Show Water Quality Threshold Line",FALSE),
+     
+    checkboxInput("ThreshPoint","Indicate Points with Poor Water Quality",FALSE),
+
+    HTML('<hr>'),
         
-        column(9, 
-          plotOutput("TimeSeries"),
-          htmlOutput("SeriesThresholdSummary"),
-          br(),
-          htmlOutput("SeriesTrendsOut"),
-          textOutput("SeasonOut"),
-          br(),
-          htmlOutput("SeriesRefSummary")
-        )
+    h3(id="TrendHeader","Trends and Seasonal Patterns"),
+     
+    checkboxInput("Trends","Show Seasonal Patterns and Trends",FALSE),
+     
+    checkboxInput("Outliers","Indicate Outliers Not Used in Analysis",FALSE),    
+     
+    HTML('<hr>'),
+     
+    h3(id="DownloadHeader","Downloads"),
+     
+    downloadButton("Data.Download","Save Data (.csv)", class="btn btn-primary") ,
+     
+    downloadButton("Plot.PNG","Save Plot (.png)", class="btn btn-primary"),
+       
+    downloadButton("Plot.JPG","Save Plot (.jpg)", class="btn btn-primary"),
+     
+    HTML('<hr>'),
+    
+    ############### Graphics options
+    
+    h3(id="GraphOptHead","Graphics Options"),
+    
+    div(id="GraphBox",checkboxInput("GraphOptions","Show Graphics Options",FALSE)),
+    
+    column(6,
+      checkboxInput("Legend","Show Legend",TRUE)
+    ),
+      
+    column(6,
+      sliderInput("FontSize", "Change Font Size", min=1, max=2.5,value=1.5, step=.25, width='130px')
+    ),
+      
+   column(12, h4("Points", style="text-align: center",id="PointHeader")),
+      
+    column(6,
+      selectInput("GoodColor","Measurement Color:",choices=ColorNames, selected="Blue", width='130px'),
+      selectInput("BadColor","Poor Quality Color:",choices=ColorNames,selected="Orange", width='130px') 
+    ),
+    
+    column(6,
+      selectInput("OutColor","Outlier Color:",choices=ColorNames,selected="Vermillion", width='130px'),   
+      sliderInput("PointSize", "Change Size", min=.5, max=2.5,value=1.5, step=.25, width='130px')
+    ),
+      
+    column(12,h4("Lines",style="text-align: center", id="LineHeader")),
+    
+   column(6,
+        selectInput("ThColor","Threshold Color:",choices=ColorNames,selected="Orange", width='130px'), 
+        selectInput("TrColor","Trend Color:",choices=ColorNames,selected="Green", width='130px')
+    ),
+      
+    column(6,
+      sliderInput("LineWidth", "Change Width", min=.5, max=4,value=1, step=.5, width='130px')
+    )    
+  ) #end well panel
+  ),
+    
+  
+  mainPanel(
+    tabsetPanel(  
+      tabPanel(h4("Plot"), 
+        plotOutput("WaterPlot"),
+        
+        conditionalPanel(condition = "input.ThreshLine && !(output.WaterPlot==null)" , 
+          h4("Threshold:"),
+          textOutput ("ThresholdSummary"),
+          textOutput ("ThresholdType")
+        ),
+        
+        br(),
+        
+        conditionalPanel(condition = "input.Trends && !(output.WaterPlot==null)" , 
+        h4("Trend Analysis"),
+        textOutput("TrendsOut"),
+        textOutput("SeasonOut")
+        ),
+        
+        br(),
+        
+       conditionalPanel(condition = "input.ThreshLine && !(output.WaterPlot==null)" , 
+          h4("Threshold Reference:"),
+          textOutput("RefSummary")
+       )
+        
       ),
       
-      tabPanel(h4("Comparisons"),
-        column(3, div(style='padding: 5px 10px',class="panel panel-default", 
-                             
-          h3("Comparison:"),
-          radioButtons(inputId="BoxBy", label="Compare by:", choices=c('year', "month", "site"), selected = "year", inline = T),
-          
-          h3("Select Site Data"),
-           
-          parkChooserUI("BoxPark"),
-          siteChooserUI("BoxSite"),
-          paramChooserUI("BoxParam"),
-          yearChooserUI("BoxYears"),
-          
-          checkboxInput("BoxThreshLine","Show Water Quality Threshold Line",FALSE),
-          
-          HTML('<hr>'),
-          
-          splitLayout(h3(id="DownloadHeader","Downloads:"), cellWidths=c("35%","35%","30%"),
-            downloadButton("BoxPlot.PNG","Save Plot (.png)", class="btn btn-primary", style="margin-top: 15px"),
-            downloadButton("BoxPlot.JPG","Save Plot (.jpg)", class="btn btn-primary", style="margin-top: 15px")
-          ),
-          splitLayout( cellWidths="35%",
-            h3("Options:"),
-            actionButton(inputId="GraphicsModal2", label='Graphics Options', class="btn btn-primary",style="margin-top: 15px")
-          ),
-          splitLayout(cellWidths="35%",
-            h3("About:"),
-            actionButton(inputId="AboutComparisons", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px")
-          )
-        )),
-        
-        column(9,
-          plotOutput("BoxPlot"),
-          htmlOutput("BoxThresholdSummary"),
-          br(),
-          htmlOutput("BoxRefSummary")
-        )
-      ),
-
-      tabPanel(h4("Map"),
-        column(2, div(style='padding: 5px 10px',class="panel panel-default",
-          h3("Data to Map"),
-          br(),
-          strong("National Park Service Monitoring"),
-          checkboxInput(inputId="MapNPS", label="Map NPS Water Monitoring", value=T),
-          uiOutput("MapChars"),
-          HTML('<hr >'),
-          br(),
-          strong("US Geological Survey Stream Gages"),
-          checkboxInput(inputId="MapUSGS", label="Map USGS Gaging Stations (slow)", value=F),
-          actionButton(inputId="AboutMap", label="About this Map...", class="btn btn-primary",style="margin-top: 15px")
-          
-        )),
-        column(10, style="padding: 0",
-               leafletOutput("WaterMap",width = "100%", height="900px")
-        ) 
-      ),
-      tabPanel(h4("Raw Data"),
-               column(3, div(style='padding: 5px 10px',class="panel panel-default", 
-                             
-                             h3("Select Site Data"),
-                             parkChooserUI("DataPark"),
-                             siteChooserUI("DataSite"),
-                             paramChooserUI("DataParam")
-               )),
-               column(9,              
-                      DT::dataTableOutput("WaterTable"))
-      ),
+      tabPanel(h4("Raw Data"),dataTableOutput("WaterTable")),
       
       tabPanel(h4("Project Information"),
-      
-        includeHTML(paste0(getwd(),"/www/","projectintro.html"))),
+        
+               includeHTML(paste0(getwd(),"/www/","projectintro.html"))),
       
       tabPanel(h4("Citations & References"),
       
         includeHTML(paste0(getwd(),"/www/","citations.html"))
       )
+      
     )
+    
   )
-)
+
+
+))

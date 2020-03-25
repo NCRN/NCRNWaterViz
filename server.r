@@ -27,7 +27,7 @@ getTresholdText<-function(object, parkcode,sitecode,charname){
 shinyServer(function(input,output,session){
 
 
-#output$Test<-renderText(TimeSite())   #For debugging purposes
+#output$Test<-renderText(exists("TrendsOut()$Analysis"))   #For debugging purposes
 
 #### Reactive Values for Graphics Options with Defaults ####
   
@@ -45,14 +45,13 @@ TimePark<-callModule(parkChooser, id="TimePark", data=WaterData, chosen=reactive
 TimeSite<-callModule(siteChooser, id="TimeSite", data=WaterData, park=reactive(DataOpts$Park), 
                      chosen=reactive(DataOpts$Site))
 TimeParam<-callModule(paramChooser, id="TimeParam",data=WaterData, park=reactive(DataOpts$Park), 
-                      site=reactive(DataOpts$Site), 
-                      chosen=reactive(DataOpts$Param))
+                      site=reactive(DataOpts$Site), chosen=reactive(DataOpts$Param))
 TimeYears<-callModule(yearChooser, id="TimeYears", data=DataUse, chosen=reactive(DataOpts$Years) )
 
 
-observeEvent(TimePark(), DataOpts$Park<-TimePark() )
-observeEvent(TimeSite(), DataOpts$Site<-TimeSite() )
-observeEvent(TimeParam(), DataOpts$Param<-TimeParam() )
+observeEvent(TimePark(), {DataOpts$Park<-TimePark(); DataOpts$Site<-NA; DataOpts$Param<-NA; DataOpts$Years<-NA} )
+observeEvent(TimeSite(), {DataOpts$Site<-TimeSite(); DataOpts$Param<-NA; DataOpts$Years<-NA} )
+observeEvent(TimeParam(), {DataOpts$Param<-TimeParam(); DataOpts$Years<-NA })
 observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 
 #### Graphics Modal Control ####
@@ -168,12 +167,9 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 
 #### Summaries of Seaonality and Trends ####
   output$SeasonOut<-renderText({
-    shiny::validate(
-      need(input$Trends==TRUE, message=FALSE),
-      need(is.atomic(TrendsOut())==FALSE, message=FALSE)
-    )
-    
-    if(Cens() == FALSE){
+
+    req(input$Trends, is.atomic(TrendsOut())==FALSE, TrendsOut()$Analysis)
+    if(Cens() == FALSE) {
     switch(class(TrendsOut()$Analysis),
       "lm" =      c("There is no seasonal pattern in the data."),
       "Cosinor" = c("There is a seasonal pattern in the data. The peak is", strsplit(summary(TrendsOut()$Analysis)$phase," ")[[1]][3],
@@ -188,7 +184,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     req(input$Trends, is.atomic(TrendsOut())==FALSE)
     
     paste(h4("Trend Analysis:"),"\n",
-      if(Cens() == FALSE){
+      if(Cens() == FALSE && !is.na(TrendsOut()$Analysis) ){
         paste(switch(class(TrendsOut()$Analysis),
         "lm" =  {
           if(summary(TrendsOut()$Analysis)$coefficients[2,4]>.05) {("There is no significant trend in the data.")} 
@@ -258,7 +254,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   
 #### Time Series Plot ####
     WaterSeriesOut<-reactive({
-      req(DataUse()$Date, DataUse()$Value)
+      req(DataUse()$Date, DataUse()$Value | DataUse()$ValueCen)
       
       SeriesPlot<- if(Cens() == FALSE){ 
           
@@ -522,7 +518,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   CharIndex<-{getCharInfo(WaterData,info="LowerPoint") %>% is.na %>% not} | {getCharInfo(WaterData,info="UpperPoint") %>% is.na %>% not} 
   NPSchars<-getCharInfo(WaterData, info="CharName")[CharIndex] %>% unique
   names(NPSchars)<-getCharInfo(WaterData, info="DisplayName")[CharIndex] %>% unique
-  output$MapChars<-renderUI( selectizeInput(inputId="MapChar",label="Charactersitic to Map", choices=NPSchars ))
+  output$MapChars<-renderUI( selectizeInput(inputId="MapChar",label="Charactersitic to Map", choices=NPSchars[order(names(NPSchars))] ))
   
   #coloring
   MapColors<-colorNumeric(palette="viridis", domain=c(0,1)) # NPS % meets threshol

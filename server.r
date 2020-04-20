@@ -51,7 +51,7 @@ TimeYears<-callModule(yearChooser, id="TimeYears", data=DataUse, chosen=reactive
 
 observeEvent(TimePark(), {DataOpts$Park<-TimePark(); DataOpts$Site<-NA; DataOpts$Param<-NA; DataOpts$Years<-c(1900,2100)} )
 observeEvent(TimeSite(), {DataOpts$Site<-TimeSite(); DataOpts$Param<-NA; DataOpts$Years<-c(1900,2100)} )
-observeEvent(TimeParam(), {DataOpts$Param<-TimeParam(); DataOpts$Years<-c(1900,2010) })
+observeEvent(TimeParam(), {DataOpts$Param<-TimeParam(); DataOpts$Years<-c(1900,2100) })
 observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 
 #### Graphics Modal Control ####

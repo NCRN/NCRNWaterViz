@@ -49,9 +49,9 @@ TimeParam<-callModule(paramChooser, id="TimeParam",data=WaterData, park=reactive
 TimeYears<-callModule(yearChooser, id="TimeYears", data=DataUse, chosen=reactive(DataOpts$Years) )
 
 
-observeEvent(TimePark(), {DataOpts$Park<-TimePark(); DataOpts$Site<-NA; DataOpts$Param<-NA; DataOpts$Years<-NA} )
-observeEvent(TimeSite(), {DataOpts$Site<-TimeSite(); DataOpts$Param<-NA; DataOpts$Years<-NA} )
-observeEvent(TimeParam(), {DataOpts$Param<-TimeParam(); DataOpts$Years<-NA })
+observeEvent(TimePark(), {DataOpts$Park<-TimePark(); DataOpts$Site<-NA; DataOpts$Param<-NA; DataOpts$Years<-c(1900,2100)} )
+observeEvent(TimeSite(), {DataOpts$Site<-TimeSite(); DataOpts$Param<-NA; DataOpts$Years<-c(1900,2100)} )
+observeEvent(TimeParam(), {DataOpts$Param<-TimeParam(); DataOpts$Years<-c(1900,2010) })
 observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 
 #### Graphics Modal Control ####

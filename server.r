@@ -168,7 +168,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 #### Summaries of Seaonality and Trends ####
   output$SeasonOut<-renderText({
 
-    req(input$Trends, is.atomic(TrendsOut())==FALSE, TrendsOut()$Analysis)
+    req(input$Trends, is.atomic(TrendsOut())==FALSE, isTruthy(TrendsOut()))
     if(Cens() == FALSE) {
     switch(class(TrendsOut()$Analysis),
       "lm" =      c("There is no seasonal pattern in the data."),
@@ -181,10 +181,11 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   })
 
   SeriesTrendsOut<-reactive({
-    req(input$Trends, is.atomic(TrendsOut())==FALSE)
+    req(input$Trends, isTruthy(TrendsOut()))
     
-    paste(h4("Trend Analysis:"),"\n",
-      if(Cens() == FALSE && !is.na(TrendsOut()$Analysis) ){
+    message <- 
+      paste(h4("Trend Analysis:"),"\n",
+        if(Cens() == FALSE && !is.na(TrendsOut()$Analysis)){
         paste(switch(class(TrendsOut()$Analysis),
         "lm" =  {
           if(summary(TrendsOut()$Analysis)$coefficients[2,4]>.05) {("There is no significant trend in the data.")} 
@@ -206,23 +207,23 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
           }
           }, NULL))
         } else if(Cens() == TRUE) {
-          message_notrend <- if(any(TrendsOut()$message=="no trend")){ 
-            paste("The following months were modeled and found no significant trends: ", 
-                  paste0(TrendsOut()$month[TrendsOut()$message=="no trend"], collapse=", "), ". ", sep = "")} 
+          m1 = "Data were separated by month for censored Mann-Kendall test."
           
-          message_notmodeled <- if(any(TrendsOut()$modeled == FALSE)){ 
-            paste("The following months had too few non-censored measurements to analyze for trends and were not plotted: ", 
-                  paste0(TrendsOut()$month[TrendsOut()$modeled == FALSE], collapse=", "), ".", sep = "")} 
-          
-          message_signtrends<- if(any(grepl("There", TrendsOut()$message))){
-            paste(TrendsOut()$message[TrendsOut()$modeled==TRUE & grepl("There", TrendsOut()$message)], sep="")
-          } 
+          m2 = if(any(TrendsOut()$message == "no trend")){
+           paste("The following months were modeled and found no significant trends: ",
+                 paste0(TrendsOut()$month[TrendsOut()$message=="no trend"], collapse=", "), ". ", sep = "")}
 
-          paste0("Data were separated by month for censored Mann-Kendall test.", br(),
-                message_notrend, br(), message_notmodeled, br(), message_signtrends)
-          
-          }
-      )
+          m3 = if(any(TrendsOut()$modeled == FALSE)){
+           paste("The following months had too few non-censored measurements to analyze for trends and were not plotted: ",
+                 paste0(TrendsOut()$month[TrendsOut()$modeled == FALSE], collapse=", "), ".", sep = "")}
+
+          m4 = if(any(grepl("There", TrendsOut()$message))){
+           paste(TrendsOut()$message[TrendsOut()$modeled==TRUE & grepl("There", TrendsOut()$message)], sep="")
+         }
+            paste(m1, m2, m3, m4, sep="\n")
+        }
+          ) 
+  return(message)
   })
   
   output$SeriesTrendsOut<-renderUI(HTML(SeriesTrendsOut()))

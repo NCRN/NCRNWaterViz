@@ -227,11 +227,12 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
         } else if(TrendType() %in% c("nonparCens", "nonpar")){
           
           paste(
-          if(TrendType() == "nonparCens"){ 
-            "Data were separated by month for censored Mann-Kendall test."
-          } else if(TrendType() == "nonpar"){
-            "Data were separated by month for Mann-Kendall test."},
-          "Solid lines are significant trends. Dashed lines are non-significant trends.",
+          if(TrendType() == "nonparCens" && !all(TrendsOut()$modeled == FALSE)){ 
+            "Data were separated by month for censored Mann-Kendall test. 
+            Solid lines are significant trends. Dashed lines are non-significant trends."
+          } else if(TrendType() == "nonpar" && !all(TrendsOut()$modeled == FALSE)){
+            "Data were separated by month for Mann-Kendall test. 
+            Solid lines are significant trends. Dashed lines are non-significant trends."},
           
           if(any(TrendsOut()$message == "no trend")){
            paste(br(), "The following months were modeled and found no significant trends: ",

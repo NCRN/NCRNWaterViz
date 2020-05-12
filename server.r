@@ -10,7 +10,8 @@ library(leaflet)
 library(jsonlite)
 library(purrr)
 library(magrittr)
-
+library(openair)
+library(NADA)
 
 #### Get data ####
 WaterData<-suppressWarnings(importNCRNWater(paste0("./Data/", Network), Data="Water Data.csv", MetaData = "VizMetaData.csv"))
@@ -153,10 +154,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   
   TrendsOut<-reactive({
     req(DataOpts$Park, DataOpts$Site, DataOpts$Param, DataUse(), TrendType(), input$Trends)
-    #shiny::validate(
-    #  need(TrendType() != "notrends",
-    #       message = "Too few measurements to model trends.")
-    #)
+
     if(TrendType() == 'wcosinor'){
       wcosinor(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
     } else if(TrendType() == 'nonpar'){
@@ -187,7 +185,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 #### Summaries of Seaonality and Trends ####
   output$SeasonOut<-renderText({
 
-    req(input$Trends, is.atomic(TrendsOut())==FALSE, isTruthy(TrendsOut()), 
+    req(input$Trends, isTruthy(TrendsOut()), 
         TrendType())
     if(TrendType() == 'wcosinor') {
     switch(class(TrendsOut()$Analysis),
@@ -233,6 +231,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
             "Data were separated by month for censored Mann-Kendall test."
           } else if(TrendType() == "nonpar"){
             "Data were separated by month for Mann-Kendall test."},
+          "Solid lines are significant trends. Dashed lines are non-significant trends.",
           
           if(any(TrendsOut()$message == "no trend")){
            paste(br(), "The following months were modeled and found no significant trends: ",
@@ -252,7 +251,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
           ) #end of nonparCen/nonpar paste
 
         } else if(TrendType() == 'notrends' & TrendsOut() == 'notrends'){
-          paste("There were too few non-censored measurements to analyze for trends.")}
+          paste("There were too few non-censored measurements to plot and analyze for trends.")}
           ) 
   return(outmessage)
   })
@@ -360,7 +359,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
                         legend=if(GraphOpts$Legend) "bottom" else "none") +
                         theme(text=element_text(size=GraphOpts$FontSize*10)) +
                         geom_smooth(data=df3, method = 'lm', se = FALSE, 
-                          aes(x = Date, y = pred_y, linetype = sign), formula = y~x)+
+                          aes(x = Date, y = pred_y, linetype = sign), formula = y~x, color='black')+
                         scale_linetype_manual(values = c('dashed', 'solid'))+ 
                         guides(linetype = FALSE)+
               
@@ -389,7 +388,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
                       sign=as.factor(ifelse(message=="no trend", 0, 1))) %>% 
                filter(message != "Too few data points.") %>% droplevels()
              
-             if(nrow(df3)==0){
+             if(nrow(df3)==0){ #catches case when mann-kendall bootstrap fails due to too little data and/or too many ties
                waterseries(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, char=DataOpts$Param, 
                            #years=DataOpts$Years[1]:DataOpts$Years[2],
                            layers=c("points"),
@@ -397,7 +396,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
                            colors=(GoodCol()),assesscolor=ThCol(), 
                            sizes=c(GraphOpts$PointSize, GraphOpts$LineWidth, GraphOpts$LineWidth),
                            legend=if(GraphOpts$Legend) "bottom" else "none") +
-                 theme(text=element_text(size=GraphOpts$FontSize*10))+
+                           theme(text=element_text(size=GraphOpts$FontSize*10))+
                  
                  {if(input$ThreshPoint && !is.na(Thresholds()[1])) geom_point(data=DataUse()[DataUse()$Value<Thresholds()[1],], 
                                                                               aes(Date,Value), pch=16,size=GraphOpts$PointSize, color=BadCol()) } +
@@ -416,7 +415,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
                          legend=if(GraphOpts$Legend) "bottom" else "none") +
                          theme(text=element_text(size=GraphOpts$FontSize*10)) +
                          geom_smooth(data=df3, method = 'lm', se = FALSE, 
-                           aes(x = Date, y = pred_y, linetype = sign), formula = y~x)+
+                           aes(x = Date, y = pred_y, linetype = sign), formula = y~x, color='black')+
                          scale_linetype_manual(values = c('dashed', 'solid'))+ 
                          guides(linetype = FALSE)+
                

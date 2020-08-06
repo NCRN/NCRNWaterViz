@@ -143,13 +143,13 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   TrendType <-reactive({
     req(DataOpts$Park, DataOpts$Site, DataOpts$Param, DataUse(), DataUse()$num_meas)
     
-    if((nrow(DataUse() %>% filter(num_meas>=4))<=1 && input$Trends==TRUE)||
+    if((nrow(DataUse() %>% filter(num_meas>=6))<=1 && input$Trends==TRUE)||
        input$Trends==FALSE){"notrends"}
     else if(nrow(DataUse())>=24 && input$Trends==TRUE){"wcosinor"}
-    else if(nrow(DataUse() %>% filter(num_meas>=4))>1 && 
-                any((DataUse() %>% filter(num_meas>=4))$Censored)==TRUE && input$Trends==TRUE){"nonparCens"}
-    else if(nrow(DataUse() %>% filter(num_meas>=4))>1 && 
-                all((DataUse() %>% filter(num_meas>=4))$Censored)==FALSE && input$Trends==TRUE){"nonpar"}
+    else if(nrow(DataUse() %>% filter(num_meas>=6))>1 && 
+                any((DataUse() %>% filter(num_meas>=6))$Censored)==TRUE && input$Trends==TRUE){"nonparCens"}
+    else if(nrow(DataUse() %>% filter(num_meas>=6))>1 && 
+                all((DataUse() %>% filter(num_meas>=6))$Censored)==FALSE && input$Trends==TRUE){"nonpar"}
   })
   
   TrendsOut<-reactive({
@@ -246,7 +246,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
                   paste0(TrendsOut()$month[TrendsOut()$modeled == FALSE], collapse=", "), ".", sep = "")},
           
           
-          if(any(grepl(br(),"There", TrendsOut()$message))){
+          if(any(grepl("There", TrendsOut()$message))){
            paste(TrendsOut()$message[TrendsOut()$modeled==TRUE & grepl("There", TrendsOut()$message)], sep="")
           }
           ) #end of nonparCen/nonpar paste

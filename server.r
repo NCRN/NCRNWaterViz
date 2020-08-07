@@ -125,7 +125,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     df1 <- getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
     df <- suppressWarnings(df1 %>% mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
                               group_by(month) %>% mutate(num_meas = sum(!is.na(Value))) %>% 
-                              ungroup())
+                              ungroup()) %>% mutate(num_mos = length(unique(month)))
     
     return(df)
     
@@ -145,22 +145,13 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     
     if(input$Trends == FALSE || (input$Trends == TRUE && max(DataUse()$num_meas)< 6)){"notrends"}
     else if(input$Trends == TRUE && max(DataUse()$num_meas >= 6)){
-               if(nrow(DataUse()) >= 24){"wcosinor"}
-               else if(nrow(DataUse()) < 24 && any(DataUse()$Censored) == TRUE){"nonparCens"}
-               else if(nrow(DataUse()) < 24 && all(DataUse()$Censored) == FALSE){"nonpar"}
+               if(nrow(DataUse()) >= 24 && DataUse()$num_mos >= 6){"wcosinor"}
+               else if((nrow(DataUse()) < 24 || DataUse()$num_mos < 6) && any(DataUse()$Censored) == TRUE){"nonparCens"}
+               else if((nrow(DataUse()) < 24 || DataUse()$num_mos < 6) && all(DataUse()$Censored) == FALSE){"nonpar"}
     }
     
       })
        
-    # if((nrow(DataUse() %>% filter(num_meas>=6))<=1 && input$Trends==TRUE)||
-    #    input$Trends==FALSE){"notrends"}
-    # else if(nrow(DataUse())>=24 && input$Trends==TRUE){"wcosinor"}
-    # else if(nrow(DataUse() %>% filter(num_meas>=6))>1 && 
-    #             any((DataUse() %>% filter(num_meas>=6))$Censored)==TRUE && input$Trends==TRUE){"nonparCens"}
-    # else if(nrow(DataUse() %>% filter(num_meas>=6))>1 && 
-    #             all((DataUse() %>% filter(num_meas>=6))$Censored)==FALSE && input$Trends==TRUE){"nonpar"}
-  # })
-  
   TrendsOut<-reactive({
     req(DataOpts$Park, DataOpts$Site, DataOpts$Param, DataUse(), TrendType(), input$Trends)
 

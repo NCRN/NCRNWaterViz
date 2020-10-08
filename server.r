@@ -125,7 +125,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     df1 <- getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
     df <- suppressWarnings(df1 %>% mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
                               group_by(month) %>% mutate(num_meas = sum(!is.na(Value))) %>% 
-                              ungroup())
+                              ungroup()) %>% mutate(num_mos = length(unique(month)))
     
     return(df)
     
@@ -143,15 +143,15 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   TrendType <-reactive({
     req(DataOpts$Park, DataOpts$Site, DataOpts$Param, DataUse(), DataUse()$num_meas)
     
-    if((nrow(DataUse() %>% filter(num_meas>=4))<=1 && input$Trends==TRUE)||
-       input$Trends==FALSE){"notrends"}
-    else if(nrow(DataUse())>=24 && input$Trends==TRUE){"wcosinor"}
-    else if(nrow(DataUse() %>% filter(num_meas>=4))>1 && 
-                any((DataUse() %>% filter(num_meas>=4))$Censored)==TRUE && input$Trends==TRUE){"nonparCens"}
-    else if(nrow(DataUse() %>% filter(num_meas>=4))>1 && 
-                all((DataUse() %>% filter(num_meas>=4))$Censored)==FALSE && input$Trends==TRUE){"nonpar"}
-  })
-  
+    if(input$Trends == FALSE || (input$Trends == TRUE && max(DataUse()$num_meas)< 6)){"notrends"}
+    else if(input$Trends == TRUE && max(DataUse()$num_meas >= 6)){
+               if(nrow(DataUse()) >= 24 && DataUse()$num_mos >= 6){"wcosinor"}
+               else if((nrow(DataUse()) < 24 || DataUse()$num_mos < 6) && any(DataUse()$Censored) == TRUE){"nonparCens"}
+               else if((nrow(DataUse()) < 24 || DataUse()$num_mos < 6) && all(DataUse()$Censored) == FALSE){"nonpar"}
+    }
+    
+      })
+       
   TrendsOut<-reactive({
     req(DataOpts$Park, DataOpts$Site, DataOpts$Param, DataUse(), TrendType(), input$Trends)
 
@@ -246,7 +246,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
                   paste0(TrendsOut()$month[TrendsOut()$modeled == FALSE], collapse=", "), ".", sep = "")},
           
           
-          if(any(grepl(br(),"There", TrendsOut()$message))){
+          if(any(grepl("There", TrendsOut()$message))){
            paste(TrendsOut()$message[TrendsOut()$modeled==TRUE & grepl("There", TrendsOut()$message)], sep="")
           }
           ) #end of nonparCen/nonpar paste
@@ -334,67 +334,67 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
             lwd=GraphOpts$LineWidth)}
         
         } else if(TrendType() == "nonparCens"){ 
-             df <- suppressWarnings(DataUse() %>% mutate(year.dec = julian(Date)/365, 
-              month = as.factor(lubridate::month(Date, label = TRUE, abbr=FALSE))))
- 
-            df2<- df %>% group_by(Category, Characteristic, Site, Park, month) %>% 
-              mutate(num_meas=length(ValueCen), 
-                     pct_true= sum(ifelse(Censored==FALSE,1,0))/num_meas,
+          
+            df <- DataUse() %>% group_by(Category, Characteristic, Site, Park, month) %>% 
+              mutate(num_meas=sum(!is.na(ValueCen)), 
+                     pct_true= sum(ifelse(Censored==FALSE, 1, 0))/num_meas,
                      adjValueCen = ifelse(Censored==TRUE, max(ValueCen), Value)) %>% 
-              ungroup() %>% arrange(month) %>% droplevels()
+              filter(num_meas >=6) %>% 
+              ungroup() %>% droplevels()
             
-            df3 <- merge(df2, TrendsOut()[,c('month','intercept','slope', 'message')], 
+            df2 <- merge(df, TrendsOut()[,c('month','intercept','slope', 'message')], 
                          by = 'month', all.x = T) %>%
               mutate(pred_y = intercept + slope * year.dec,
-                     sign=as.factor(ifelse(message=="no trend", 0, 1))) %>% 
-              filter(message != "Too few data points.") %>% droplevels()
+                     sign=as.factor(ifelse(message=="no trend", 0, 1)),
+                     month = as.factor(lubridate::month(Date, label = TRUE, abbr = FALSE))) %>% 
+              arrange(month) 
             
+            ylabel = paste0(getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site,
+                                               charname = DataOpts$Param, info = "CategoryDisplay"), " (",
+                            getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site,
+                                        charname = DataOpts$Param, info = "Units"), ")")
           
-            waterseries(df3, parkcode=DataOpts$Park, sitecode=DataOpts$Site, 
+            waterseries(df2, parkcode=DataOpts$Park, sitecode=DataOpts$Site, 
                         char=DataOpts$Param, censored = TRUE, deseason = TRUE,
                         #years=DataOpts$Years[1]:DataOpts$Years[2],
                         layers=c("points"),
-                        assessment=input$SeriesThreshLine, title=Title(),
-                        colors=(GoodCol()),assesscolor=ThCol(), 
+                        assessment=input$SeriesThreshLine, 
+                        title=Title(),
+                        #colors=(GoodCol()),
+                        assesscolor=ThCol(),
                         sizes=c(GraphOpts$PointSize, GraphOpts$LineWidth, GraphOpts$LineWidth),
                         legend=if(GraphOpts$Legend) "bottom" else "none") +
+                        labs(y = ylabel)+
                         theme(text=element_text(size=GraphOpts$FontSize*10)) +
-                        geom_smooth(data=df3, method = 'lm', se = FALSE, 
-                          aes(x = Date, y = pred_y, linetype = sign), formula = y~x, color='black')+
-                        scale_linetype_manual(values = c('dashed', 'solid'))+ 
-                        guides(linetype = FALSE)+
-              
-            {if(input$ThreshPoint && !is.na(Thresholds()[1])) 
-              geom_point(data=df2[df2$ValueCen<Thresholds()[1],],
-              aes(Date,Value), pch=16,size=GraphOpts$PointSize, color=BadCol())} +
-            
-            {if(input$ThreshPoint && !is.na(Thresholds()[2])) 
-              geom_point(data=df2[df2$Value>Thresholds()[2],],
-              aes(Date,Value), pch=16, size=GraphOpts$PointSize, color=BadCol())}
+                        geom_smooth(data=df2, method = 'lm', se = FALSE,
+                        aes(x = Date, y = pred_y, linetype = sign), formula = y~x, color='black')+
+                        scale_linetype_manual(values = c('dashed', 'solid'), guide = 'none')+
+                        
+
+            {if(input$ThreshPoint && !is.na(Thresholds()[1]))
+              geom_point(data=df2[df2$AdjValueCen<Thresholds()[1],],
+              aes(Date,AdjValueCen), pch=16,size=GraphOpts$PointSize, color=BadCol())} +
+
+            {if(input$ThreshPoint && !is.na(Thresholds()[2]))
+              geom_point(data=df2[df2$AdjValueCen>Thresholds()[2],],
+              aes(Date,AdjValueCen), pch=16, size=GraphOpts$PointSize, color=BadCol())}
         
 
         } else if(TrendType() == "nonpar"){ 
 
-             df <- suppressWarnings(DataUse() %>% mutate(year.dec = julian(Date)/365, 
-                   month = as.factor(lubridate::month(Date, 
-                   label = TRUE, abbr=FALSE))))
-             
-             df2<- df %>% group_by(Category, Characteristic, Site, Park, month) %>% 
-               mutate(num_meas=sum(!is.na(Value)), 
-                      adjValueCen = ifelse(Censored==TRUE, max(ValueCen), Value)) %>% 
-               ungroup() %>% arrange(month) %>% droplevels()
-
-             df3 <- merge(df2, TrendsOut()[,c('month','intercept','slope', 'message')], by = 'month', all.x = T) %>%
+             df <- merge(DataUse(), TrendsOut()[,c('month','intercept','slope', 'message')], by = 'month', all.x = T) %>%
                mutate(pred_y = intercept + slope * year.dec,
-                      sign=as.factor(ifelse(message=="no trend", 0, 1))) %>% 
-               filter(message != "Too few data points.") %>% droplevels()
+                      sign=as.factor(ifelse(message=="no trend", 0, 1)),
+                      month = as.factor(lubridate::month(Date, label = TRUE, abbr = FALSE))) %>% 
+               filter(message != "Too few data points.") %>% arrange(month) %>% droplevels()
              
-             if(nrow(df3)==0){ #catches case when mann-kendall bootstrap fails due to too little data and/or too many ties
+             if(nrow(df)==0){ #catches case when mann-kendall bootstrap fails due to too little data and/or too many ties
                waterseries(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, char=DataOpts$Param, 
-                           #years=DataOpts$Years[1]:DataOpts$Years[2],
                            layers=c("points"),
+                           #years=DataOpts$Years[1]:DataOpts$Years[2],
                            assessment=input$SeriesThreshLine, title=Title(),
-                           colors=(GoodCol()),assesscolor=ThCol(), 
+                           colors=(GoodCol()),
+                           assesscolor=ThCol(), 
                            sizes=c(GraphOpts$PointSize, GraphOpts$LineWidth, GraphOpts$LineWidth),
                            legend=if(GraphOpts$Legend) "bottom" else "none") +
                            theme(text=element_text(size=GraphOpts$FontSize*10))+
@@ -406,26 +406,36 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
                                                                               aes(Date,Value), pch=16, size=GraphOpts$PointSize, color=BadCol())} 
              } else{
              
-             waterseries(df3, parkcode=DataOpts$Park, sitecode=DataOpts$Site, 
+             ylabel = paste0(getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site,
+                                         charname = DataOpts$Param, info = "CategoryDisplay"), " (",
+                             getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site,
+                                         charname = DataOpts$Param, info = "Units"), ")") 
+             
+              pointlab = paste0(getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site,
+                                            charname = DataOpts$Param, info = "DisplayName"))
+             
+             waterseries(df, parkcode=DataOpts$Park, sitecode=DataOpts$Site, 
                          char=DataOpts$Param, censored = FALSE, deseason = TRUE,
                          #years=DataOpts$Years[1]:DataOpts$Years[2],
-                         layers="points",
+                         layers=c("points"), 
                          assessment=input$SeriesThreshLine, title=Title(),
-                         colors=(GoodCol()),assesscolor=ThCol(), 
+                         colors=(GoodCol()),
+                         assesscolor=ThCol(), 
                          sizes=c(GraphOpts$PointSize, GraphOpts$LineWidth, GraphOpts$LineWidth),
                          legend=if(GraphOpts$Legend) "bottom" else "none") +
+                         labs(y = ylabel, color = pointlab)+
                          theme(text=element_text(size=GraphOpts$FontSize*10)) +
-                         geom_smooth(data=df3, method = 'lm', se = FALSE, 
+                         geom_smooth(data=df, method = 'lm', se = FALSE, 
                            aes(x = Date, y = pred_y, linetype = sign), formula = y~x, color='black')+
-                         scale_linetype_manual(values = c('dashed', 'solid'))+ 
-                         guides(linetype = FALSE)+
+                         scale_linetype_manual(values = c('dashed', 'solid'), guide = 'none')+ 
+                         
                
                {if(input$ThreshPoint && !is.na(Thresholds()[1])) 
-                 geom_point(data=df2[df2$ValueCen<Thresholds()[1],],
+                 geom_point(data=df[df$Value<Thresholds()[1],],
                             aes(Date,Value), pch=16,size=GraphOpts$PointSize, color=BadCol())} +
                
                {if(input$ThreshPoint && !is.na(Thresholds()[2])) 
-                 geom_point(data=df2[df2$Value>Thresholds()[2],],
+                 geom_point(data=df[df$Value>Thresholds()[2],],
                             aes(Date,Value), pch=16, size=GraphOpts$PointSize, color=BadCol())}
              
            }

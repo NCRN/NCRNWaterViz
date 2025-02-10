@@ -19,7 +19,7 @@ git checkout ncrn_refactor
 renv::status()
 ```
 
-4.  Create a Data/NCRN folder
+4.  Create a Data/NCRN folder. In terminal:
 
 ```{terminal}
 mkdir Data
@@ -36,7 +36,7 @@ cd ../..
 -   click the "Run App" button at the top of your code editor
 
 7.  If the app runs for you, continue on. Otherwise, contact Charlie.
-8.  Make your feature branch(es) from the `ncrn_refactor` branch.
+8.  Make your feature branch(es) from the `ncrn_refactor` branch. In terminal:
 
 ```{terminal}
 git checkout -b <the_name_of_your_branch>

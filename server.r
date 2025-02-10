@@ -14,7 +14,7 @@ library(openair)
 library(NADA)
 
 #### Get data ####
-WaterData<-suppressWarnings(importNCRNWater(paste0("./Data/", Network), Data="Water Data.csv", MetaData = "VizMetaData.csv"))
+WaterData<-suppressWarnings(importNCRNWater(paste0("./Data/", Network), Data=dataname, MetaData = metadataname, wqx=wqx_bool))
 
 ####getThresholdText Function
 getTresholdText<-function(object, parkcode,sitecode,charname){    

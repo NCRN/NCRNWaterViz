@@ -286,7 +286,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   
 #### Time Series Plot ####
     WaterSeriesOut<-reactive({
-      req(DataUse()$Date, TrendType(), DataUse()$Value | DataUse()$ValueCen)
+      req(DataUse()$Date, TrendType(), DataUse()$Value)
       
       SeriesPlot<- if(TrendType() == "notrends"){  
         cens <- ifelse(any(DataUse()$Censored==TRUE), TRUE, FALSE)

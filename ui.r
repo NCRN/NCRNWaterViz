@@ -43,12 +43,19 @@ shinyUI(
           checkboxInput("SeriesThreshLine","Show Water Quality Threshold Line",FALSE),
           checkboxInput("ThreshPoint","Indicate Points with Poor Water Quality",FALSE),
           HTML('<hr>'),
-           
-          h3(id="TrendHeader","Trends and Seasonal Patterns"),
-          checkboxInput("Trends","Show Seasonal Patterns and Trends",FALSE),
-          checkboxInput("Outliers","Indicate Outliers Not Used in Analysis",FALSE),    
-          HTML('<hr>'),
-           
+          
+          # to hide the "Trends" checkbox, we'll make it only conditionally-visible
+          # this approach leaves all of the downstream code intact to avoid breaking dependencies
+          # take the contents out of the conditionalPanel and reload the app to restore functionality
+          conditionalPanel( 
+            condition = "1===2", # a condition that only ever evaluates to FALSE
+            # then we move everything that should be conditionally-visible into the body of the panel
+            h3(id="TrendHeader","Trends and Seasonal Patterns")
+            ,checkboxInput("Trends","Show Seasonal Patterns and Trends",FALSE)
+            ,checkboxInput("Outliers","Indicate Outliers Not Used in Analysis",FALSE)
+            ,HTML('<hr>')
+            ),
+          
           splitLayout(h3(id="DownloadHeader","Downloads:"), cellWidths=c("35%","35%","30%"),
             downloadButton("Plot.PNG","Save Plot (.png)", class="btn btn-primary", style="margin-top: 15px"),
             downloadButton("Plot.JPG","Save Plot (.jpg)", class="btn btn-primary", style="margin-top: 15px")

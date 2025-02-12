@@ -37,7 +37,7 @@ GraphOpts<-reactiveValues(Legend=TRUE, FontSize=1.5, GoodColor="Blue", BadColor=
  
 #### Reactive Values for Choosing Data ####
 
-DataOpts<-reactiveValues(Park=NA, Site=NA, Param=NA, Years=NA, USGSload=FALSE, USGSdata=NA)
+DataOpts<-reactiveValues(Park=NA, Site=NA, Param=NA, Agg=NA, Years=NA, USGSload=FALSE, USGSdata=NA)
 
 #### UI Controls ####  
 
@@ -121,6 +121,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
        need(DataOpts$Park, message="Choose a Park"),
        need(DataOpts$Site, message="Choose a Site"),
        need(DataOpts$Param, message="Choose a Water Quality Parameter")
+      # need(DataOpts$Agg, message="Choose an Aggregation Period")
      )  
     df1 <- getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
     df <- suppressWarnings(df1 %>% mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
@@ -181,8 +182,53 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   OutCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$OutColor,]$Rcolor})
   ThCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$ThColor,]$Rcolor})
   TrCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$TrColor,]$Rcolor})
+  
+#### Summary Table ####
+  SummaryPark<-callModule(parkChooser, id="SummaryPark", data=WaterData, chosen=reactive(DataOpts$Park))
+  SummarySite<-callModule(siteChooser, id="SummarySite", data=WaterData, park=reactive(DataOpts$Park), chosen=reactive(DataOpts$Site))
+  SummaryParam<-callModule(paramChooser, id="SummaryParam",data=WaterData, park=reactive(DataOpts$Park), site=reactive(DataOpts$Site), chosen=reactive(DataOpts$Param))
+#  SummaryAgg<-callModule(aggChooser, id="SummaryAgg", data=WaterData, park=reactive(DataOpts$Park), site=reactive(DataOpts$Site), param=reactive(DataOpts$Param), chosen=reactive(DataOpts$Agg))
+  #DataYears<-callModule(yearChooser, id="DataYears", data=DataUse, chosen=reactive(DataOpts$Years) )
+  
+  observeEvent(SummaryPark(), DataOpts$Park<-SummaryPark() )
+  observeEvent(SummarySite(), DataOpts$Site<-SummarySite() )
+  observeEvent(SummaryParam(), DataOpts$Param<-SummaryParam() )
+ # observeEvent(SummaryAgg(), DataOpts$Agg<-SummaryAgg() )
+  #observeEvent(DataYears(), DataOpts$Years<-DataYears() )
+  
+  #Aggregation Column
+ # agg <- mutate(Aggregation = case_when(input$selected_agg == "month" ~ format(Date, "%b"),
+  #                                 input$selected_agg == "year" ~ format(Date, "%Y"), TRUE ~ "none"))
+summary <- reactive({
+ # req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
+  
+  table <- DataUse() %>%
+     # group_by(SummarySite) %>%
+    summarise(
+      Minimum = round(min(Value, na.rm = TRUE), 2),   
+      Q1 = round(quantile(Value, 0.25, na.rm = TRUE), 2),   
+      Mean = round(mean(Value, na.rm = TRUE), 2),   
+      Median = round(median(Value, na.rm = TRUE), 2),   
+      Q3 = round(quantile(Value, 0.75, na.rm = TRUE),2),  
+      Maximum = round(max(Value, na.rm = TRUE), 2),  
+      SD = round(sd(Value, na.rm = TRUE), 2), 
+      n = n(), .groups = "drop") 
+     # arrange(SummarySite)
+ #   arrange(factor(Aggregation, levels = month.abb), SiteName)
+    return(table)
+  })
+  
+  ### Summary table output ####
+  output$SummaryTable <-DT::renderDataTable({
+    datatable(summary(),
+                   #extensions=c("Buttons","KeyTable"),caption=htmltools::tags$caption(htmltools::h3(Title())),
+                   #class="stripe hover order-column cell-border",filter="top",
+                   rownames=F, options=list(autoWidth=TRUE, dom="Bltirp", buttons=c("copy","csv","excel","pdf","print"), keys=TRUE)
+    )
+})
+  
 
-#### Summaries of Seaonality and Trends ####
+#### Summaries of Seasonality and Trends ####
   output$SeasonOut<-renderText({
 
     req(input$Trends, isTruthy(TrendsOut()), 
@@ -282,7 +328,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   })      
   
   output$SeriesRefSummary<-renderUI(HTML(RefSummary()))
-  
+
   
 #### Time Series Plot ####
     WaterSeriesOut<-reactive({

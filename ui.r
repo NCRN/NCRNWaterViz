@@ -22,8 +22,22 @@ shinyUI(
         ))
       )
     ),
- # mainPanel(
-    tabsetPanel(  
+    
+  
+ #mainPanel(
+  tabsetPanel(  
+    tabPanel(h4("Summary"),
+      column(3, div(style='padding: 5px 10px',class="panel panel-default", 
+                             
+                             h3("Select Site Data"),
+                             parkChooserUI("DataPark"),
+                             siteChooserUI("DataSite"),
+                             paramChooserUI("DataParam")
+               ))
+      ,
+               column(9,              
+                      DT::dataTableOutput("SummaryTable"))
+      ),
       tabPanel(h4("Time Series Plot"),
         column(3, div(style='padding: 5px 10px',class="panel panel-default", 
           

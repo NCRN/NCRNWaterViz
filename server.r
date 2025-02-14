@@ -187,19 +187,17 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   SummaryPark<-callModule(parkChooser, id="SummaryPark", data=WaterData, chosen=reactive(DataOpts$Park))
   SummarySite<-callModule(siteChooser, id="SummarySite", data=WaterData, park=reactive(DataOpts$Park), chosen=reactive(DataOpts$Site))
   SummaryParam<-callModule(paramChooser, id="SummaryParam",data=WaterData, park=reactive(DataOpts$Park), site=reactive(DataOpts$Site), chosen=reactive(DataOpts$Param))
-  #DataYears<-callModule(yearChooser, id="DataYears", data=DataUse, chosen=reactive(DataOpts$Years) )
-  
+
   observeEvent(SummaryPark(), DataOpts$Park<-SummaryPark() )
   observeEvent(SummarySite(), DataOpts$Site<-SummarySite() )
   observeEvent(SummaryParam(), DataOpts$Param<-SummaryParam() )
-  #observeEvent(DataYears(), DataOpts$Years<-DataYears() )
-  
+
 summary <- reactive({
- # req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
-  
-  
   table <- DataUse() %>%
-     # group_by(SummarySite) %>%
+    mutate(Date = as.Date(Date)) %>%
+    mutate(Aggregation = case_when(input$BoxBy == "month" ~ format(Date, "%b"),
+                                   input$BoxBy == "year" ~ format(Date, "%Y"))) %>%
+    group_by(Aggregation) %>%
     summarise(
       Minimum = round(min(Value, na.rm = TRUE), 2),   
       Q1 = round(quantile(Value, 0.25, na.rm = TRUE), 2),   
@@ -208,9 +206,20 @@ summary <- reactive({
       Q3 = round(quantile(Value, 0.75, na.rm = TRUE),2),  
       Maximum = round(max(Value, na.rm = TRUE), 2),  
       SD = round(sd(Value, na.rm = TRUE), 2), 
-      n = n(), .groups = "drop") 
-     # arrange(SummarySite)
- #   arrange(factor(Aggregation, levels = month.abb), SiteName)
+      n = n()) %>% ungroup() %>%
+    arrange(factor(Aggregation, levels = month.abb))
+ # print(table)
+#  table <- DataUse() %>%
+   #  group_by(input$BoxBy) %>%
+ #   summarise(
+  #    Minimum = round(min(Value, na.rm = TRUE), 2),   
+   #   Q1 = round(quantile(Value, 0.25, na.rm = TRUE), 2),   
+    #  Mean = round(mean(Value, na.rm = TRUE), 2),   
+     # Median = round(median(Value, na.rm = TRUE), 2),   
+      #Q3 = round(quantile(Value, 0.75, na.rm = TRUE),2),  
+      #Maximum = round(max(Value, na.rm = TRUE), 2),  
+      #SD = round(sd(Value, na.rm = TRUE), 2), 
+      #n = n(), .groups = "drop") 
     return(table)
   })
   

@@ -560,7 +560,14 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       rownames=F, options=list(autoWidth=TRUE, dom="Bltirp", buttons=c("copy","csv","excel","pdf","print"), keys=TRUE)
                   ),server=F
   )
-  
+
+### Data table output ####
+ output$ExceedancesTable <-DT::renderDataTable(
+   expr=datatable(DataUse(), extensions=c("Buttons","KeyTable"),caption=htmltools::tags$caption(htmltools::h3(Title())),
+                  class="stripe hover order-column cell-border",filter="top",
+      rownames=F, options=list(autoWidth=TRUE, dom="Bltirp", buttons=c("copy","csv","excel","pdf","print"), keys=TRUE)
+                  ),server=F
+  )  
   
 #### Mapping ####
   

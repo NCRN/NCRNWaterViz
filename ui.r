@@ -159,6 +159,17 @@ shinyUI(
                column(9,              
                       DT::dataTableOutput("WaterTable"))
       ),
+      tabPanel(h4("Exceedances"),
+               column(3, div(style='padding: 5px 10px',class="panel panel-default", 
+                             
+                             h3("Select Site Data"),
+                             parkChooserUI("DataPark"),
+                             siteChooserUI("DataSite"),
+                             paramChooserUI("DataParam")
+               )),
+               column(9,              
+                      DT::dataTableOutput("ExceedancesTable"))
+      ),
       
       tabPanel(h4("Project Information"),
       

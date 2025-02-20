@@ -121,9 +121,8 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
        need(DataOpts$Park, message="Choose a Park"),
        need(DataOpts$Site, message="Choose a Site"),
        need(DataOpts$Param, message="Choose a Water Quality Parameter")
-      # need(DataOpts$Agg, message="Choose an Aggregation Period")
      )  
-    df1 <- getWData(WaterData, parkcode=DataOpts$Park, sitecode=if(input$BoxBy !="site") DataOpts$Site else NA, years=if(input$BoxBy !="year") DataOpts$Years[1]:DataOpts$Years[2] else NA, charname=DataOpts$Param)
+    df1 <- getWData(WaterData, parkcode=DataOpts$Park, sitecode=if(input$BoxBy !="site") DataOpts$Site else NA, charname=DataOpts$Param)
     df <- suppressWarnings(df1 %>% mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
                               group_by(month) %>% mutate(num_meas = sum(!is.na(Value))) %>% 
                               ungroup()) %>% mutate(num_mos = length(unique(month)))
@@ -192,12 +191,17 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   observeEvent(SummarySite(), DataOpts$Site<-SummarySite() )
   observeEvent(SummaryParam(), DataOpts$Param<-SummaryParam() )
 
+  
 summary <- reactive({
-  table <- DataUse() %>%
+  table <- DataUse () %>%
+    
+    #Aggregation
+    filter(Site %in% DataOpts$Site) %>%
     mutate(Date = as.Date(Date)) %>%
     mutate(Aggregation = case_when(input$BoxBy == "month" ~ format(Date, "%b"),
-                                   input$BoxBy == "year" ~ format(Date, "%Y"))) %>%
-    group_by(Aggregation) %>%
+                                   input$BoxBy == "year" ~ format(Date, "%Y"), TRUE ~ as.character(Site))) %>%
+ 
+    group_by(Aggregation, Site) %>%
     summarise(
       Minimum = round(min(Value, na.rm = TRUE), 2),   
       Q1 = round(quantile(Value, 0.25, na.rm = TRUE), 2),   
@@ -206,23 +210,12 @@ summary <- reactive({
       Q3 = round(quantile(Value, 0.75, na.rm = TRUE),2),  
       Maximum = round(max(Value, na.rm = TRUE), 2),  
       SD = round(sd(Value, na.rm = TRUE), 2), 
-      n = n()) %>% ungroup() %>%
-    arrange(factor(Aggregation, levels = month.abb))
- # print(table)
-#  table <- DataUse() %>%
-   #  group_by(input$BoxBy) %>%
- #   summarise(
-  #    Minimum = round(min(Value, na.rm = TRUE), 2),   
-   #   Q1 = round(quantile(Value, 0.25, na.rm = TRUE), 2),   
-    #  Mean = round(mean(Value, na.rm = TRUE), 2),   
-     # Median = round(median(Value, na.rm = TRUE), 2),   
-      #Q3 = round(quantile(Value, 0.75, na.rm = TRUE),2),  
-      #Maximum = round(max(Value, na.rm = TRUE), 2),  
-      #SD = round(sd(Value, na.rm = TRUE), 2), 
-      #n = n(), .groups = "drop") 
-    return(table)
-  })
+      n = n(), .groups = "drop") %>%
+    arrange(factor(Aggregation, levels = month.abb), Site)
   
+  return(table)
+})
+
   ### Summary table output ####
   output$SummaryTable <-DT::renderDataTable({
     datatable(summary(),

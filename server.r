@@ -130,6 +130,25 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     return(df)
     
     })
+#### Multiple site selections ####
+  DataUseMultiple<-reactive({ 
+    shiny::validate(
+      need(DataOpts$Park, message="Choose a Park"),
+      need(DataOpts$Site, message="Choose a Site"),
+      need(DataOpts$Param, message="Choose a Water Quality Parameter")
+    )  
+    combined_data <- data.frame()
+    for (site in DataOpts$Site) {
+      site_data <- NCRNWater::getWData(NCRN, parkcode=DataOpts$Park, sitecode= site, charname=DataOpts$Param)
+      combined_data <- dplyr::bind_rows(combined_data, site_data)
+    }
+    df <- suppressWarnings(combined_data %>% mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
+                             group_by(month) %>% mutate(num_meas = sum(!is.na(Value))) %>% 
+                             ungroup()) %>% mutate(num_mos = length(unique(month)))
+    return(df)
+  })
+  
+#### Thresholds ####
   
   Thresholds<-reactive({
     c(getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="LowerPoint"),
@@ -193,7 +212,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 
   
 summary <- reactive({
-  table <- DataUse () %>%
+  table <- DataUseMultiple () %>%
     
     #Aggregation
    # filter(Site %in% DataOpts$Site) %>%
@@ -243,7 +262,9 @@ summary_text_data <- reactive({
   lowest_agg_label <- if (input$BoxBy == "site") "" else paste0(" in ", lowest_value$Aggregation)
   
   #Generate text
-  paste0("The average mean value for site ", paste(avg_summary$Site, "is ", round(avg_summary$avg_mean, 2), collapse = "; "), ". The average median value for site ", paste(avg_summary$Site, "is ", round(avg_summary$avg_median, 2), collapse = "; "), ". The highest ", DataOpts$Param, " value was ", round(highest_value$Maximum, 2), " at ", highest_value$Site, highest_agg_label, ", while the lowest value was ", round(lowest_value$Minimum, 2), " at ", lowest_value$Site, lowest_agg_label, ".")
+  paste0("The average mean value for site ", paste(avg_summary$Site, "is ", round(avg_summary$avg_mean, 2), collapse = "; "), 
+         ". The average median value for site ", paste(avg_summary$Site, "is ", round(avg_summary$avg_median, 2), collapse = "; "), 
+         ". The highest ", DataOpts$Param, " value was ", round(highest_value$Maximum, 2), " at ", highest_value$Site, highest_agg_label, ", while the lowest value was ", round(lowest_value$Minimum, 2), " at ", lowest_value$Site, lowest_agg_label, ".")
 })
 output$summary_text <- renderText({
   summary_text_data()

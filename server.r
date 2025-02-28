@@ -122,7 +122,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
        need(DataOpts$Site, message="Choose a Site"),
        need(DataOpts$Param, message="Choose a Water Quality Parameter")
      )  
-    df1 <- getWData(WaterData, parkcode=DataOpts$Park, sitecode=if(input$BoxBy !="site") DataOpts$Site else NA, charname=DataOpts$Param)
+    df1 <- getWData(WaterData, parkcode=DataOpts$Park, sitecode=NA, charname=DataOpts$Param)
     df <- suppressWarnings(df1 %>% mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
                               group_by(month) %>% mutate(num_meas = sum(!is.na(Value))) %>% 
                               ungroup()) %>% mutate(num_mos = length(unique(month)))
@@ -196,7 +196,7 @@ summary <- reactive({
   table <- DataUse () %>%
     
     #Aggregation
-    filter(Site %in% DataOpts$Site) %>%
+   # filter(Site %in% DataOpts$Site) %>%
     mutate(Date = as.Date(Date)) %>%
     mutate(Aggregation = case_when(input$BoxBy == "month" ~ format(Date, "%b"),
                                    input$BoxBy == "year" ~ format(Date, "%Y"), TRUE ~ as.character(Site))) %>%

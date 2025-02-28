@@ -224,7 +224,31 @@ summary <- reactive({
                    rownames=F, options=list(autoWidth=TRUE, dom="Bltirp", buttons=c("copy","csv","excel","pdf","print"), keys=TRUE)
     )
 })
+#Summary text
+summary_text_data <- reactive({
+  text_data <- summary()
+
+  avg_summary <- text_data %>%
+    group_by(Site) %>%
+    summarize(
+      avg_mean = mean(Mean, na.rm = TRUE),
+      avg_median = mean(Median, na.rm = TRUE), .groups = "drop")
   
+  #Highest/Lowest values
+  highest_value <- text_data[which.max(text_data$Maximum), ]
+  lowest_value <- text_data[which.min(text_data$Minimum), ]
+  
+  #Month/year label if aggregated
+  highest_agg_label <- if (input$BoxBy == "site") "" else paste0(" in ", highest_value$Aggregation)
+  lowest_agg_label <- if (input$BoxBy == "site") "" else paste0(" in ", lowest_value$Aggregation)
+  
+  #Generate text
+  paste0("The average mean value for site ", paste(avg_summary$Site, "is ", round(avg_summary$avg_mean, 2), collapse = "; "), ". The average median value for site ", paste(avg_summary$Site, "is ", round(avg_summary$avg_median, 2), collapse = "; "), ". The highest ", DataOpts$Param, " value was ", round(highest_value$Maximum, 2), " at ", highest_value$Site, highest_agg_label, ", while the lowest value was ", round(lowest_value$Minimum, 2), " at ", lowest_value$Site, lowest_agg_label, ".")
+})
+output$summary_text <- renderText({
+  summary_text_data()
+})
+
 
 #### Summaries of Seasonality and Trends ####
   output$SeasonOut<-renderText({

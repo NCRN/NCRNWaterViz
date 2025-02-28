@@ -38,7 +38,8 @@ shinyUI(
                              paramChooserUI("DataParam")
                ))
       ,
-               column(9,              
+               column(9,
+                      textOutput("summary_text"),
                       DT::dataTableOutput("SummaryTable"))
       ),
       tabPanel(h4("Time Series Plot"),

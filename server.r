@@ -139,7 +139,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     )  
     combined_data <- data.frame()
     for (site in DataOpts$Site) {
-      site_data <- NCRNWater::getWData(NCRN, parkcode=DataOpts$Park, sitecode= site, charname=DataOpts$Param)
+      site_data <- getWData(WaterData, parkcode=DataOpts$Park, sitecode= site, charname=DataOpts$Param)
       combined_data <- dplyr::bind_rows(combined_data, site_data)
     }
     df <- suppressWarnings(combined_data %>% mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 

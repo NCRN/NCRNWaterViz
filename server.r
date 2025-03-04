@@ -204,7 +204,8 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 #### Summary Table ####
   SummaryPark<-callModule(parkChooser, id="SummaryPark", data=WaterData, chosen=reactive(DataOpts$Park))
   SummarySite<-callModule(siteChooser, id="SummarySite", data=WaterData, park=reactive(DataOpts$Park), chosen=reactive(DataOpts$Site))
-  SummaryParam<-callModule(paramChooser, id="SummaryParam",data=WaterData, park=reactive(DataOpts$Park), site=reactive(DataOpts$Site), chosen=reactive(DataOpts$Param))
+  SummaryParam<-callModule(paramChooser, id="SummaryParam",data=WaterData, park=reactive(DataOpts$Park), site=reactive(DataOpts$Site), 
+                           chosen=reactive(DataOpts$Param))
 
   observeEvent(SummaryPark(), DataOpts$Park<-SummaryPark() )
   observeEvent(SummarySite(), DataOpts$Site<-SummarySite() )
@@ -220,7 +221,7 @@ summary <- reactive({
     mutate(Aggregation = case_when(input$BoxBy == "month" ~ format(Date, "%b"),
                                    input$BoxBy == "year" ~ format(Date, "%Y"), TRUE ~ as.character(Site))) %>%
  
-    group_by(Aggregation, Site) %>%
+      group_by(Aggregation, Site) %>%
     summarise(
       Minimum = round(min(Value, na.rm = TRUE), 2),   
       Q1 = round(quantile(Value, 0.25, na.rm = TRUE), 2),   
@@ -235,18 +236,31 @@ summary <- reactive({
   return(table)
 })
 
-  ### Summary table output ####
-  output$SummaryTable <-DT::renderDataTable({
-    datatable(summary(),
-                   #extensions=c("Buttons","KeyTable"),caption=htmltools::tags$caption(htmltools::h3(Title())),
-                   #class="stripe hover order-column cell-border",filter="top",
-                   rownames=F, options=list(autoWidth=TRUE, dom="Bltirp", buttons=c("copy","csv","excel","pdf","print"), keys=TRUE)
-    )
+### Summary table output ####
+output$SummaryTable <-DT::renderDataTable({
+ # table <- summary()
+  
+  group_headers <- summary() %>%
+  distinct(Aggregation) %>%
+  mutate(Site = Aggregation, Minimum = NA, Q1 = NA, Mean = NA, Median = NA, Q3 = NA, Maximum = NA, SD = NA, n = NA)
+            
+summary_table <- bind_rows(group_headers, summary()) %>%
+  arrange(Aggregation, Site) %>%
+  mutate(is_group = Site == Aggregation)
+            
+datatable( 
+  summary_table, 
+  rownames=F, options=list(pageLength = 100, autoWidth=TRUE, ordering = FALSE)) %>%
+  formatStyle("Site", fontWeight = styleEqual(summary_table$Aggregation[summary_table$is_group], rep("bold", sum(summary_table$is_group))), 
+                          backgroundColor = styleEqual(summary_table$Aggregation[summary_table$is_group], rep("#f0f0f0", sum(summary_table$is_group))))
+            
 })
+
+
 #Summary text
 summary_text_data <- reactive({
   text_data <- summary()
-
+  
   avg_summary <- text_data %>%
     group_by(Site) %>%
     summarize(
@@ -269,6 +283,7 @@ summary_text_data <- reactive({
 output$summary_text <- renderText({
   summary_text_data()
 })
+
 
 
 #### Summaries of Seasonality and Trends ####

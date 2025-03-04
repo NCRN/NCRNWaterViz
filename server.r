@@ -238,8 +238,6 @@ summary <- reactive({
 
 ### Summary table output ####
 output$SummaryTable <-DT::renderDataTable({
- # table <- summary()
-  
   group_headers <- summary() %>%
   distinct(Aggregation) %>%
   mutate(Site = Aggregation, Minimum = NA, Q1 = NA, Mean = NA, Median = NA, Q3 = NA, Maximum = NA, SD = NA, n = NA)
@@ -249,13 +247,12 @@ summary_table <- bind_rows(group_headers, summary()) %>%
   mutate(is_group = Site == Aggregation)
             
 datatable( 
-  summary_table, 
+  summary_table %>%
+    select(-Aggregation, -is_group), 
   rownames=F, options=list(pageLength = 100, autoWidth=TRUE, ordering = FALSE)) %>%
   formatStyle("Site", fontWeight = styleEqual(summary_table$Aggregation[summary_table$is_group], rep("bold", sum(summary_table$is_group))), 
                           backgroundColor = styleEqual(summary_table$Aggregation[summary_table$is_group], rep("#f0f0f0", sum(summary_table$is_group))))
-            
 })
-
 
 #Summary text
 summary_text_data <- reactive({

@@ -163,9 +163,9 @@ shinyUI(
                column(3, div(style='padding: 5px 10px',class="panel panel-default", 
                              
                              h3("Select Site Data"),
-                             parkChooserUI("DataPark"),
-                             siteChooserUI("DataSite"),
-                             paramChooserUI("DataParam")
+                             parkChooserUI("DataParkExceedances"),
+                             siteChooserUI("DataSiteExceedances"),
+                             paramChooserUI("DataParamExceedances")
                )),
                column(9,              
                       DT::dataTableOutput("ExceedancesTable"))

@@ -561,6 +561,16 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
                   ),server=F
   )
 
+#### Exceedances Controls ####
+  ExceedancesPark<-callModule(parkChooser, id="DataParkExceedances", data=WaterData, chosen=reactive(DataOpts$Park))
+  ExceedancesSite<-callModule(siteChooser, id="DataSiteExceedances", data=WaterData, park=reactive(DataOpts$Park), chosen=reactive(DataOpts$Site))
+  ExceedancesParam<-callModule(paramChooser, id="DataParamExceedances",data=WaterData, park=reactive(DataOpts$Park), site=reactive(DataOpts$Site), 
+                       chosen=reactive(DataOpts$Param))
+  
+  observeEvent(ExceedancesPark(), DataOpts$Park<-ExceedancesPark() )
+  observeEvent(ExceedancesSite(), DataOpts$Site<-ExceedancesSite() )
+  observeEvent(ExceedancesParam(), DataOpts$Param<-ExceedancesParam() )
+  
 ### Exceedances data use function ####
   ExceedancesDataUse<-reactive({ 
     shiny::validate(

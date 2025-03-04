@@ -561,12 +561,45 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
                   ),server=F
   )
 
-### Data table output ####
- output$ExceedancesTable <-DT::renderDataTable(
-   expr=datatable(DataUse(), extensions=c("Buttons","KeyTable"),caption=htmltools::tags$caption(htmltools::h3(Title())),
-                  class="stripe hover order-column cell-border",filter="top",
-      rownames=F, options=list(autoWidth=TRUE, dom="Bltirp", buttons=c("copy","csv","excel","pdf","print"), keys=TRUE)
-                  ),server=F
+### Exceedances data use function ####
+  ExceedancesDataUse<-reactive({ 
+    shiny::validate(
+      need(DataOpts$Park, message="Choose a Park"),
+      need(DataOpts$Site, message="Choose a Site"),
+      need(DataOpts$Param, message="Choose a Water Quality Parameter")
+    )  
+    df2 <- getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
+    df1 <- suppressWarnings(df2 %>% mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
+                              group_by(month) %>% mutate(num_meas = sum(!is.na(Value))) %>% 
+                              ungroup()) %>% mutate(num_mos = length(unique(month)))
+    df <- df1[, c("OrganizationFormalName", "ActivityMediaSubdivisionName", "Date", "Characteristic", "Value", "ResultMeasure.MeasureUnitCode")]
+    
+    LowerThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="LowerDescription")
+    UpperThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="UpperDescription")
+    LowerPoint<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="LowerPoint")
+    UpperPoint<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="UpperPoint")
+    
+    if(!is.na(LowerPoint)) {
+      df <- df[df$Value < LowerPoint, ]
+      df$LowerThreshold <- LowerThreshold
+    }
+    
+    if(!is.na(UpperPoint)) {
+      df <- df[df$Value > UpperPoint, ]
+      df$UpperThreshold <- UpperThreshold
+    }
+    
+    
+    return(df)
+    
+  })
+  
+### Exceedances data table output ####
+  output$ExceedancesTable <-DT::renderDataTable(
+    expr=datatable(ExceedancesDataUse(), extensions=c("Buttons","KeyTable"),caption=htmltools::tags$caption(htmltools::h3(Title())),
+                   class="stripe hover order-column cell-border",filter="top",
+                   rownames=F, options=list(autoWidth=TRUE, dom="Bltirp", buttons=c("copy","csv","excel","pdf","print"), keys=TRUE)
+    ),server=F
   )  
   
 #### Mapping ####

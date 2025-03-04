@@ -212,17 +212,16 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   observeEvent(SummaryParam(), DataOpts$Param<-SummaryParam() )
 
   
-summary <- reactive({
-  table <- DataUseMultiple () %>%
+  summary <- reactive({
+    table <- DataUseMultiple () %>%
     
     #Aggregation
-   # filter(Site %in% DataOpts$Site) %>%
     mutate(Date = as.Date(Date)) %>%
     mutate(Aggregation = case_when(input$BoxBy == "month" ~ format(Date, "%b"),
                                    input$BoxBy == "year" ~ format(Date, "%Y"), TRUE ~ as.character(Site))) %>%
  
-      group_by(Aggregation, Site) %>%
-    summarise(
+    group_by(Aggregation, Site) %>%
+      summarise(
       Minimum = round(min(Value, na.rm = TRUE), 2),   
       Q1 = round(quantile(Value, 0.25, na.rm = TRUE), 2),   
       Mean = round(mean(Value, na.rm = TRUE), 2),   
@@ -231,57 +230,70 @@ summary <- reactive({
       Maximum = round(max(Value, na.rm = TRUE), 2),  
       SD = round(sd(Value, na.rm = TRUE), 2), 
       n = n(), .groups = "drop") %>%
-    arrange(factor(Aggregation, levels = month.abb), Site)
+      arrange(factor(Aggregation, levels = month.abb), Site)
   
   return(table)
 })
 
 ### Summary table output ####
-output$SummaryTable <-DT::renderDataTable({
-  group_headers <- summary() %>%
-  distinct(Aggregation) %>%
-  mutate(Site = Aggregation, Minimum = NA, Q1 = NA, Mean = NA, Median = NA, Q3 = NA, Maximum = NA, SD = NA, n = NA)
+  output$SummaryTable <-DT::renderDataTable({
+    table <- summary()
+  
+    if (input$BoxBy %in% c("month", "year")) {
+      group_headers <- table %>%
+      distinct(Aggregation) %>%
+      mutate(Site = Aggregation, Minimum = NA, Q1 = NA, Mean = NA, Median = NA, Q3 = NA, Maximum = NA, SD = NA, n = NA)
             
-summary_table <- bind_rows(group_headers, summary()) %>%
-  arrange(Aggregation, Site) %>%
-  mutate(is_group = Site == Aggregation)
-            
-datatable( 
-  summary_table %>%
-    select(-Aggregation, -is_group), 
+    summary_table <- bind_rows(group_headers, table) %>%
+    mutate(Aggregation = factor(Aggregation, levels = c(month.abb, 
+                                                        sort(unique(group_headers$Aggregation[!group_headers$Aggregation %in% month.abb & 
+                                                                                              !is.na(as.numeric(table$Aggregation))]), decreasing = FALSE)))) %>%
+  
+    arrange(Aggregation, desc(is.na(Minimum)), Site) %>%
+    mutate(is_group = Site == Aggregation)
+    } else {
+    summary_table <- table %>%
+      arrange(Site) %>%
+      mutate(is_group = FALSE)
+    }
+    summary_table <- summary_table %>%
+      select(-Aggregation, -is_group)
+  
+  datatable( 
+  summary_table,
   rownames=F, options=list(pageLength = 100, autoWidth=TRUE, ordering = FALSE)) %>%
-  formatStyle("Site", fontWeight = styleEqual(summary_table$Aggregation[summary_table$is_group], rep("bold", sum(summary_table$is_group))), 
-                          backgroundColor = styleEqual(summary_table$Aggregation[summary_table$is_group], rep("#f0f0f0", sum(summary_table$is_group))))
+  formatStyle("Site", fontWeight = styleEqual(if(exists("group_headers")) 
+    group_headers$Site else character(0), rep("bold", if (exists("group_headers")) nrow(group_headers) else 0)),
+                          backgroundColor = styleEqual(if (exists("group_headers")) group_headers$Site else character(0), rep("#f0f0f0", if (exists("group_headers")) nrow(group_headers) else 0)))
 })
 
 #Summary text
-summary_text_data <- reactive({
-  text_data <- summary()
+  summary_text_data <- reactive({
+    text_data <- summary()
   
-  avg_summary <- text_data %>%
+    avg_summary <- text_data %>%
     group_by(Site) %>%
     summarize(
       avg_mean = mean(Mean, na.rm = TRUE),
       avg_median = mean(Median, na.rm = TRUE), .groups = "drop")
   
-  #Highest/Lowest values
-  highest_value <- text_data[which.max(text_data$Maximum), ]
-  lowest_value <- text_data[which.min(text_data$Minimum), ]
+    #Highest/Lowest values
+    highest_value <- text_data[which.max(text_data$Maximum), ]
+    lowest_value <- text_data[which.min(text_data$Minimum), ]
   
-  #Month/year label if aggregated
-  highest_agg_label <- if (input$BoxBy == "site") "" else paste0(" in ", highest_value$Aggregation)
-  lowest_agg_label <- if (input$BoxBy == "site") "" else paste0(" in ", lowest_value$Aggregation)
+    #Month/year label if aggregated
+    highest_agg_label <- if (input$BoxBy == "site") "" else paste0(" in ", highest_value$Aggregation)
+    lowest_agg_label <- if (input$BoxBy == "site") "" else paste0(" in ", lowest_value$Aggregation)
   
-  #Generate text
-  paste0("The average mean value for site ", paste(avg_summary$Site, "is ", round(avg_summary$avg_mean, 2), collapse = "; "), 
+    #Generate text
+    paste0("The average mean value for site ", paste(avg_summary$Site, "is ", round(avg_summary$avg_mean, 2), collapse = "; "), 
          ". The average median value for site ", paste(avg_summary$Site, "is ", round(avg_summary$avg_median, 2), collapse = "; "), 
          ". The highest ", DataOpts$Param, " value was ", round(highest_value$Maximum, 2), " at ", highest_value$Site, highest_agg_label, ", while the lowest value was ", round(lowest_value$Minimum, 2), " at ", lowest_value$Site, lowest_agg_label, ".")
 })
-output$summary_text <- renderText({
-  summary_text_data()
+  output$summary_text <- renderText({
+    summary_text_data()
 })
-
-
+  
 
 #### Summaries of Seasonality and Trends ####
   output$SeasonOut<-renderText({

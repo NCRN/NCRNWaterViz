@@ -229,7 +229,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       Maximum = round(max(Value, na.rm = TRUE), 2),  
       SD = round(sd(Value, na.rm = TRUE), 2), 
       n = n(), .groups = "drop") %>%
-      arrange(factor(Aggregation, levels = month.abb), Site)
+      arrange(factor(Aggregation, levels = month.name), Site)
   
   return(table)
 })
@@ -238,14 +238,17 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   output$SummaryTable <-DT::renderDataTable({
     table <- summary()
     
+    table <- table %>%
+    mutate(Aggregation = ifelse(Aggregation %in% month.abb, 
+                                month.name[match(Aggregation, month.abb)], Aggregation))
     if (input$BoxBy %in% c("month", "year")) {
       group_headers <- table %>%
       distinct(Aggregation) %>%
       mutate(Site = Aggregation, Minimum = NA, Q1 = NA, Mean = NA, Median = NA, Q3 = NA, Maximum = NA, SD = NA, n = NA)
     
     summary_table <- bind_rows(group_headers, table) %>%
-      mutate(Aggregation = factor(Aggregation, levels = c(month.abb, 
-                                                          sort(unique(as.character(table$Aggregation[!table$Aggregation %in% month.abb])))))) %>%
+      mutate(Aggregation = factor(Aggregation, levels = c(month.name, 
+                                                          sort(unique(as.character(table$Aggregation[!table$Aggregation %in% month.name])))))) %>%
       
       arrange(Aggregation, desc(is.na(Minimum)), Site) %>%
       mutate(is_group = Site == Aggregation)
@@ -263,9 +266,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     
     formatStyle("Site", fontWeight = if(input$BoxBy %in% c("month", "year")) {
       styleEqual(group_headers$Site, rep("bold", nrow(group_headers)))
-    } else if (input$BoxBy == "site")
-    { "bold"
-    } else {
+    } else if (input$BoxBy == "site") { "bold" } else { 
       NULL},
       backgroundColor = if(input$BoxBy %in% c("month", "year")) {
         styleEqual(group_headers$Site, rep("#f0f0f0", nrow(group_headers)))

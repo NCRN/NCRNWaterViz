@@ -31,7 +31,7 @@ shinyUI(
                              
                              h3("Select Site Data"),
                     
-                    radioButtons(inputId="BoxBy", label="Compare by:", choices=c("year", "month", "site"), selected = "year", inline = T),
+                    radioButtons(inputId="SummaryBoxBy", label="Compare by:", choices=c("year", "month", "site"), selected = "year", inline = T),
                     
                              parkChooserUI("SummaryPark"),
                              siteChooserUI("SummarySite"),

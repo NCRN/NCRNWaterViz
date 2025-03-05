@@ -216,8 +216,8 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     
     #Aggregation
     mutate(Date = as.Date(Date)) %>%
-    mutate(Aggregation = case_when(input$BoxBy == "month" ~ format(Date, "%b"),
-                                   input$BoxBy == "year" ~ format(Date, "%Y"), TRUE ~ as.character(Site))) %>%
+    mutate(Aggregation = case_when(input$SummaryBoxBy == "month" ~ format(Date, "%b"),
+                                   input$SummaryBoxBy == "year" ~ format(Date, "%Y"), TRUE ~ as.character(Site))) %>%
  
     group_by(Aggregation, Site) %>%
       summarise(
@@ -241,7 +241,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     table <- table %>%
     mutate(Aggregation = ifelse(Aggregation %in% month.abb, 
                                 month.name[match(Aggregation, month.abb)], Aggregation))
-    if (input$BoxBy %in% c("month", "year")) {
+    if (input$SummaryBoxBy %in% c("month", "year")) {
       group_headers <- table %>%
       distinct(Aggregation) %>%
       mutate(Site = Aggregation, Minimum = NA, Q1 = NA, Mean = NA, Median = NA, Q3 = NA, Maximum = NA, SD = NA, n = NA)
@@ -264,11 +264,11 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     summary_table,
     rownames=F, options=list(pageLength = 100, autoWidth=TRUE, ordering = FALSE)) %>%
     
-    formatStyle("Site", fontWeight = if(input$BoxBy %in% c("month", "year")) {
+    formatStyle("Site", fontWeight = if(input$SummaryBoxBy %in% c("month", "year")) {
       styleEqual(group_headers$Site, rep("bold", nrow(group_headers)))
-    } else if (input$BoxBy == "site") { "bold" } else { 
+    } else if (input$SummaryBoxBy == "site") { "bold" } else { 
       NULL},
-      backgroundColor = if(input$BoxBy %in% c("month", "year")) {
+      backgroundColor = if(input$SummaryBoxBy %in% c("month", "year")) {
         styleEqual(group_headers$Site, rep("#f0f0f0", nrow(group_headers)))
       } else {
         NULL
@@ -291,8 +291,8 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     lowest_value <- text_data[which.min(text_data$Minimum), ]
   
     #Month/year label if aggregated
-    highest_agg_label <- if (input$BoxBy == "site") "" else paste0(" in ", highest_value$Aggregation)
-    lowest_agg_label <- if (input$BoxBy == "site") "" else paste0(" in ", lowest_value$Aggregation)
+    highest_agg_label <- if (input$SummaryBoxBy == "site") "" else paste0(" in ", highest_value$Aggregation)
+    lowest_agg_label <- if (input$SummaryBoxBy == "site") "" else paste0(" in ", lowest_value$Aggregation)
   
     #Generate text
     paste0("The average mean value for site ", paste(avg_summary$Site, "is ", round(avg_summary$avg_mean, 2), collapse = "; "), 

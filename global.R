@@ -63,11 +63,6 @@ siteChooser<-function(input, output, session, data, park, chosen){
          getSiteInfo(data, parkcode=park(), info="SiteName")  )))
      )
    })
-  
-#  observeEvent(park(), {  
- #   filtered_sites <- getSiteInfo(data, parkcode = park(), sitecode = NA, info = "SiteName")
-  #  updateSelectInput(session, inputId = "SiteIn", choices = filtered_sites) 
-#  })
   return(reactive(input$SiteIn))
 }
 

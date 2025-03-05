@@ -210,7 +210,6 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   observeEvent(SummaryPark(), DataOpts$Park<-SummaryPark() )
   observeEvent(SummarySite(), DataOpts$Site<-SummarySite() )
   observeEvent(SummaryParam(), DataOpts$Param<-SummaryParam() )
-
   
   summary <- reactive({
     table <- DataUseMultiple () %>%
@@ -238,34 +237,43 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 ### Summary table output ####
   output$SummaryTable <-DT::renderDataTable({
     table <- summary()
-  
+    
     if (input$BoxBy %in% c("month", "year")) {
       group_headers <- table %>%
       distinct(Aggregation) %>%
       mutate(Site = Aggregation, Minimum = NA, Q1 = NA, Mean = NA, Median = NA, Q3 = NA, Maximum = NA, SD = NA, n = NA)
-            
+    
     summary_table <- bind_rows(group_headers, table) %>%
-    mutate(Aggregation = factor(Aggregation, levels = c(month.abb, 
-                                                        sort(unique(group_headers$Aggregation[!group_headers$Aggregation %in% month.abb & 
-                                                                                              !is.na(as.numeric(table$Aggregation))]), decreasing = FALSE)))) %>%
-  
-    arrange(Aggregation, desc(is.na(Minimum)), Site) %>%
-    mutate(is_group = Site == Aggregation)
+      mutate(Aggregation = factor(Aggregation, levels = c(month.abb, 
+                                                          sort(unique(as.character(table$Aggregation[!table$Aggregation %in% month.abb])))))) %>%
+      
+      arrange(Aggregation, desc(is.na(Minimum)), Site) %>%
+      mutate(is_group = Site == Aggregation)
     } else {
-    summary_table <- table %>%
-      arrange(Site) %>%
-      mutate(is_group = FALSE)
+      summary_table <- table %>%
+        arrange(Site) %>%
+        mutate(is_group = FALSE)
     }
-    summary_table <- summary_table %>%
-      select(-Aggregation, -is_group)
+  summary_table <- summary_table %>%
+    select(-Aggregation, -is_group)
   
   datatable( 
-  summary_table,
-  rownames=F, options=list(pageLength = 100, autoWidth=TRUE, ordering = FALSE)) %>%
-  formatStyle("Site", fontWeight = styleEqual(if(exists("group_headers")) 
-    group_headers$Site else character(0), rep("bold", if (exists("group_headers")) nrow(group_headers) else 0)),
-                          backgroundColor = styleEqual(if (exists("group_headers")) group_headers$Site else character(0), rep("#f0f0f0", if (exists("group_headers")) nrow(group_headers) else 0)))
-})
+    summary_table,
+    rownames=F, options=list(pageLength = 100, autoWidth=TRUE, ordering = FALSE)) %>%
+    
+    formatStyle("Site", fontWeight = if(input$BoxBy %in% c("month", "year")) {
+      styleEqual(group_headers$Site, rep("bold", nrow(group_headers)))
+    } else if (input$BoxBy == "site")
+    { "bold"
+    } else {
+      NULL},
+      backgroundColor = if(input$BoxBy %in% c("month", "year")) {
+        styleEqual(group_headers$Site, rep("#f0f0f0", nrow(group_headers)))
+      } else {
+        NULL
+      }
+    )
+  })
 
 #Summary text
   summary_text_data <- reactive({
@@ -288,7 +296,8 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     #Generate text
     paste0("The average mean value for site ", paste(avg_summary$Site, "is ", round(avg_summary$avg_mean, 2), collapse = "; "), 
          ". The average median value for site ", paste(avg_summary$Site, "is ", round(avg_summary$avg_median, 2), collapse = "; "), 
-         ". The highest ", DataOpts$Param, " value was ", round(highest_value$Maximum, 2), " at ", highest_value$Site, highest_agg_label, ", while the lowest value was ", round(lowest_value$Minimum, 2), " at ", lowest_value$Site, lowest_agg_label, ".")
+         ". The highest ", DataOpts$Param, " value was ", round(highest_value$Maximum, 2), " at ", highest_value$Site, highest_agg_label, 
+         ", while the lowest value was ", round(lowest_value$Minimum, 2), " at ", lowest_value$Site, lowest_agg_label, ".")
 })
   output$summary_text <- renderText({
     summary_text_data()

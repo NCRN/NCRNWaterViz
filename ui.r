@@ -33,9 +33,9 @@ shinyUI(
                     
                     radioButtons(inputId="BoxBy", label="Compare by:", choices=c("year", "month", "site"), selected = "year", inline = T),
                     
-                             parkChooserUI("DataPark"),
-                             siteChooserUI("DataSite"),
-                             paramChooserUI("DataParam")
+                             parkChooserUI("SummaryPark"),
+                             siteChooserUI("SummarySite"),
+                             paramChooserUI("SummaryParam")
                ))
       ,
                column(9,

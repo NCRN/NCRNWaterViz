@@ -39,7 +39,7 @@ shinyUI(
                ))
       ,
                column(9,
-                      textOutput("summary_text"),
+                      uiOutput("summary_text"),
                       DT::dataTableOutput("SummaryTable"))
       ),
       tabPanel(h4("Time Series Plot"),

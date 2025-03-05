@@ -59,11 +59,17 @@ siteChooser<-function(input, output, session, data, park, chosen){
    observe({
      updateSelectizeInput(session, inputId = "SiteIn", selected=chosen(), 
        choices=c("Choose a Site"="",
-       c(`names<-`(getSiteInfo(data, parkcode=park(), info="SiteCode"), 
-         getSiteInfo(data, parkcode=park(), info="SiteName")  )))
+       c("Select All" = "ALL", setNames(getSiteInfo(data, parkcode=park(), info="SiteCode"), 
+         getSiteInfo(data, parkcode=park(), info="SiteName") )))
      )
    })
-  return(reactive(input$SiteIn))
+  return(reactive({
+    if ("ALL" %in% input$SiteIn){
+      getSiteInfo(data, parkcode = park(), info = "SiteCode")
+    } else {
+      input$SiteIn
+    }
+    }))
 }
 
 ### Parameter Module ####

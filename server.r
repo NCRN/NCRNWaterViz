@@ -293,6 +293,18 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   summary_text_data <- reactive({
     text_data <- summary()
   
+    site_info <- data.frame(
+      Site = getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteCode"),
+    SiteName = getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteName"), stringsAsFactors = FALSE)
+    
+    #site_info <- data.frame(SiteCode = site_codes, SiteName = site_names, stringsAsFactors = FALSE)
+    
+    text_data <- text_data %>%
+      left_join(site_info, by = "Site") %>%
+      mutate(Site = ifelse(!is.na(SiteName), SiteName, Site)) %>% 
+      select(-SiteName)
+    
+    #Average values
     avg_summary <- text_data %>%
     group_by(Site) %>%
     summarize(

@@ -241,6 +241,19 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     table <- table %>%
     mutate(Aggregation = ifelse(Aggregation %in% month.abb, 
                                 month.name[match(Aggregation, month.abb)], Aggregation))
+
+   #SiteCodes to full site names
+    site_codes <- getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteCode")
+    site_names <- getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteName")
+    
+    site_info <- data.frame(SiteCode = site_codes, SiteName = site_names, stringsAsFactors = FALSE)
+ 
+    table <- table %>%
+      left_join(site_info, by = c("Site" = "SiteCode")) %>%
+      mutate(Site = ifelse(!is.na(SiteName), SiteName, Site)) %>% 
+      select(-SiteName)
+    
+    #Table grouping
     if (input$SummaryBoxBy %in% c("month", "year")) {
       group_headers <- table %>%
       distinct(Aggregation) %>%

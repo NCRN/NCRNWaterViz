@@ -583,20 +583,38 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
                               group_by(month) %>% mutate(num_meas = sum(!is.na(Value))) %>% 
                               ungroup()) %>% mutate(num_mos = length(unique(month)))
     df <- df1[, c("OrganizationFormalName", "ActivityMediaSubdivisionName", "Date", "Characteristic", "Value", "ResultMeasure.MeasureUnitCode")]
+    df <- subset(df, !is.na(Value))
     
     LowerThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="LowerDescription")
     UpperThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="UpperDescription")
     LowerPoint<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="LowerPoint")
     UpperPoint<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="UpperPoint")
+    Unit<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="Units")
+    Sitename<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info = "SiteName")
+    Characteristic<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info = "DisplayName")
     
     if(!is.na(LowerPoint)) {
-      df <- df[df$Value < LowerPoint, ]
-      df$LowerThreshold <- LowerThreshold
+      if(any(df$Value <= LowerPoint, na.rm = TRUE)) {
+        df<- df[df$Value < LowerPoint, ]
+        df$LowerThreshold <- LowerThreshold
+      }
+      else{
+        df$LowerThreshold<- paste0("No measurements of ", Characteristic, " at ", Sitename, " fall below the water quality threshold of ", LowerPoint, " ", Unit)
+      }
     }
     
     if(!is.na(UpperPoint)) {
-      df <- df[df$Value > UpperPoint, ]
-      df$UpperThreshold <- UpperThreshold
+      if(any(df$Value >= UpperPoint, na.rm = TRUE)) {
+        df<- df[df$Value > UpperPoint, ]
+        df$UpperThreshold <- UpperThreshold
+      } 
+      else {
+        df$UpperThreshold<- paste0("No measurements of ", Characteristic, " at ", Sitename, " exceed the water quality threshold of ", UpperPoint, " ", Unit)
+      }
+    }
+    
+    if(is.na(LowerPoint) & is.na(UpperPoint)) {
+      df$Threshold<- paste0("There is no recorded water quality threshold for ", Characteristic, " at ", Sitename)
     }
     
     

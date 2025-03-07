@@ -37,7 +37,7 @@ GraphOpts<-reactiveValues(Legend=TRUE, FontSize=1.5, GoodColor="Blue", BadColor=
  
 #### Reactive Values for Choosing Data ####
 
-DataOpts<-reactiveValues(Park=NA, Site=NA, Param=NA, Agg=NA, Years=NA, USGSload=FALSE, USGSdata=NA)
+DataOpts<-reactiveValues(Park=NA, Site=NA, Param=NA, Agg=NA, DateRange=NA, Years=NA, USGSload=FALSE, USGSdata=NA)
 
 #### UI Controls ####  
 
@@ -128,10 +128,31 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
                               ungroup()) %>% mutate(num_mos = length(unique(month)))
     
     return(df)
-    
     })
+  
 #### Multiple site selections ####
-  DataUseMultiple<-reactive({ 
+  #DataUseMultiple<-reactive({ 
+   # shiny::validate(
+  #    need(DataOpts$Park, message="Choose a Park"),
+  #    need(DataOpts$Site, message="Choose a Site"),
+  #    need(DataOpts$Param, message="Choose a Water Quality Parameter")
+  #  )  
+  #  combined_data <- data.frame()
+  #  for (site in DataOpts$Site) {
+  #    site_data <- getWData(WaterData, parkcode=DataOpts$Park, sitecode= site, charname=DataOpts$Param)
+  #    combined_data <- dplyr::bind_rows(combined_data, site_data)
+  #  }
+  #  df <- suppressWarnings(combined_data %>% mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
+  #                           group_by(month) %>% mutate(num_meas = sum(!is.na(Value))) %>% 
+  #                           ungroup()) %>% mutate(num_mos = length(unique(month)))
+  #  return(df)
+  #})
+  
+  
+  
+  
+  #### Date Range Multiple site selections ####
+ DataUseMultiple <-reactive({ 
     shiny::validate(
       need(DataOpts$Park, message="Choose a Park"),
       need(DataOpts$Site, message="Choose a Site"),
@@ -142,11 +163,26 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       site_data <- getWData(WaterData, parkcode=DataOpts$Park, sitecode= site, charname=DataOpts$Param)
       combined_data <- dplyr::bind_rows(combined_data, site_data)
     }
-    df <- suppressWarnings(combined_data %>% mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
+    
+    minDate <- min(combined_data$Date, na.rm=T)
+    maxDate <- max(combined_data$Date, na.rm=T)
+    
+   # if (is.null(DataOpts$DateRange)) {
+    #  DataOpts$DateRange <- c(minDate, maxDate)}
+   
+    print(class(minDate))
+    print(class(maxDate))
+    
+    df <- suppressWarnings(combined_data %>% 
+                             filter(Date >= DataOpts$DateRange[1] & Date <= DataOpts$DateRange[2]) %>%
+                             mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
                              group_by(month) %>% mutate(num_meas = sum(!is.na(Value))) %>% 
                              ungroup()) %>% mutate(num_mos = length(unique(month)))
     return(df)
   })
+  print("9")
+  
+  
   
 #### Thresholds ####
   
@@ -206,11 +242,13 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   SummarySite<-callModule(siteChooser, id="SummarySite", data=WaterData, park=reactive(DataOpts$Park), chosen=reactive(DataOpts$Site))
   SummaryParam<-callModule(paramChooser, id="SummaryParam",data=WaterData, park=reactive(DataOpts$Park), site=reactive(DataOpts$Site), 
                            chosen=reactive(DataOpts$Param))
-
+  SummaryDateRange<-callModule(daterangeChooser, id="SummaryDateRange", data=DataUseMultiple, chosen=reactive(DataOpts$DateRange))
+print("6")
   observeEvent(SummaryPark(), DataOpts$Park<-SummaryPark() )
   observeEvent(SummarySite(), DataOpts$Site<-SummarySite() )
   observeEvent(SummaryParam(), DataOpts$Param<-SummaryParam() )
-  
+  observeEvent(SummaryDateRange(), DataOpts$DateRange<-SummaryDateRange() )
+  print("7")
   summary <- reactive({
     table <- DataUseMultiple () %>%
     
@@ -313,10 +351,9 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     site_list <- paste(
       sapply(1:length(avg_summary$Site), function(i) { 
                         paste0("<li><b>", avg_summary$Site[i], ":</b> average <i>mean</i> is ", round(avg_summary$avg_mean[i], 2), " ", summary_units,
-                        " and the average <i>median</i> is ", round(avg_summary$avg_median[i], 2), " ", summary_units, ".</li>")
-      }),
-      collapse = ""
-    )
+                        " and the average <i>median</i> is ", round(avg_summary$avg_median[i], 2), " ", summary_units, ".</li>") }), 
+      collapse = "")
+
     #Highest/Lowest values
     highest_value <- text_data[which.max(text_data$Maximum), ]
     lowest_value <- text_data[which.min(text_data$Minimum), ]

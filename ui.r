@@ -35,7 +35,9 @@ shinyUI(
                     
                              parkChooserUI("SummaryPark"),
                              siteChooserUI("SummarySite"),
-                             paramChooserUI("SummaryParam")
+                             paramChooserUI("SummaryParam"),
+                             daterangeChooserUI("SummaryDateRange") 
+                              
                ))
       ,
                column(9,

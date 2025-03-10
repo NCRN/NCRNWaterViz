@@ -578,6 +578,8 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       need(DataOpts$Site, message="Choose a Site"),
       need(DataOpts$Param, message="Choose a Water Quality Parameter")
     )  
+    
+    #for loop to call getWData, df editing n times, rowbind sites
     df2 <- getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
     df1 <- suppressWarnings(df2 %>% mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
                               group_by(month) %>% mutate(num_meas = sum(!is.na(Value))) %>% 
@@ -593,32 +595,36 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     Sitename<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info = "SiteName")
     Characteristic<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info = "DisplayName")
     
-    if(!is.na(LowerPoint)) {
       if(any(df$Value <= LowerPoint, na.rm = TRUE)) {
-        df<- df[df$Value < LowerPoint, ]
-        df$LowerThreshold <- LowerThreshold
+        lowerdf<- df[df$Value < LowerPoint, ]
+        lowerdf$LowerThreshold <- LowerThreshold
+      } else{
+        lowerdf<- df[0, ]
       }
-      else{
-        df$LowerThreshold<- paste0("No measurements of ", Characteristic, " at ", Sitename, " fall below the water quality threshold of ", LowerPoint, " ", Unit)
-      }
-    }
     
-    if(!is.na(UpperPoint)) {
       if(any(df$Value >= UpperPoint, na.rm = TRUE)) {
-        df<- df[df$Value > UpperPoint, ]
-        df$UpperThreshold <- UpperThreshold
-      } 
-      else {
-        df$UpperThreshold<- paste0("No measurements of ", Characteristic, " at ", Sitename, " exceed the water quality threshold of ", UpperPoint, " ", Unit)
+        upperdf<- df[df$Value > UpperPoint, ]
+        upperdf$UpperThreshold <- UpperThreshold
+      } else {
+        upperdf<- df[0, ]
       }
-    }
     
-    if(is.na(LowerPoint) & is.na(UpperPoint)) {
-      df$Threshold<- paste0("There is no recorded water quality threshold for ", Characteristic, " at ", Sitename)
-    }
+    exdf<- dplyr::bind_rows(lowerdf, upperdf)
+    
+      if(!is.na(LowerPoint) & all(df$Value > LowerPoint)) {
+        showNotification(paste0("No measurements of ", Characteristic, " at ", Sitename, " fall below the water quality threshold of ", LowerPoint, " ", Unit), type = "error", duration = 10)
+      }
+    
+      if(!is.na(UpperPoint) & all(df$Value < UpperPoint)) {
+        showNotification(paste0("No measurements of ", Characteristic, " at ", Sitename, " exceed the water quality threshold of ", UpperPoint, " ", Unit), type = "error", duration = 10)
+      }
+    
+      if(is.na(LowerPoint) & is.na(UpperPoint)) {
+        showNotification(paste0("There is no recorded water quality threshold for ", Characteristic, " at ", Sitename), type = "error", duration = 10)
+      }
     
     
-    return(df)
+    return(exdf)
     
   })
   

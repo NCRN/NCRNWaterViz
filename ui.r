@@ -168,7 +168,20 @@ shinyUI(
                              paramChooserUI("DataParamExceedances")
                )),
                column(9,              
-                      DT::dataTableOutput("ExceedancesTable"))
+                      DT::dataTableOutput("ExceedancesTable")),
+              
+               tags$style(HTML("
+    /* Custom CSS for notification */
+    .custom-notification {
+      background-color: #3498db;  /* Custom blue background */
+      color: white;               /* White text */
+      font-size: 18px;            /* Font size for the text */
+      padding: 15px;              /* Padding inside the notification */
+      border-radius: 10px;        /* Rounded corners */
+      font-weight: bold;          /* Bold text */
+    }
+"))
+               
       ),
       
       tabPanel(h4("Project Information"),

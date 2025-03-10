@@ -610,6 +610,8 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       }
     
     exdf<- dplyr::bind_rows(lowerdf, upperdf)
+    exdf<- exdf %>%
+      arrange(desc(Date))
     
       if(!is.na(LowerPoint) & all(df$Value > LowerPoint)) {
         showNotification(paste0("No measurements of ", Characteristic, " at ", Sitename, " fall below the water quality threshold of ", LowerPoint, " ", Unit), type = "error", duration = 10)

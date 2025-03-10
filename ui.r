@@ -36,14 +36,14 @@ shinyUI(
                              parkChooserUI("SummaryPark"),
                              siteChooserUI("SummarySite"),
                              paramChooserUI("SummaryParam"),
-                             daterangeChooserUI("SummaryDateRange") 
+                             yearChooserUI("SummaryYears") 
                               
-               ))
-      ,
+               )),
                column(9,
                       uiOutput("summary_text"),
                       DT::dataTableOutput("SummaryTable"))
       ),
+    
       tabPanel(h4("Time Series Plot"),
         column(3, div(style='padding: 5px 10px',class="panel panel-default", 
           

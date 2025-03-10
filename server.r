@@ -163,25 +163,15 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       site_data <- getWData(WaterData, parkcode=DataOpts$Park, sitecode= site, charname=DataOpts$Param)
       combined_data <- dplyr::bind_rows(combined_data, site_data)
     }
-    
-    minDate <- min(combined_data$Date, na.rm=T)
-    maxDate <- max(combined_data$Date, na.rm=T)
-    
-   # if (is.null(DataOpts$DateRange)) {
-    #  DataOpts$DateRange <- c(minDate, maxDate)}
-   
-    print(class(minDate))
-    print(class(maxDate))
-    
+
     df <- suppressWarnings(combined_data %>% 
-                             filter(Date >= DataOpts$DateRange[1] & Date <= DataOpts$DateRange[2]) %>%
+                             mutate(Year = lubridate::year(Date)) %>%
+                             filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #for date range
                              mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
                              group_by(month) %>% mutate(num_meas = sum(!is.na(Value))) %>% 
                              ungroup()) %>% mutate(num_mos = length(unique(month)))
     return(df)
   })
-  print("9")
-  
   
   
 #### Thresholds ####
@@ -242,13 +232,15 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   SummarySite<-callModule(siteChooser, id="SummarySite", data=WaterData, park=reactive(DataOpts$Park), chosen=reactive(DataOpts$Site))
   SummaryParam<-callModule(paramChooser, id="SummaryParam",data=WaterData, park=reactive(DataOpts$Park), site=reactive(DataOpts$Site), 
                            chosen=reactive(DataOpts$Param))
-  SummaryDateRange<-callModule(daterangeChooser, id="SummaryDateRange", data=DataUseMultiple, chosen=reactive(DataOpts$DateRange))
-print("6")
+  SummaryYears<-callModule(yearChooser, id="SummaryYears", data=DataUseMultiple, chosen=reactive(DataOpts$Years) )
+  
+  #SummaryDateRange<-callModule(daterangeChooser, id="SummaryDateRange", data=DataUseMultiple, chosen=reactive(DataOpts$DateRange))
+
   observeEvent(SummaryPark(), DataOpts$Park<-SummaryPark() )
   observeEvent(SummarySite(), DataOpts$Site<-SummarySite() )
   observeEvent(SummaryParam(), DataOpts$Param<-SummaryParam() )
-  observeEvent(SummaryDateRange(), DataOpts$DateRange<-SummaryDateRange() )
-  print("7")
+  observeEvent(SummaryYears(), DataOpts$Years<-SummaryYears() )
+
   summary <- reactive({
     table <- DataUseMultiple () %>%
     
@@ -256,7 +248,7 @@ print("6")
     mutate(Date = as.Date(Date)) %>%
     mutate(Aggregation = case_when(input$SummaryBoxBy == "month" ~ format(Date, "%b"),
                                    input$SummaryBoxBy == "year" ~ format(Date, "%Y"), TRUE ~ as.character(Site))) %>%
- 
+      
     group_by(Aggregation, Site) %>%
       summarise(
       Minimum = round(min(Value, na.rm = TRUE), 2),   
@@ -267,14 +259,21 @@ print("6")
       Maximum = round(max(Value, na.rm = TRUE), 2),  
       SD = round(sd(Value, na.rm = TRUE), 2), 
       n = n(), .groups = "drop") %>%
-      arrange(factor(Aggregation, levels = month.name), Site)
-  
+      arrange(factor(Aggregation, levels = month.name), Site) 
+    
   return(table)
 })
 
 ### Summary table output ####
   output$SummaryTable <-DT::renderDataTable({
     table <- summary()
+
+   # table <- table %>%
+    #  mutate(Year = lubridate::year(Date)) %>%
+    #  filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) #for date range
+
+   # print(paste("Year start 2:", DataOpts$Years[1]))
+    #print(paste("Year end 2:", DataOpts$Years[2]))
     
     table <- table %>%
     mutate(Aggregation = ifelse(Aggregation %in% month.abb, 
@@ -290,7 +289,7 @@ print("6")
       left_join(site_info, by = c("Site" = "SiteCode")) %>%
       mutate(Site = ifelse(!is.na(SiteName), SiteName, Site)) %>% 
       select(-SiteName)
-    
+      
     #Table grouping
     if (input$SummaryBoxBy %in% c("month", "year")) {
       group_headers <- table %>%
@@ -312,7 +311,7 @@ print("6")
     select(-Aggregation, -is_group)
   
   datatable( 
-    summary_table,
+    summary_table, 
     rownames=F, options=list(pageLength = 100, autoWidth=TRUE, ordering = FALSE)) %>%
     
     formatStyle("Site", fontWeight = if(input$SummaryBoxBy %in% c("month", "year")) {
@@ -350,8 +349,8 @@ print("6")
     
     site_list <- paste(
       sapply(1:length(avg_summary$Site), function(i) { 
-                        paste0("<li><b>", avg_summary$Site[i], ":</b> average <i>mean</i> is ", round(avg_summary$avg_mean[i], 2), " ", summary_units,
-                        " and the average <i>median</i> is ", round(avg_summary$avg_median[i], 2), " ", summary_units, ".</li>") }), 
+                        paste0("<li><b>", avg_summary$Site[i], ":</b> average mean is ", round(avg_summary$avg_mean[i], 2), " ", summary_units,
+                        " and the average median is ", round(avg_summary$avg_median[i], 2), " ", summary_units, ".</li>") }), 
       collapse = "")
 
     #Highest/Lowest values

@@ -310,10 +310,16 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   summary_table <- summary_table %>%
     select(-Aggregation, -is_group)
   
-  datatable( 
-    summary_table, 
-    rownames=F, options=list(pageLength = 100, autoWidth=TRUE, ordering = FALSE)) %>%
-    
+  #datatable( 
+    #summary_table, 
+    #rownames=F, options=list(pageLength = 100, autoWidth=TRUE, ordering = FALSE)) %>%
+   
+  datatable(summary_table, extensions=c("Buttons", "KeyTable"),
+                 #caption=tags$caption(h3(Title())),
+                 class="stripe hover order-column cell-border",
+                 rownames=F, options=list(pageLength = 100, autoWidth=TRUE, ordering= FALSE, dom= "Bltipr", buttons=c("copy","csv","excel","pdf","print"), keys = TRUE)) %>%
+  #,server=F)
+  
     formatStyle("Site", fontWeight = if(input$SummaryBoxBy %in% c("month", "year")) {
       styleEqual(group_headers$Site, rep("bold", nrow(group_headers)))
     } else if (input$SummaryBoxBy == "site") { "bold" } else { 

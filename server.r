@@ -270,15 +270,12 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 
     table <- table %>%
       mutate(SD = ifelse(!is.na(Mean) & is.na(SD), "Not available", SD),
-             Minimum = ifelse(is.na(Minimum), "Data not collected", Minimum),
-             Q1 = ifelse(is.na(Q1), "Data not collected", Q1),
-             Mean = ifelse(is.na(Mean), "Data not collected", Mean),
-             Median = ifelse(is.na(Median), "Data not collected", Median),
-             Q3 = ifelse(is.na(Q3), "Data not collected", Q3),
-             Maximum = ifelse(is.na(Maximum), "Data not collected", Maximum),
-            # SD = ifelse(is.na(SD), "Data not collected", SD))
-             #Minimum = ifelse(rowSums(!is.na(select(., Mean, Median))) == 0 & is.na(Minimum), "Data not collected", Minimum),
-             #Maximum = ifelse(rowSums(!is.na(select(., Mean, Median))) == 0 & is.na(Maximum), "Data not collected", Maximum),
+             Minimum = ifelse(is.na(Minimum) | Minimum == Inf | Minimum == -Inf, "Data not collected", Minimum),
+            # Q1 = ifelse(is.na(Q1), "Data not collected", Q1),
+            # Mean = ifelse(is.na(Mean), "Data not collected", Mean),
+            # Median = ifelse(is.na(Median), "Data not collected", Median),
+            # Q3 = ifelse(is.na(Q3), "Data not collected", Q3),
+             Maximum = ifelse(is.na(Maximum) | Maximum == Inf | Maximum == -Inf, "Data not collected", Maximum),
              across(everything(), ~ifelse(is.na(.), "Data not collected", .)))
     
    # table <- table %>%

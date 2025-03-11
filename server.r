@@ -336,6 +336,14 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   summary_text_data <- reactive({
     text_data <- summary()
     
+    #Full characteristic name
+    char_info <- data.frame(
+      Char = getCharInfo(WaterData, parkcode = DataOpts$Park, info = "CharName"),
+      CharName = getCharInfo(WaterData, parkcode = DataOpts$Park, info = "DisplayName"), stringsAsFactors = FALSE)
+    
+    FullParamName <- char_info$CharName[match(DataOpts$Param, char_info$Char)]
+    
+    #Full site names
     site_info <- data.frame(
       Site = getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteCode"),
       SiteName = getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteName"), stringsAsFactors = FALSE)
@@ -345,6 +353,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       mutate(Site = ifelse(!is.na(SiteName), SiteName, Site)) %>% 
       select(-SiteName)
     
+    #Average values per site
     avg_summary <- text_data %>%
       group_by(Site) %>%
       summarize(
@@ -370,9 +379,9 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     #Generate text
     HTML(paste0(
           "<p><b>Summary Report:</b></p>",
-          "<p>The average mean and median values for ", DataOpts$Param, " at the selected sites are as follows:</p>", 
+          "<p>The average mean and median values for ", FullParamName, " at the selected sites are as follows:</p>", 
           "<ul>", site_list, "</ul>", 
-          "<p>The highest ", DataOpts$Param, " value across selected sites was ", round(highest_value$Maximum, 2), " ", summary_units, " at ", highest_value$Site, highest_agg_label, 
+          "<p>The highest ", FullParamName, " value across selected sites was ", round(highest_value$Maximum, 2), " ", summary_units, " at ", highest_value$Site, highest_agg_label, 
           ", while the lowest value was ", round(lowest_value$Minimum, 2), " ", summary_units, " at ", lowest_value$Site, lowest_agg_label, ".</p>"))
   })
   

@@ -408,8 +408,8 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       select(-c(n, Aggregation, Site))
     
     numeric_table <- as.data.frame(numeric_table)
-#    numeric_table == Inf | numeric_table == -Inf 
     numeric_table[is.infinite(as.matrix(numeric_table)) | is.nan(as.matrix(numeric_table))] <- NA
+    
     if (nrow(numeric_table) > 0 &&
         all(is.na(numeric_table))) {
       if (!isTRUE(isolate(session$userData$popup))) {

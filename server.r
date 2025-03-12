@@ -267,7 +267,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 ### Summary table output ####
   output$SummaryTable <-DT::renderDataTable({
     table <- summary()
-
+    
     table <- table %>%
       mutate(SD = ifelse(!is.na(Mean) & is.na(SD), "Not available", SD),
              Minimum = ifelse(is.na(Minimum) | Minimum == Inf | Minimum == -Inf, "Data not collected", Minimum),
@@ -282,9 +282,9 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     #  mutate(Year = lubridate::year(Date)) %>%
     #  filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) #for date range
 
-   # print(paste("Year start 2:", DataOpts$Years[1]))
-    #print(paste("Year end 2:", DataOpts$Years[2]))
-    
+   # print(paste("Year start:", DataOpts$Years[1]))
+    #print(paste("Year end:", DataOpts$Years[2]))
+
     table <- table %>%
     mutate(Aggregation = ifelse(Aggregation %in% month.abb, 
                                 month.name[match(Aggregation, month.abb)], Aggregation))
@@ -323,7 +323,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   #datatable( 
     #summary_table, 
     #rownames=F, options=list(pageLength = 100, autoWidth=TRUE, ordering = FALSE)) %>%
-   
+
   datatable(summary_table, extensions=c("Buttons", "KeyTable"),
                  #caption=tags$caption(h3(Title())),
                  class="stripe hover order-column cell-border",
@@ -399,7 +399,29 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     summary_text_data()
 })
   
+  #Notification pop-up when all data is missing in table
+  observe({
+    req(summary())
+    notifs <- summary()
 
+    numeric_table <- notifs %>%
+      select(-c(n, Aggregation, Site))
+    
+    numeric_table <- as.data.frame(numeric_table)
+#    numeric_table == Inf | numeric_table == -Inf 
+    numeric_table[is.infinite(as.matrix(numeric_table)) | is.nan(as.matrix(numeric_table))] <- NA
+    if (nrow(numeric_table) > 0 &&
+        all(is.na(numeric_table))) {
+      if (!isTRUE(isolate(session$userData$popup))) {
+      showNotification(
+        paste("No data collected for", DataOpts$Param, "at selected sites."), 
+        type = "warning", 
+        duration = 15)
+        session$userData$popup <- TRUE }
+    } else {
+      session$userData$popup <- FALSE }
+  }, priority = 1)
+  
 #### Summaries of Seasonality and Trends ####
   output$SeasonOut<-renderText({
 

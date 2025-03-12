@@ -166,7 +166,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 
     df <- suppressWarnings(combined_data %>% 
                              mutate(Year = lubridate::year(Date)) %>%
-                             filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #for date range
+                             # filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #for date range (before)
                              mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
                              group_by(month) %>% mutate(num_meas = sum(!is.na(Value))) %>% 
                              ungroup()) %>% mutate(num_mos = length(unique(month)))
@@ -244,6 +244,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   summary <- reactive({
     table <- DataUseMultiple () %>%
     
+    filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% # for date range (after)
     #Aggregation
     mutate(Date = as.Date(Date)) %>%
     mutate(Aggregation = case_when(input$SummaryBoxBy == "month" ~ format(Date, "%b"),

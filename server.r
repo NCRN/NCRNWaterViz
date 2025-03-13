@@ -572,6 +572,9 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   observeEvent(ExceedancesSite(), DataOpts$Site<-ExceedancesSite() )
   observeEvent(ExceedancesParam(), DataOpts$Param<-ExceedancesParam() )
   
+### Exceedances prep
+  
+  
 ### Exceedances data use function ####
   ExceedancesDataUse<-reactive({ 
     shiny::validate(
@@ -610,22 +613,22 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       }
     
     exdf<- dplyr::bind_rows(lowerdf, upperdf)
-    exdf_table<- exdf %>%
+    exdf<- exdf %>%
       arrange(desc(Date))
     
       if(!is.na(LowerPoint) & all(df$Value > LowerPoint)) {
-        showNotification(paste0("No measurements of ", Characteristic, " at ", Sitename, " fall below the water quality threshold of ", LowerPoint, " ", Unit), type = "error", duration = NULL, id = "n1")
+        showNotification(paste0("No measurements of ", Characteristic, " at ", Sitename, " fall below the water quality threshold of ", LowerPoint, " ", Unit), type = "error", duration = 10, id = "n1")
       }
     
       if(!is.na(UpperPoint) & all(df$Value < UpperPoint)) {
-        showNotification(paste0("No measurements of ", Characteristic, " at ", Sitename, " exceed the water quality threshold of ", UpperPoint, " ", Unit), type = "error", duration = NULL, id = "n2")
+        showNotification(paste0("No measurements of ", Characteristic, " at ", Sitename, " exceed the water quality threshold of ", UpperPoint, " ", Unit), type = "error", duration = 10, id = "n2")
       }
     
       if(is.na(LowerPoint) & is.na(UpperPoint)) {
-        showNotification(paste0("There is no recorded water quality threshold for ", Characteristic, " at ", Sitename), type = "error", duration = NULL, id = "n3")
+        showNotification(paste0("There is no recorded water quality threshold for ", Characteristic, " at ", Sitename), type = "error", duration = 10, id = "n3")
       }
     
-    return(exdf_table)
+    return(exdf)
     
   })
   
@@ -718,6 +721,85 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   
   output$exceedances_summary<- renderText({
     exceedances_text()
+  })
+  
+  ### Exceedances histogram ###
+  
+  exceedances_hist_plot<-reactive({ 
+    shiny::validate(
+      need(DataOpts$Park, message=""),
+      need(DataOpts$Site, message=""),
+      need(DataOpts$Param, message="")
+    )  
+    
+    df2 <- getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
+    df1 <- suppressWarnings(df2 %>% mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
+                              group_by(month) %>% mutate(num_meas = sum(!is.na(Value))) %>% 
+                              ungroup()) %>% mutate(num_mos = length(unique(month)))
+    df <- df1[, c("OrganizationFormalName", "ActivityMediaSubdivisionName", "Date", "Characteristic", "Value", "ResultMeasure.MeasureUnitCode")]
+    df <- subset(df, !is.na(Value))
+    
+    LowerThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="LowerDescription")
+    UpperThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="UpperDescription")
+    LowerPoint<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="LowerPoint")
+    UpperPoint<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="UpperPoint")
+    Unit<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="Units")
+    Sitename<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info = "SiteName")
+    Characteristic<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info = "DisplayName")
+    
+    if(any(df$Value <= LowerPoint, na.rm = TRUE)) {
+      lowerdf<- df[df$Value < LowerPoint, ]
+      lowerdf$LowerThreshold <- LowerThreshold
+    } else{
+      lowerdf<- df[0, ]
+    }
+    
+    if(any(df$Value >= UpperPoint, na.rm = TRUE)) {
+      upperdf<- df[df$Value > UpperPoint, ]
+      upperdf$UpperThreshold <- UpperThreshold
+    } else {
+      upperdf<- df[0, ]
+    }
+    
+    exdf<- dplyr::bind_rows(lowerdf, upperdf)
+    
+    histyears<- data.frame(Year = lubridate::year(df$Date))
+    totcount<- histyears %>%
+      dplyr::count(Year) %>%
+      dplyr::rename("ntot" = "n")
+    totcount <- subset(totcount, !is.na(Year))
+    
+    excount <- exdf %>%
+      mutate(Year = lubridate::year(Date)) %>%
+      count(Year) %>%
+      dplyr::rename("nex" = "n")
+    excount <- subset(excount, !is.na(Year))
+    
+    histdata<- dplyr::left_join(totcount, excount, by = "Year")
+    histdata[is.na(histdata)] <- 0
+    histdata<- histdata %>%
+      mutate(percent_ex = (nex / ntot) * 100)
+    
+      p<- ggplot(histdata, aes(x = Year, y = percent_ex, text = paste0(totcount$ntot, " total observations"))) +
+      geom_bar(stat = "identity", fill = "lightgray") +
+      ylim(0, 100) +
+      labs(
+        title = paste0("Frequency of exceedance per observation of ", Characteristic, " at ", Sitename),
+        x = "Year",
+        y = "% exceedance") +
+      theme_minimal() +
+      theme(
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
+    
+    ggplotly(p, tooltip = "text")
+  
+})
+  
+  observeEvent(input$hist_button, {
+    output$exceedances_hist <- renderPlotly({
+     exceedances_hist_plot()
+    })
   })
   
 #### Mapping ####

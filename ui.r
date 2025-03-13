@@ -165,11 +165,14 @@ shinyUI(
                              h3("Select Site Data"),
                              parkChooserUI("DataParkExceedances"),
                              siteChooserUI("DataSiteExceedances"),
-                             paramChooserUI("DataParamExceedances")
+                             paramChooserUI("DataParamExceedances"),
+                             actionButton("hist_button", "Render Histogram")
                )),
                column(9,              
                       uiOutput("exceedances_summary"),
+                      plotlyOutput("exceedances_hist"),
                       DT::dataTableOutput("ExceedancesTable")),
+    
                
       ),
       

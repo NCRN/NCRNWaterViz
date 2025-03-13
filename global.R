@@ -22,7 +22,6 @@ yearChooser<-function(input,output,session,data,chosen)  {
   
   observe({
     req( data() )
-   # print(data()$Value)
     if(class(data()$Date)=="Date"){
       YrMax<-reactive(max(year(data()$Date), na.rm=T))
       YrMin<-reactive(min(year(data()$Date), na.rm=T))
@@ -101,8 +100,6 @@ paramChooserUI<-function(id){
 paramChooser<-function(input, output, session, data, park, site, chosen){
   PChoices<-reactive({
     req(park())
-    print(data()$Value)
-    
     Choice<-getCharInfo(data, parkcode=park(), info="CharName")
     ChoiceName<-paste0(getCharInfo(data, parkcode=park(), info="DisplayName"), " (",
                        getCharInfo(data, parkcode=park(), info="Units") %>% 

@@ -279,13 +279,6 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
              Maximum = ifelse(is.na(Maximum) | Maximum == Inf | Maximum == -Inf, "Data not collected", Maximum),
              across(everything(), ~ifelse(is.na(.), "Data not collected", .)))
     
-   # table <- table %>%
-    #  mutate(Year = lubridate::year(Date)) %>%
-    #  filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) #for date range
-
-   # print(paste("Year start:", DataOpts$Years[1]))
-    #print(paste("Year end:", DataOpts$Years[2]))
-
     table <- table %>%
     mutate(Aggregation = ifelse(Aggregation %in% month.abb, 
                                 month.name[match(Aggregation, month.abb)], Aggregation))
@@ -321,11 +314,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   summary_table <- summary_table %>%
     select(-Aggregation, -is_group)
   
-  #datatable( 
-    #summary_table, 
-    #rownames=F, options=list(pageLength = 100, autoWidth=TRUE, ordering = FALSE)) %>%
-
-  datatable(summary_table, extensions=c("Buttons", "KeyTable"),
+ datatable(summary_table, extensions=c("Buttons", "KeyTable"),
                  #caption=tags$caption(h3(Title())),
                  class="stripe hover order-column cell-border",
                  rownames=F, options=list(pageLength = 100, autoWidth=TRUE, ordering= FALSE, dom= "Bltipr", buttons=c("copy","csv","excel","pdf","print"), keys = TRUE)) %>%
@@ -345,7 +334,8 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 
 #Summary text
   summary_text_data <- reactive({
-    text_data <- summary()
+    raw_data <- DataUseMultiple()
+    summary_data <- summary()
     
     #Full characteristic name
     char_info <- data.frame(
@@ -359,41 +349,43 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       Site = getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteCode"),
       SiteName = getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteName"), stringsAsFactors = FALSE)
 
-    text_data <- text_data %>%
-      left_join(site_info, by = "Site") %>%
-      mutate(Site = ifelse(!is.na(SiteName), SiteName, Site)) %>% 
-      select(-SiteName)
+    summary_data <- summary_data %>%
+      left_join(site_info, by = "Site") 
     
-    #Average values per site
-    avg_summary <- text_data %>%
-      group_by(Site) %>%
+    raw_data <- raw_data %>%
+      left_join(site_info, by = "Site") 
+
+    avg_summary <- raw_data %>%
+      group_by(Site, SiteName) %>%
       summarize(
-        avg_mean = mean(Mean, na.rm = TRUE),
-        avg_median = mean(Median, na.rm = TRUE), .groups = "drop")
-    
+        avg_mean = mean(Value, na.rm = TRUE),
+        avg_median = median(Value, na.rm = TRUE)
+      )
     summary_units <- unique(getCharInfo(WaterData,parkcode=DataOpts$Park, charname=DataOpts$Param, info="Units"))
     
     site_list <- paste(
       sapply(1:length(avg_summary$Site), function(i) { 
-                        paste0("<li><b>", avg_summary$Site[i], ":</b> average mean is ", round(avg_summary$avg_mean[i], 2), " ", summary_units,
-                        " and the average median is ", round(avg_summary$avg_median[i], 2), " ", summary_units, ".</li>") }), 
+                        paste0("<li><b>", avg_summary$SiteName[i], ":</b> mean is ", round(avg_summary$avg_mean[i], 2), " ", summary_units,
+                        " and the median is ", round(avg_summary$avg_median[i], 2), " ", summary_units, ".</li>") }), 
       collapse = "")
 
     #Highest/Lowest values
-    highest_value <- text_data[which.max(text_data$Maximum), ]
-    lowest_value <- text_data[which.min(text_data$Minimum), ]
-    
-    #Month/year label if aggregated
-    highest_agg_label <- if (input$SummaryBoxBy == "site") "" else paste0(" in ", highest_value$Aggregation)
-    lowest_agg_label <- if (input$SummaryBoxBy == "site") "" else paste0(" in ", lowest_value$Aggregation)
-    
+    highest_value <- raw_data[which.max(raw_data$Value), ]
+    lowest_value <- raw_data[which.min(raw_data$Value), ]
+  
+    #Highest/Lowest Dates
+    highest_month <- format(as.Date(highest_value$Date), "%B")
+    highest_year <- format(as.Date(highest_value$Date), "%Y")
+    lowest_month <- format(as.Date(lowest_value$Date), "%B")
+    lowest_year <- format(as.Date(lowest_value$Date), "%Y")
+
     #Generate text
     HTML(paste0(
           "<p><b>Summary Report:</b></p>",
-          "<p>The average mean and median values for ", FullParamName, " at the selected sites are as follows:</p>", 
+          "<p>The mean and median values for ", FullParamName, " at the selected sites and years are as follows:</p>", 
           "<ul>", site_list, "</ul>", 
-          "<p>The highest ", FullParamName, " value across selected sites was ", round(highest_value$Maximum, 2), " ", summary_units, " at ", highest_value$Site, highest_agg_label, 
-          ", while the lowest value was ", round(lowest_value$Minimum, 2), " ", summary_units, " at ", lowest_value$Site, lowest_agg_label, ".</p>"))
+          "<p>The highest ", FullParamName, " value across selected sites was ", round(highest_value$Value, 2), " ", summary_units, " at ", highest_value$SiteName, " in ", highest_month, " ", highest_year,
+          ", while the lowest value was ", round(lowest_value$Value, 2), " ", summary_units, " at ", lowest_value$SiteName, " in ", lowest_month, " ", lowest_year, ".</p>"))
   })
   
   output$summary_text <- renderText({

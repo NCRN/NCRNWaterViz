@@ -605,7 +605,12 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     
     exdf<- dplyr::bind_rows(lowerdf, upperdf)
     
-    return(c(exdf, df))
+    tmp <- list(
+      'exdf'=exdf
+      ,'df'=df
+      ,'lowerpoint'=LowerPoint
+      )
+    return(tmp)
   }
     
   
@@ -617,15 +622,11 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       need(DataOpts$Param, message="Choose a Water Quality Parameter")
     )  
     
-    tmp<- ExceedancesPrep(DataOpts$Park, DataOpts$Site, DataOpts$Param, WaterData)
-    df<- tmp[2]
-    exdf<- tmp[1]
-    
-    print(df)
-    print(exdf)
-    print(class(df))
-    print(class(tmp))
-    
+    tmp <- ExceedancesPrep(DataOpts$Park, DataOpts$Site, DataOpts$Param, WaterData)
+    exdf <- tmp$exdf
+    df <- tmp$df
+    LowerPoint <- tmp$lowerpoint
+
     # df2 <- getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
     # df1 <- suppressWarnings(df2 %>% mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
     #                           group_by(month) %>% mutate(num_meas = sum(!is.na(Value))) %>% 
@@ -658,15 +659,15 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     # exdf<- dplyr::bind_rows(lowerdf, upperdf)
     exdf<- exdf %>%
       arrange(desc(Date))
-    
+
       if(!is.na(LowerPoint) & all(df$Value > LowerPoint)) {
         showNotification(paste0("No measurements of ", Characteristic, " at ", Sitename, " fall below the water quality threshold of ", LowerPoint, " ", Unit), type = "error", duration = 10, id = "n1")
       }
-    
+
       if(!is.na(UpperPoint) & all(df$Value < UpperPoint)) {
         showNotification(paste0("No measurements of ", Characteristic, " at ", Sitename, " exceed the water quality threshold of ", UpperPoint, " ", Unit), type = "error", duration = 10, id = "n2")
       }
-    
+
       if(is.na(LowerPoint) & is.na(UpperPoint)) {
         showNotification(paste0("There is no recorded water quality threshold for ", Characteristic, " at ", Sitename), type = "error", duration = 10, id = "n3")
       }

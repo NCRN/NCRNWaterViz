@@ -110,7 +110,7 @@ paramChooser<-function(input, output, session, data, park, site, chosen){
   
   observe(
     updateSelectizeInput(session, inputId="ParamIn",selected=chosen(), 
-                         choices=c("Choose a Parameter"="",as.list(sort(PChoices()))))
+                         choices=c("Choose a Parameter"="", as.list(sort(PChoices()))))
   )
   
   return(reactive(input$ParamIn))

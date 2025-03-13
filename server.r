@@ -149,9 +149,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   #})
   
   
-  
-  
-  #### Date Range Multiple site selections ####
+  ####  Housekeeping of data --Multiple site selections ####
  DataUseMultiple <-reactive({ 
     shiny::validate(
       need(DataOpts$Park, message="Choose a Park"),
@@ -172,8 +170,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
                              ungroup()) %>% mutate(num_mos = length(unique(month)))
     return(df)
   })
-  
-  
+
 #### Thresholds ####
   
   Thresholds<-reactive({
@@ -258,7 +255,8 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       Median = round(median(Value, na.rm = TRUE), 2),   
       Q3 = round(quantile(Value, 0.75, na.rm = TRUE),2),  
       Maximum = round(max(Value, na.rm = TRUE), 2),  
-      SD = round(sd(Value, na.rm = TRUE), 2), 
+      SD = round(sd(Value, na.rm = TRUE), 2),
+      n_site_visit = n_distinct(Date),
       n = n(), .groups = "drop") %>%
       arrange(factor(Aggregation, levels = month.name), Site) 
     
@@ -267,6 +265,11 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 
 ### Summary table output ####
   output$SummaryTable <-DT::renderDataTable({
+    shiny::validate(
+      need(DataOpts$Park, message="Choose a Park"),
+      need(DataOpts$Site, message="Choose a Site"),
+      need(DataOpts$Param, message="Choose a Water Quality Parameter")
+    )  
     table <- summary()
     
     table <- table %>%
@@ -334,9 +337,12 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 
 #Summary text
   summary_text_data <- reactive({
-    raw_data <- DataUseMultiple()
-    summary_data <- summary()
+    raw_data <- DataUseMultiple() 
+    #%>%
+     # filter(Year %in% DataOpts$Year)
     
+    summary_data <- summary()
+      
     #Full characteristic name
     char_info <- data.frame(
       Char = getCharInfo(WaterData, parkcode = DataOpts$Park, info = "CharName"),

@@ -301,7 +301,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     if (input$SummaryBoxBy %in% c("month", "year")) {
       group_headers <- table %>%
       distinct(Aggregation) %>%
-      mutate(Site = Aggregation, Minimum = NA, Q1 = NA, Mean = NA, Median = NA, Q3 = NA, Maximum = NA, SD = NA, n = NA)
+      mutate(Site = Aggregation, Minimum = NA, Q1 = NA, Mean = NA, Median = NA, Q3 = NA, Maximum = NA, SD = NA, n_site_visit = NA, n = NA)
     
     summary_table <- bind_rows(group_headers, table) %>%
       mutate(Aggregation = factor(Aggregation, levels = c(month.name, 
@@ -337,9 +337,8 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 
 #Summary text
   summary_text_data <- reactive({
-    raw_data <- DataUseMultiple() 
-    #%>%
-     # filter(Year %in% DataOpts$Year)
+    raw_data <- DataUseMultiple () %>%
+      filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2])
     
     summary_data <- summary()
       

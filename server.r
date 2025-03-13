@@ -12,6 +12,7 @@ library(purrr)
 library(magrittr)
 library(openair)
 library(NADA)
+library(plotly)
 
 #### Get data ####
 WaterData<-suppressWarnings(importNCRNWater(paste0("./Data/", Network), Data=dataname, MetaData = metadataname, wqx=wqx_bool))
@@ -579,7 +580,6 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       need(DataOpts$Param, message="Choose a Water Quality Parameter")
     )  
     
-    #for loop to call getWData, df editing n times, rowbind sites
     df2 <- getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
     df1 <- suppressWarnings(df2 %>% mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
                               group_by(month) %>% mutate(num_meas = sum(!is.na(Value))) %>% 
@@ -610,25 +610,25 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       }
     
     exdf<- dplyr::bind_rows(lowerdf, upperdf)
-    exdf<- exdf %>%
+    exdf_table<- exdf %>%
       arrange(desc(Date))
     
       if(!is.na(LowerPoint) & all(df$Value > LowerPoint)) {
-        showNotification(paste0("No measurements of ", Characteristic, " at ", Sitename, " fall below the water quality threshold of ", LowerPoint, " ", Unit), type = "error", duration = 10)
+        showNotification(paste0("No measurements of ", Characteristic, " at ", Sitename, " fall below the water quality threshold of ", LowerPoint, " ", Unit), type = "error", duration = NULL, id = "n1")
       }
     
       if(!is.na(UpperPoint) & all(df$Value < UpperPoint)) {
-        showNotification(paste0("No measurements of ", Characteristic, " at ", Sitename, " exceed the water quality threshold of ", UpperPoint, " ", Unit), type = "error", duration = 10)
+        showNotification(paste0("No measurements of ", Characteristic, " at ", Sitename, " exceed the water quality threshold of ", UpperPoint, " ", Unit), type = "error", duration = NULL, id = "n2")
       }
     
       if(is.na(LowerPoint) & is.na(UpperPoint)) {
-        showNotification(paste0("There is no recorded water quality threshold for ", Characteristic, " at ", Sitename), type = "error", duration = 10)
+        showNotification(paste0("There is no recorded water quality threshold for ", Characteristic, " at ", Sitename), type = "error", duration = NULL, id = "n3")
       }
     
-    
-    return(exdf)
+    return(exdf_table)
     
   })
+  
   
 ### Exceedances data table output ####
   output$ExceedancesTable <-DT::renderDataTable(
@@ -637,6 +637,88 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
                    rownames=F, options=list(autoWidth=TRUE, dom="Bltirp", buttons=c("copy","csv","excel","pdf","print"), keys=TRUE)
     ),server=F
   )  
+  
+### Exceedances reactive text ###
+  
+  exceedances_text<-reactive({ 
+    shiny::validate(
+      need(DataOpts$Park, message=""),
+      need(DataOpts$Site, message=""),
+      need(DataOpts$Param, message="")
+    )  
+    
+    df2 <- getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
+    df1 <- suppressWarnings(df2 %>% mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
+                              group_by(month) %>% mutate(num_meas = sum(!is.na(Value))) %>% 
+                              ungroup()) %>% mutate(num_mos = length(unique(month)))
+    df <- df1[, c("OrganizationFormalName", "ActivityMediaSubdivisionName", "Date", "Characteristic", "Value", "ResultMeasure.MeasureUnitCode")]
+    df <- subset(df, !is.na(Value))
+    
+    LowerThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="LowerDescription")
+    UpperThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="UpperDescription")
+    LowerPoint<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="LowerPoint")
+    UpperPoint<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="UpperPoint")
+    Unit<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="Units")
+    Sitename<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info = "SiteName")
+    Characteristic<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info = "DisplayName")
+    
+    if(any(df$Value <= LowerPoint, na.rm = TRUE)) {
+      lowerdf<- df[df$Value < LowerPoint, ]
+      lowerdf$LowerThreshold <- LowerThreshold
+    } else{
+      lowerdf<- df[0, ]
+    }
+    
+    if(any(df$Value >= UpperPoint, na.rm = TRUE)) {
+      upperdf<- df[df$Value > UpperPoint, ]
+      upperdf$UpperThreshold <- UpperThreshold
+    } else {
+      upperdf<- df[0, ]
+    }
+    
+    exdf<- dplyr::bind_rows(lowerdf, upperdf)
+  
+  histyears<- data.frame(Year = lubridate::year(df$Date))
+  totcount<- histyears %>%
+    dplyr::count(Year) %>%
+    dplyr::rename("ntot" = "n")
+  totcount <- subset(totcount, !is.na(Year))
+  
+  excount <- exdf %>%
+    mutate(Year = lubridate::year(Date)) %>%
+    count(Year) %>%
+    dplyr::rename("nex" = "n")
+  excount <- subset(excount, !is.na(Year))
+  
+  histdata<- dplyr::left_join(totcount, excount, by = "Year")
+  histdata[is.na(histdata)] <- 0
+  histdata<- histdata %>%
+    mutate(percent_ex = (nex / ntot) * 100)
+
+    
+    recent_year<- max(histdata$Year)
+    oldest_year<- min(histdata$Year)
+    nex<- histdata[histdata$Year == recent_year, "nex"]
+    ntot<- histdata[histdata$Year == recent_year, "ntot"]
+    recent_freq<- sprintf("%.2f%%", (nex/ntot)*100)
+    sum_nex<- sum(histdata$nex)
+    sum_ntot<- sum(histdata$ntot)
+    sum_freq<- sprintf("%.2f%%", (sum_nex/sum_ntot)*100)
+    freq_comp<- ifelse((nex/ntot) > (sum_nex/sum_ntot), "greater than",
+                       ifelse((nex/ntot) == (sum_nex/sum_ntot), "equal to", "less than"))
+    
+    
+    HTML(paste0(
+      "<p><b>Exceedances Summary:</b></p>",
+      "<p>There were ", nex, " exceedances of the ", Characteristic, " water quality threshold among ", ntot, " observations at ", Sitename, " in ", recent_year, ".<p>",
+      "<p>There have been ", sum_nex, " exceedances of the ", Characteristic, " water quality threshold among ", sum_ntot, " observations at ", Sitename, " since monitoring began in ", oldest_year, ".<p>",
+      "<p>The frequency of exceedances per observation in ", recent_year, " of ", "<u>", recent_freq, "</u>", " is ", freq_comp, " the overall exceedance frequency of ", "<u>", sum_freq, "</u>", ".<p>"))
+    
+  })
+  
+  output$exceedances_summary<- renderText({
+    exceedances_text()
+  })
   
 #### Mapping ####
   

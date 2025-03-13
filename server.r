@@ -573,7 +573,41 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   observeEvent(ExceedancesParam(), DataOpts$Param<-ExceedancesParam() )
   
 ### Exceedances prep
-  
+  ExceedancesPrep<- function(Park, Site, Param, WaterData){
+    df2 <- getWData(WaterData, parkcode=Park, sitecode=Site, charname=Param)
+    df1 <- suppressWarnings(df2 %>% mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
+                              group_by(month) %>% mutate(num_meas = sum(!is.na(Value))) %>% 
+                              ungroup()) %>% mutate(num_mos = length(unique(month)))
+    df <- df1[, c("OrganizationFormalName", "ActivityMediaSubdivisionName", "Date", "Characteristic", "Value", "ResultMeasure.MeasureUnitCode")]
+    df <- subset(df, !is.na(Value))
+    
+    LowerThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info="LowerDescription")
+    UpperThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info="UpperDescription")
+    LowerPoint<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info="LowerPoint")
+    UpperPoint<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info="UpperPoint")
+    Unit<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info="Units")
+    Sitename<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info = "SiteName")
+    Characteristic<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info = "DisplayName")
+    
+    if(any(df$Value <= LowerPoint, na.rm = TRUE)) {
+      lowerdf<- df[df$Value < LowerPoint, ]
+      lowerdf$LowerThreshold <- LowerThreshold
+    } else{
+      lowerdf<- df[0, ]
+    }
+    
+    if(any(df$Value >= UpperPoint, na.rm = TRUE)) {
+      upperdf<- df[df$Value > UpperPoint, ]
+      upperdf$UpperThreshold <- UpperThreshold
+    } else {
+      upperdf<- df[0, ]
+    }
+    
+    exdf<- dplyr::bind_rows(lowerdf, upperdf)
+    
+    return(c(exdf, df))
+  }
+    
   
 ### Exceedances data use function ####
   ExceedancesDataUse<-reactive({ 
@@ -583,36 +617,45 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       need(DataOpts$Param, message="Choose a Water Quality Parameter")
     )  
     
-    df2 <- getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
-    df1 <- suppressWarnings(df2 %>% mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
-                              group_by(month) %>% mutate(num_meas = sum(!is.na(Value))) %>% 
-                              ungroup()) %>% mutate(num_mos = length(unique(month)))
-    df <- df1[, c("OrganizationFormalName", "ActivityMediaSubdivisionName", "Date", "Characteristic", "Value", "ResultMeasure.MeasureUnitCode")]
-    df <- subset(df, !is.na(Value))
+    tmp<- ExceedancesPrep(DataOpts$Park, DataOpts$Site, DataOpts$Param, WaterData)
+    df<- tmp[2]
+    exdf<- tmp[1]
     
-    LowerThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="LowerDescription")
-    UpperThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="UpperDescription")
-    LowerPoint<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="LowerPoint")
-    UpperPoint<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="UpperPoint")
-    Unit<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="Units")
-    Sitename<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info = "SiteName")
-    Characteristic<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info = "DisplayName")
+    print(df)
+    print(exdf)
+    print(class(df))
+    print(class(tmp))
     
-      if(any(df$Value <= LowerPoint, na.rm = TRUE)) {
-        lowerdf<- df[df$Value < LowerPoint, ]
-        lowerdf$LowerThreshold <- LowerThreshold
-      } else{
-        lowerdf<- df[0, ]
-      }
-    
-      if(any(df$Value >= UpperPoint, na.rm = TRUE)) {
-        upperdf<- df[df$Value > UpperPoint, ]
-        upperdf$UpperThreshold <- UpperThreshold
-      } else {
-        upperdf<- df[0, ]
-      }
-    
-    exdf<- dplyr::bind_rows(lowerdf, upperdf)
+    # df2 <- getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
+    # df1 <- suppressWarnings(df2 %>% mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
+    #                           group_by(month) %>% mutate(num_meas = sum(!is.na(Value))) %>% 
+    #                           ungroup()) %>% mutate(num_mos = length(unique(month)))
+    # df <- df1[, c("OrganizationFormalName", "ActivityMediaSubdivisionName", "Date", "Characteristic", "Value", "ResultMeasure.MeasureUnitCode")]
+    # df <- subset(df, !is.na(Value))
+    # 
+    # LowerThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="LowerDescription")
+    # UpperThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="UpperDescription")
+    # LowerPoint<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="LowerPoint")
+    # UpperPoint<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="UpperPoint")
+    # Unit<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="Units")
+    # Sitename<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info = "SiteName")
+    # Characteristic<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info = "DisplayName")
+    # 
+    #   if(any(df$Value <= LowerPoint, na.rm = TRUE)) {
+    #     lowerdf<- df[df$Value < LowerPoint, ]
+    #     lowerdf$LowerThreshold <- LowerThreshold
+    #   } else{
+    #     lowerdf<- df[0, ]
+    #   }
+    # 
+    #   if(any(df$Value >= UpperPoint, na.rm = TRUE)) {
+    #     upperdf<- df[df$Value > UpperPoint, ]
+    #     upperdf$UpperThreshold <- UpperThreshold
+    #   } else {
+    #     upperdf<- df[0, ]
+    #   }
+    # 
+    # exdf<- dplyr::bind_rows(lowerdf, upperdf)
     exdf<- exdf %>%
       arrange(desc(Date))
     

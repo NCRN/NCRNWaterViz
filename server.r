@@ -265,11 +265,11 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 
 ### Summary table output ####
   output$SummaryTable <-DT::renderDataTable({
-    shiny::validate(
-      need(DataOpts$Park, message="Choose a Park"),
-      need(DataOpts$Site, message="Choose a Site"),
-      need(DataOpts$Param, message="Choose a Water Quality Parameter")
-    )  
+   # shiny::validate(
+    #  need(DataOpts$Park, message="Choose a Park"),
+     # need(DataOpts$Site, message="Choose a Site"),
+      #need(DataOpts$Param, message="Choose a Water Quality Parameter")
+    #)  
     table <- summary()
     
     table <- table %>%
@@ -370,9 +370,13 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     
     site_list <- paste(
       sapply(1:length(avg_summary$Site), function(i) { 
-                        paste0("<li><b>", avg_summary$SiteName[i], ":</b> mean is ", round(avg_summary$avg_mean[i], 2), " ", summary_units,
-                        " and the median is ", round(avg_summary$avg_median[i], 2), " ", summary_units, ".</li>") }), 
+                        paste0("<li><b>", avg_summary$SiteName[i], " -</b> Mean: ", round(avg_summary$avg_mean[i], 2), " ", summary_units,
+                        " | Median: ", round(avg_summary$avg_median[i], 2), " ", summary_units, ".</li>") }), 
       collapse = "")
+     # sapply(1:length(avg_summary$Site), function(i) { 
+      #                  paste0("<li><b>", avg_summary$SiteName[i], ":</b> mean is ", round(avg_summary$avg_mean[i], 2), " ", summary_units,
+       #                 " and the median is ", round(avg_summary$avg_median[i], 2), " ", summary_units, ".</li>") }), 
+      #collapse = "")
 
     #Highest/Lowest values
     highest_value <- raw_data[which.max(raw_data$Value), ]

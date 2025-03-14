@@ -719,7 +719,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       "<p><b>Exceedances Summary:</b></p>",
       "<p>There were ", nex, " exceedances of the ", Characteristic, " water quality threshold among ", ntot, " observations at ", Sitename, " in ", recent_year, ".<p>",
       "<p>There have been ", sum_nex, " exceedances of the ", Characteristic, " water quality threshold among ", sum_ntot, " observations at ", Sitename, " since monitoring began in ", oldest_year, ".<p>",
-      "<p>The frequency of exceedances per observation in ", recent_year, " of ", "<u>", recent_freq, "</u>", " is ", freq_comp, " the overall exceedance frequency of ", "<u>", sum_freq, "</u>", ".<p>"))
+      "<p><u>", recent_freq, "</u>", " of observations exceeded the water quality threshold in ", recent_year, ", ", freq_comp, " the overall exceedance percentage of ", "<u>", sum_freq, "</u>", ".<p>"))
     
   })
   
@@ -762,16 +762,28 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     histdata<- dplyr::left_join(totcount, excount, by = "Year")
     histdata[is.na(histdata)] <- 0
     histdata<- histdata %>%
-      mutate(percent_ex = (nex / ntot) * 100)
+      dplyr::mutate(percent_ex = (nex / ntot) * 100) %>%
+      dplyr::mutate(formatted_percent_ex = scales::percent(percent_ex / 100, accuracy = 0.01))
+    
+    ExPoint<- dplyr::case_when(
+      is.na(UpperPoint) == TRUE & !is.na(LowerPoint) == TRUE ~ LowerPoint
+      ,!is.na(UpperPoint) == TRUE & is.na(LowerPoint) == TRUE ~ UpperPoint
+      ,!is.na(UpperPoint) == TRUE & !is.na(LowerPoint) == TRUE & any(exdf$Value <= LowerPoint, na.rm=TRUE) & all(exdf$Value < UpperPoint, na.rm=TRUE) ~ LowerPoint
+      ,!is.na(UpperPoint) == TRUE & !is.na(LowerPoint) == TRUE & any(exdf$Value >= UpperPoint, na.rm=TRUE) & all(exdf$Value > LowerPoint, na.rm=TRUE) ~ UpperPoint
+      # ,!is.na(UpperPoint) == TRUE & !is.na(LowerPoint) == TRUE & any(exdf$Value >= UpperPoint, na.rm=TRUE) & any(exdf$Value <= LowerPoint, na.rm=TRUE) ~ paste0(LowerPoint, " and ", UpperPoint)
+    )
     
   # Plotting
-      p<- ggplot(histdata, aes(x = Year, y = percent_ex, text = paste0(totcount$ntot, " total observations"))) +
+      p<- ggplot(histdata, aes(x = Year, y = percent_ex,
+                               text = paste0(Year, ", ", Characteristic, "\n",
+                                             ntot, " total observation(s)", "\n",
+                                             formatted_percent_ex, " of observations exceeding ", ExPoint, " ", Unit))) +
       geom_bar(stat = "identity", fill = "lightgray") +
       ylim(0, 100) +
       labs(
-        title = paste0("Frequency of exceedance per observation of ", Characteristic, " at ", Sitename),
+        title = paste0("Percent of ", Characteristic, " observations exceeding the water quality threshold at ", Sitename),
         x = "Year",
-        y = "% exceedance") +
+        y = "% observations") +
       theme_minimal() +
       theme(
         panel.grid.major = element_blank(),
@@ -785,20 +797,18 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   
   output$exceedances_hist <- renderUI({
     if (show_plot()) {
-      plotlyOutput("plot")  # Show plot only when 'show_plot' is TRUE
+      plotlyOutput("hist")
     }
   })
   
-  # Render the plot when 'show_plot' is TRUE
-  output$plot <- renderPlotly({
+  output$hist <- renderPlotly({
     exceedances_hist_plot()
   })
   
-  # Toggle the plot visibility when the button is clicked
   observeEvent(input$hist_button, {
-    show_plot(!show_plot())  # Toggle the reactive value
+    show_plot(!show_plot())
     new_label <- ifelse(show_plot(), "Hide Histogram", "Show Histogram")
-    updateActionButton(session, "hist_button", label = new_label)  # Update button label
+    updateActionButton(session, "hist_button", label = new_label)
   })
   
 #### Mapping ####

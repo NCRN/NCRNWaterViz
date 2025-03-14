@@ -148,14 +148,14 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   #  return(df)
   #})
   
-  
   ####  Housekeeping of data --Multiple site selections ####
  DataUseMultiple <-reactive({ 
-    shiny::validate(
-      need(DataOpts$Park, message="Choose a Park"),
-      need(DataOpts$Site, message="Choose a Site"),
-      need(DataOpts$Param, message="Choose a Water Quality Parameter")
-    )  
+     shiny::validate(
+       need(DataOpts$Park, message="Choose a Park"),
+       need(DataOpts$Site, message="Choose a Site"),
+       need(DataOpts$Param, message="Choose a Water Quality Parameter")
+     )  
+
     combined_data <- data.frame()
     for (site in DataOpts$Site) {
       site_data <- getWData(WaterData, parkcode=DataOpts$Park, sitecode= site, charname=DataOpts$Param)
@@ -265,11 +265,6 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 
 ### Summary table output ####
   output$SummaryTable <-DT::renderDataTable({
-   # shiny::validate(
-    #  need(DataOpts$Park, message="Choose a Park"),
-     # need(DataOpts$Site, message="Choose a Site"),
-      #need(DataOpts$Param, message="Choose a Water Quality Parameter")
-    #)  
     table <- summary()
     
     table <- table %>%
@@ -360,6 +355,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   
 #Summary text
   summary_text_data <- reactive({
+    req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
     raw_data <- DataUseMultiple () %>%
       filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2])
     

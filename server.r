@@ -334,7 +334,30 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       }
     )
   })
-
+  
+  #Notification pop-up when all data is missing in table
+  observe({
+    req(summary())
+    notifs <- summary()
+    
+    numeric_table <- notifs %>%
+      select(-c(n, n_site_visit, Aggregation, Site))
+    
+    numeric_table <- as.data.frame(numeric_table)
+    numeric_table[is.infinite(as.matrix(numeric_table)) | is.nan(as.matrix(numeric_table))] <- NA
+    
+    if (nrow(numeric_table) > 0 &&
+        all(is.na(numeric_table))) {
+      if (!isTRUE(isolate(session$userData$popup))) {
+        showNotification(
+          paste("No data collected for", DataOpts$Param, "at selected sites."), 
+          type = "warning", 
+          duration = 15)
+        session$userData$popup <- TRUE }
+    } else {
+      session$userData$popup <- FALSE }
+  }, priority = 1)
+  
 #Summary text
   summary_text_data <- reactive({
     raw_data <- DataUseMultiple () %>%
@@ -400,29 +423,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   output$summary_text <- renderText({
     summary_text_data()
 })
-  
-  #Notification pop-up when all data is missing in table
-  observe({
-    req(summary())
-    notifs <- summary()
 
-    numeric_table <- notifs %>%
-      select(-c(n, Aggregation, Site))
-    
-    numeric_table <- as.data.frame(numeric_table)
-    numeric_table[is.infinite(as.matrix(numeric_table)) | is.nan(as.matrix(numeric_table))] <- NA
-    
-    if (nrow(numeric_table) > 0 &&
-        all(is.na(numeric_table))) {
-      if (!isTRUE(isolate(session$userData$popup))) {
-      showNotification(
-        paste("No data collected for", DataOpts$Param, "at selected sites."), 
-        type = "warning", 
-        duration = 15)
-        session$userData$popup <- TRUE }
-    } else {
-      session$userData$popup <- FALSE }
-  }, priority = 1)
   
 #### Summaries of Seasonality and Trends ####
   output$SeasonOut<-renderText({

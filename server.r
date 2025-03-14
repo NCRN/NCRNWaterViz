@@ -608,7 +608,13 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     tmp <- list(
       'exdf'=exdf
       ,'df'=df
+      ,'lowerthreshold'=LowerThreshold
+      ,'upperthreshold'=UpperThreshold
       ,'lowerpoint'=LowerPoint
+      ,'upperpoint'=UpperPoint
+      ,'unit'=Unit
+      ,'characteristic'=Characteristic
+      ,'sitename'=Sitename
       )
     return(tmp)
   }
@@ -619,44 +625,19 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     shiny::validate(
       need(DataOpts$Park, message="Choose a Park"),
       need(DataOpts$Site, message="Choose a Site"),
-      need(DataOpts$Param, message="Choose a Water Quality Parameter")
-    )  
+      need(DataOpts$Param, message="Choose a Water Quality Parameter"))  
     
     tmp <- ExceedancesPrep(DataOpts$Park, DataOpts$Site, DataOpts$Param, WaterData)
     exdf <- tmp$exdf
     df <- tmp$df
+    LowerThreshold <- tmp$lowerthreshold
+    UpperThreshold <- tmp$upperthreshold
     LowerPoint <- tmp$lowerpoint
+    UpperPoint <- tmp$upperpoint
+    Unit <- tmp$unit
+    Characteristic <- tmp$characteristic
+    Sitename <- tmp$sitename
 
-    # df2 <- getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
-    # df1 <- suppressWarnings(df2 %>% mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
-    #                           group_by(month) %>% mutate(num_meas = sum(!is.na(Value))) %>% 
-    #                           ungroup()) %>% mutate(num_mos = length(unique(month)))
-    # df <- df1[, c("OrganizationFormalName", "ActivityMediaSubdivisionName", "Date", "Characteristic", "Value", "ResultMeasure.MeasureUnitCode")]
-    # df <- subset(df, !is.na(Value))
-    # 
-    # LowerThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="LowerDescription")
-    # UpperThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="UpperDescription")
-    # LowerPoint<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="LowerPoint")
-    # UpperPoint<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="UpperPoint")
-    # Unit<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="Units")
-    # Sitename<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info = "SiteName")
-    # Characteristic<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info = "DisplayName")
-    # 
-    #   if(any(df$Value <= LowerPoint, na.rm = TRUE)) {
-    #     lowerdf<- df[df$Value < LowerPoint, ]
-    #     lowerdf$LowerThreshold <- LowerThreshold
-    #   } else{
-    #     lowerdf<- df[0, ]
-    #   }
-    # 
-    #   if(any(df$Value >= UpperPoint, na.rm = TRUE)) {
-    #     upperdf<- df[df$Value > UpperPoint, ]
-    #     upperdf$UpperThreshold <- UpperThreshold
-    #   } else {
-    #     upperdf<- df[0, ]
-    #   }
-    # 
-    # exdf<- dplyr::bind_rows(lowerdf, upperdf)
     exdf<- exdf %>%
       arrange(desc(Date))
 
@@ -691,40 +672,20 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     shiny::validate(
       need(DataOpts$Park, message=""),
       need(DataOpts$Site, message=""),
-      need(DataOpts$Param, message="")
-    )  
+      need(DataOpts$Param, message=""))
     
-    df2 <- getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
-    df1 <- suppressWarnings(df2 %>% mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
-                              group_by(month) %>% mutate(num_meas = sum(!is.na(Value))) %>% 
-                              ungroup()) %>% mutate(num_mos = length(unique(month)))
-    df <- df1[, c("OrganizationFormalName", "ActivityMediaSubdivisionName", "Date", "Characteristic", "Value", "ResultMeasure.MeasureUnitCode")]
-    df <- subset(df, !is.na(Value))
-    
-    LowerThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="LowerDescription")
-    UpperThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="UpperDescription")
-    LowerPoint<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="LowerPoint")
-    UpperPoint<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="UpperPoint")
-    Unit<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="Units")
-    Sitename<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info = "SiteName")
-    Characteristic<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info = "DisplayName")
-    
-    if(any(df$Value <= LowerPoint, na.rm = TRUE)) {
-      lowerdf<- df[df$Value < LowerPoint, ]
-      lowerdf$LowerThreshold <- LowerThreshold
-    } else{
-      lowerdf<- df[0, ]
-    }
-    
-    if(any(df$Value >= UpperPoint, na.rm = TRUE)) {
-      upperdf<- df[df$Value > UpperPoint, ]
-      upperdf$UpperThreshold <- UpperThreshold
-    } else {
-      upperdf<- df[0, ]
-    }
-    
-    exdf<- dplyr::bind_rows(lowerdf, upperdf)
+    tmp <- ExceedancesPrep(DataOpts$Park, DataOpts$Site, DataOpts$Param, WaterData)
+    exdf <- tmp$exdf
+    df <- tmp$df
+    LowerThreshold <- tmp$lowerthreshold
+    UpperThreshold <- tmp$upperthreshold
+    LowerPoint <- tmp$lowerpoint
+    UpperPoint <- tmp$upperpoint
+    Unit <- tmp$unit
+    Characteristic <- tmp$characteristic
+    Sitename <- tmp$sitename
   
+  # Data wrangling
   histyears<- data.frame(Year = lubridate::year(df$Date))
   totcount<- histyears %>%
     dplyr::count(Year) %>%
@@ -742,20 +703,19 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   histdata<- histdata %>%
     mutate(percent_ex = (nex / ntot) * 100)
 
-    
-    recent_year<- max(histdata$Year)
-    oldest_year<- min(histdata$Year)
-    nex<- histdata[histdata$Year == recent_year, "nex"]
-    ntot<- histdata[histdata$Year == recent_year, "ntot"]
-    recent_freq<- sprintf("%.2f%%", (nex/ntot)*100)
-    sum_nex<- sum(histdata$nex)
-    sum_ntot<- sum(histdata$ntot)
-    sum_freq<- sprintf("%.2f%%", (sum_nex/sum_ntot)*100)
-    freq_comp<- ifelse((nex/ntot) > (sum_nex/sum_ntot), "greater than",
+  recent_year<- max(histdata$Year)
+  oldest_year<- min(histdata$Year)
+  nex<- histdata[histdata$Year == recent_year, "nex"]
+  ntot<- histdata[histdata$Year == recent_year, "ntot"]
+  recent_freq<- sprintf("%.2f%%", (nex/ntot)*100)
+  sum_nex<- sum(histdata$nex)
+  sum_ntot<- sum(histdata$ntot)
+  sum_freq<- sprintf("%.2f%%", (sum_nex/sum_ntot)*100)
+  freq_comp<- ifelse((nex/ntot) > (sum_nex/sum_ntot), "greater than",
                        ifelse((nex/ntot) == (sum_nex/sum_ntot), "equal to", "less than"))
     
-    
-    HTML(paste0(
+  # Writing
+   HTML(paste0(
       "<p><b>Exceedances Summary:</b></p>",
       "<p>There were ", nex, " exceedances of the ", Characteristic, " water quality threshold among ", ntot, " observations at ", Sitename, " in ", recent_year, ".<p>",
       "<p>There have been ", sum_nex, " exceedances of the ", Characteristic, " water quality threshold among ", sum_ntot, " observations at ", Sitename, " since monitoring began in ", oldest_year, ".<p>",
@@ -773,40 +733,20 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     shiny::validate(
       need(DataOpts$Park, message=""),
       need(DataOpts$Site, message=""),
-      need(DataOpts$Param, message="")
-    )  
+      need(DataOpts$Param, message=""))
     
-    df2 <- getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
-    df1 <- suppressWarnings(df2 %>% mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
-                              group_by(month) %>% mutate(num_meas = sum(!is.na(Value))) %>% 
-                              ungroup()) %>% mutate(num_mos = length(unique(month)))
-    df <- df1[, c("OrganizationFormalName", "ActivityMediaSubdivisionName", "Date", "Characteristic", "Value", "ResultMeasure.MeasureUnitCode")]
-    df <- subset(df, !is.na(Value))
+    tmp <- ExceedancesPrep(DataOpts$Park, DataOpts$Site, DataOpts$Param, WaterData)
+    exdf <- tmp$exdf
+    df <- tmp$df
+    LowerThreshold <- tmp$lowerthreshold
+    UpperThreshold <- tmp$upperthreshold
+    LowerPoint <- tmp$lowerpoint
+    UpperPoint <- tmp$upperpoint
+    Unit <- tmp$unit
+    Characteristic <- tmp$characteristic
+    Sitename <- tmp$sitename
     
-    LowerThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="LowerDescription")
-    UpperThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="UpperDescription")
-    LowerPoint<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="LowerPoint")
-    UpperPoint<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="UpperPoint")
-    Unit<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="Units")
-    Sitename<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info = "SiteName")
-    Characteristic<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info = "DisplayName")
-    
-    if(any(df$Value <= LowerPoint, na.rm = TRUE)) {
-      lowerdf<- df[df$Value < LowerPoint, ]
-      lowerdf$LowerThreshold <- LowerThreshold
-    } else{
-      lowerdf<- df[0, ]
-    }
-    
-    if(any(df$Value >= UpperPoint, na.rm = TRUE)) {
-      upperdf<- df[df$Value > UpperPoint, ]
-      upperdf$UpperThreshold <- UpperThreshold
-    } else {
-      upperdf<- df[0, ]
-    }
-    
-    exdf<- dplyr::bind_rows(lowerdf, upperdf)
-    
+  # Data wrangling
     histyears<- data.frame(Year = lubridate::year(df$Date))
     totcount<- histyears %>%
       dplyr::count(Year) %>%
@@ -824,6 +764,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     histdata<- histdata %>%
       mutate(percent_ex = (nex / ntot) * 100)
     
+  # Plotting
       p<- ggplot(histdata, aes(x = Year, y = percent_ex, text = paste0(totcount$ntot, " total observations"))) +
       geom_bar(stat = "identity", fill = "lightgray") +
       ylim(0, 100) +
@@ -840,10 +781,24 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   
 })
   
+  show_plot <- reactiveVal(FALSE)
+  
+  output$exceedances_hist <- renderUI({
+    if (show_plot()) {
+      plotlyOutput("plot")  # Show plot only when 'show_plot' is TRUE
+    }
+  })
+  
+  # Render the plot when 'show_plot' is TRUE
+  output$plot <- renderPlotly({
+    exceedances_hist_plot()
+  })
+  
+  # Toggle the plot visibility when the button is clicked
   observeEvent(input$hist_button, {
-    output$exceedances_hist <- renderPlotly({
-     exceedances_hist_plot()
-    })
+    show_plot(!show_plot())  # Toggle the reactive value
+    new_label <- ifelse(show_plot(), "Hide Histogram", "Show Histogram")
+    updateActionButton(session, "hist_button", label = new_label)  # Update button label
   })
   
 #### Mapping ####

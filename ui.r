@@ -1,5 +1,6 @@
 library(shiny)
 library(leaflet)
+library(plotly)
 
 ColorNames<-GraphColors$DisplayColor
 
@@ -166,12 +167,13 @@ shinyUI(
                              parkChooserUI("DataParkExceedances"),
                              siteChooserUI("DataSiteExceedances"),
                              paramChooserUI("DataParamExceedances"),
-                             actionButton("hist_button", "Render Histogram")
+                             actionButton("hist_button", "Show Histogram")
                )),
                column(9,              
                       uiOutput("exceedances_summary"),
-                      plotlyOutput("exceedances_hist"),
+                      uiOutput("exceedances_hist"),
                       DT::dataTableOutput("ExceedancesTable")),
+                      
     
                
       ),

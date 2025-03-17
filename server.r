@@ -707,7 +707,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     Characteristic <- tmp$characteristic
     Sitename <- tmp$sitename
     
-  SummarizeExceedances(df, exdf)
+  histdata<- SummarizeExceedances(df, exdf)
 
   # Text prep
   recent_year<- max(histdata$Year)
@@ -769,7 +769,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     Characteristic <- tmp$characteristic
     Sitename <- tmp$sitename
     
-  SummarizeExceedances(df, exdf)
+  histdata<- SummarizeExceedances(df, exdf)
     
   # Plot prep
     ExPoint<- dplyr::case_when(

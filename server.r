@@ -666,6 +666,28 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     ),server=F
   )  
   
+### SummarizeExceedances() function ###
+  SummarizeExceedances<- function(df, exdf){
+    histyears<- data.frame(Year = lubridate::year(df$Date))
+    totcount<- histyears %>%
+      dplyr::count(Year) %>%
+      dplyr::rename("ntot" = "n")
+    totcount <- subset(totcount, !is.na(Year))
+    
+    excount <- exdf %>%
+      dplyr::mutate(Year = lubridate::year(Date)) %>%
+      dplyr::count(Year) %>%
+      dplyr::rename("nex" = "n")
+    excount <- subset(excount, !is.na(Year))
+    
+    histdata<- dplyr::left_join(totcount, excount, by = "Year")
+    histdata[is.na(histdata)] <- 0
+    histdata<- histdata %>%
+      dplyr::mutate(percent_ex = (nex / ntot) * 100) %>%
+      dplyr::mutate(formatted_percent_ex = scales::percent(percent_ex / 100, accuracy = 0.01))
+    
+    return(histdata)
+  }
 ### Exceedances reactive text ###
   
   exceedances_text<-reactive({ 
@@ -684,25 +706,10 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     Unit <- tmp$unit
     Characteristic <- tmp$characteristic
     Sitename <- tmp$sitename
-  
-  # Data wrangling
-  histyears<- data.frame(Year = lubridate::year(df$Date))
-  totcount<- histyears %>%
-    dplyr::count(Year) %>%
-    dplyr::rename("ntot" = "n")
-  totcount <- subset(totcount, !is.na(Year))
-  
-  excount <- exdf %>%
-    mutate(Year = lubridate::year(Date)) %>%
-    count(Year) %>%
-    dplyr::rename("nex" = "n")
-  excount <- subset(excount, !is.na(Year))
-  
-  histdata<- dplyr::left_join(totcount, excount, by = "Year")
-  histdata[is.na(histdata)] <- 0
-  histdata<- histdata %>%
-    mutate(percent_ex = (nex / ntot) * 100)
+    
+  SummarizeExceedances(df, exdf)
 
+  # Text prep
   recent_year<- max(histdata$Year)
   oldest_year<- min(histdata$Year)
   nex<- histdata[histdata$Year == recent_year, "nex"]
@@ -713,14 +720,30 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   sum_freq<- sprintf("%.2f%%", (sum_nex/sum_ntot)*100)
   freq_comp<- ifelse((nex/ntot) > (sum_nex/sum_ntot), "greater than",
                        ifelse((nex/ntot) == (sum_nex/sum_ntot), "equal to", "less than"))
+  grammar1<- if(nex==1) {
+    paste("There was", nex, "exceedance of the ")
+  } else {
+    paste("There were", nex, "exceedances of the ")
+  }
+  grammar2<- if(sum_nex==1) {
+    paste("There has been", sum_nex, "exceedance of the ")
+  } else {
+    paste("There have been", sum_nex, "exceedances of the ")
+  }
     
-  # Writing
-   HTML(paste0(
-      "<p><b>Exceedances Summary:</b></p>",
-      "<p>There were ", nex, " exceedances of the ", Characteristic, " water quality threshold among ", ntot, " observations at ", Sitename, " in ", recent_year, ".<p>",
-      "<p>There have been ", sum_nex, " exceedances of the ", Characteristic, " water quality threshold among ", sum_ntot, " observations at ", Sitename, " since monitoring began in ", oldest_year, ".<p>",
-      "<p><u>", recent_freq, "</u>", " of observations exceeded the water quality threshold in ", recent_year, ", ", freq_comp, " the overall exceedance percentage of ", "<u>", sum_freq, "</u>", ".<p>"))
-    
+  # Writing text
+  summary<- c(
+    paste0(grammar1, Characteristic, " water quality threshold among ", ntot, " observations at ", Sitename, " in ", recent_year, ".")
+    ,paste0(grammar2, Characteristic, " water quality threshold among ", sum_ntot, " observations at ", Sitename, " since monitoring began in ", oldest_year, ".")
+    ,paste0("<u>", recent_freq, "</u>", " of observations exceeded the water quality threshold in ", recent_year, ", ", freq_comp, " the overall exceedance percentage of ", "<u>", sum_freq, "</u>", ".")
+  )
+  summary_bullets<- paste0("<li>", summary, "</li>", collapse = "")
+   
+  HTML(paste0(
+    "<p><b>Exceedances Summary:</b></p>",
+    "<ul>", summary_bullets, "</ul>"
+  ))
+   
   })
   
   output$exceedances_summary<- renderText({
@@ -746,25 +769,9 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     Characteristic <- tmp$characteristic
     Sitename <- tmp$sitename
     
-  # Data wrangling
-    histyears<- data.frame(Year = lubridate::year(df$Date))
-    totcount<- histyears %>%
-      dplyr::count(Year) %>%
-      dplyr::rename("ntot" = "n")
-    totcount <- subset(totcount, !is.na(Year))
+  SummarizeExceedances(df, exdf)
     
-    excount <- exdf %>%
-      mutate(Year = lubridate::year(Date)) %>%
-      count(Year) %>%
-      dplyr::rename("nex" = "n")
-    excount <- subset(excount, !is.na(Year))
-    
-    histdata<- dplyr::left_join(totcount, excount, by = "Year")
-    histdata[is.na(histdata)] <- 0
-    histdata<- histdata %>%
-      dplyr::mutate(percent_ex = (nex / ntot) * 100) %>%
-      dplyr::mutate(formatted_percent_ex = scales::percent(percent_ex / 100, accuracy = 0.01))
-    
+  # Plot prep
     ExPoint<- dplyr::case_when(
       is.na(UpperPoint) == TRUE & !is.na(LowerPoint) == TRUE ~ LowerPoint
       ,!is.na(UpperPoint) == TRUE & is.na(LowerPoint) == TRUE ~ UpperPoint
@@ -774,20 +781,20 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     )
     
   # Plotting
-      p<- ggplot(histdata, aes(x = Year, y = percent_ex,
-                               text = paste0(Year, ", ", Characteristic, "\n",
-                                             ntot, " total observation(s)", "\n",
-                                             formatted_percent_ex, " of observations exceeding ", ExPoint, " ", Unit))) +
-      geom_bar(stat = "identity", fill = "lightgray") +
-      ylim(0, 100) +
-      labs(
-        title = paste0("Percent of ", Characteristic, " observations exceeding the water quality threshold at ", Sitename),
-        x = "Year",
-        y = "% observations") +
-      theme_minimal() +
-      theme(
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank())
+    p<- ggplot(histdata, aes(x = Year, y = percent_ex,
+                              text = paste0(Year, ", ", Characteristic, "\n",
+                                            ntot, " total observation(s)", "\n",
+                                            formatted_percent_ex, " of observations exceeding ", ExPoint, " ", Unit))) +
+        geom_bar(stat = "identity", fill = "lightgray") +
+        ylim(0, 100) +
+        labs(
+          title = paste0("Percent of ", Characteristic, " observations exceeding the water quality threshold at ", Sitename),
+          x = "Year",
+          y = "% observations") +
+        theme_minimal() +
+        theme(
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank())
     
     ggplotly(p, tooltip = "text")
   

@@ -34,21 +34,21 @@ yearChooser<-function(input,output,session,data,chosen)  {
 }
 
 #### Date Module ####
-daterangeChooserUI <-function(id){
-  ns<-NS(id)
-  dateRangeInput(inputId=ns("DateRangeIn"), label="4. Date Range (optional)", start = 2005-01-01, end = NULL)
-}
-
-daterangeChooser<-function(input,output,session,data, chosen)  {
-  observe({
-    req(data())
-    MinDate<-min(data()$Date, na.rm=T)
-    MaxDate<-max(data()$Date, na.rm=T)
-    updateDateRangeInput(session, "DateRangeIn", start = MinDate, end = MaxDate) 
-    })
-
-  return(reactive(input$DateRangeIn))
-}
+# daterangeChooserUI <-function(id){
+#   ns<-NS(id)
+#   dateRangeInput(inputId=ns("DateRangeIn"), label="4. Date Range (optional)", start = 2005-01-01, end = NULL)
+# }
+# 
+# daterangeChooser<-function(input,output,session,data, chosen)  {
+#   observe({
+#     req(data())
+#     MinDate<-min(data()$Date, na.rm=T)
+#     MaxDate<-max(data()$Date, na.rm=T)
+#     updateDateRangeInput(session, "DateRangeIn", start = MinDate, end = MaxDate)
+#     })
+# 
+#   return(reactive(input$DateRangeIn))
+# }
 
 #### Park Module ####
 

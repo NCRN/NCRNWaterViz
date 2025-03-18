@@ -172,7 +172,22 @@ shinyUI(
                column(9,              
                       uiOutput("exceedances_summary"),
                       uiOutput("exceedances_hist"),
-                      DT::dataTableOutput("ExceedancesTable")),
+                      DT::dataTableOutput("ExceedancesTable"),
+                      
+                      tags$style(HTML("
+    .shiny-notification {
+      background-color: #D0342C;
+      color: white;
+      font-size: 18px;
+      border-radius: 10px;
+      padding: 15px;
+    }
+    .shiny-notification-close {
+      color: white;
+    }
+    "))
+                      
+                      ),
                       
     
                

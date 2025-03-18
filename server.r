@@ -650,7 +650,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       }
 
       if(is.na(LowerPoint) & is.na(UpperPoint)) {
-        showNotification(paste0("There is no recorded water quality threshold for ", Characteristic, " at ", Sitename), type = "error", duration = 10, id = "n3")
+        showNotification(paste0("There is no recorded water quality threshold for ", Characteristic, " at ", Sitename, "."), type = "error", duration = 10, id = "n3")
       }
     
     return(exdf)

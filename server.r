@@ -256,9 +256,15 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     #     n_site_visit, int, count of observations for unique site visits
     #     n, int, count of total observations
     #
-    # Examples:
-    #  DataOpts$Years= 2007
-    #  input$SummaryBoxBy = "month"
+    # Example:
+    #   DataOpts$Years <- 2010,
+    #   input$SummaryBoxBy <- "month"
+    #   
+    #   summary <- reactive({
+    #     DataOpts$Years, 
+    #     input$SummaryBoxBy
+    #    })
+    #
     
     data_values <- DataUseMultiple () %>%
     
@@ -297,9 +303,12 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     #  DT::datatable. A formatted data table with statistical values according to user input and grouped according to aggregation type (year, month, site).
     # 
     # Example:
-    #  output$SummaryTable <-DT::renderDataTable({
-    #      DataOpts$Park = "ANTI",
-    #      input$SummaryBoxBy = "year"
+    #   DataOpts$Park <- "ANTI",
+    #   input$SummaryBoxBy <- "year"
+    #   
+    #   output$SummaryTable <-DT::renderDataTable({
+    #      DataOpts$Park,
+    #      input$SummaryBoxBy
     #   })
     
     table <- summary()
@@ -376,9 +385,13 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     #  Pop-up notification, indicates that no data was recorded at selected site(s) for selected parameter. 
     #
     # Example:
+    #  DataOpts$Param <- "DOmg"
+    #
     #  shiny::observe({
+    #     if (!session$userData$popup)
+    #     shiny::showNotification(
+    #     paste("No data collected for", DataOpts$Param, "at selected sites."), type = "warning")
     #     session$userData$popup <- TRUE
-    #     DataOpts$Param<- "DOmg"
     #   })
     
     shiny::req(summary(), DataOpts$Param)
@@ -425,13 +438,14 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     #     DataOpts$Park<-"ANTI"
     #     DataOpts$Site<- "NCRN_ANTI_ANCR",
     #     DataOpts$Param<- "DOmg",
+    #     DataOpts$Years<- 2008,   
+    #
     #   summary_text_data <- reactive({
     #     DataOpts$Park,
     #     DataOpts$Site,
     #     DataOpts$Param,
-    #     DataOpts$Years= 2008
+    #     DataOpts$Years
     #   })
-    #
     
     req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
     raw_data <- DataUseMultiple () %>%

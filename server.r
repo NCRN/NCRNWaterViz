@@ -262,7 +262,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     
     data_values <- DataUseMultiple () %>%
     
-    dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% # for date range (after)
+    dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #year filtering
 
     #Aggregation
     dplyr::mutate(Date = as.Date(Date)) %>%
@@ -345,24 +345,23 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     summary_table <- summary_table %>%
       dplyr::select(-Aggregation, -is_group)
 
- DT::datatable(summary_table, extensions=c("Buttons", "KeyTable"),
+    DT::datatable(summary_table, extensions=c("Buttons", "KeyTable"),
                  #caption=tags$caption(h3(Title())),
                  class="stripe hover order-column cell-border",
-                 rownames=F, options=list(pageLength = 100, autoWidth=TRUE, ordering= FALSE, 
+                 rownames=F, options=list(paging = FALSE, autoWidth=TRUE, ordering= FALSE, 
                                           dom= "Bltipr", buttons=c("copy","csv","excel","pdf","print"), keys = TRUE)) %>%
-  #,server=F)
+    #,server=F)
   
     DT::formatStyle("Site", fontWeight = if(input$SummaryBoxBy %in% c("month", "year")) {
       DT::styleEqual(group_headers$Site, rep("bold", nrow(group_headers)))
-    } else if (input$SummaryBoxBy == "site") { "bold" } else { 
-      NULL},
-      backgroundColor = if(input$SummaryBoxBy %in% c("month", "year")) {
-        DT::styleEqual(group_headers$Site, rep("#f0f0f0", nrow(group_headers)))
+    } else if (input$SummaryBoxBy == "site") { "bold" } else { NULL }
+      ,backgroundColor = if(input$SummaryBoxBy %in% c("month", "year")) {
+       DT::styleEqual(group_headers$Site, rep("#f0f0f0", nrow(group_headers)))
       } else {
         NULL
       }
-    )
-  })
+     )
+    })
   
   #Notification pop-up when all data is missing in table
   shiny::observe({
@@ -401,9 +400,9 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
         session$userData$popup <- TRUE }
     } else {
       session$userData$popup <- FALSE }
-  }, priority = 1)
+    }, priority = 1)
   
-#Summary text
+### Summary text ###
   summary_text_data <- reactive({
     # Generates a reactive summary text to display mean and median values for the selected parameter and site(s), along with the 
     #       highest and lowest recorded values across sites, including the month and year they occurred. 
@@ -431,7 +430,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2])
     
     summary_data <- summary()
-
+    
     #Full characteristic name
     char_info <- data.frame(
       Char = NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, info = "CharName"),
@@ -476,11 +475,11 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 
     #Generate text
     HTML(paste0(
-          "<p><b>Summary Report:</b></p>",
-          "<p>The mean and median values for ", FullParamName, " at the selected sites and years are as follows:</p>", 
-          "<ul>", site_list, "</ul>", 
-          "<p>The highest ", FullParamName, " value across selected sites was ", round(highest_value$Value, 2), " ", summary_units, " at ", highest_value$SiteName, " in ", highest_month, " ", highest_year,
-          ", while the lowest value was ", round(lowest_value$Value, 2), " ", summary_units, " at ", lowest_value$SiteName, " in ", lowest_month, " ", lowest_year, ".</p>"))
+          "<p><b><span style='font-size: 18px;'>Summary Report:</b></p>"
+          ,"<p>The mean and median values for ", FullParamName, " at the selected sites and years are as follows:</p>" 
+          ,"<ul>", site_list, "</ul>"
+          ,"<p>The highest ", FullParamName, " value across selected sites was ", round(highest_value$Value, 2), " ", summary_units, " at ", highest_value$SiteName, " in ", highest_month, " ", highest_year
+          ,", while the lowest value was ", round(lowest_value$Value, 2), " ", summary_units, " at ", lowest_value$SiteName, " in ", lowest_month, " ", lowest_year, ".</p>"))
   })
   
   output$summary_text <- shiny::renderText({

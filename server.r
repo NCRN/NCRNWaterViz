@@ -381,7 +381,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     #     DataOpts$Param<- "DOmg"
     #   })
     
-    shiny::req(summary())
+    shiny::req(summary(), DataOpts$Param)
     notifs <- summary()
     
     numeric_table <- notifs %>%
@@ -390,17 +390,22 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     numeric_table <- as.data.frame(numeric_table)
     numeric_table[is.infinite(as.matrix(numeric_table)) | is.nan(as.matrix(numeric_table))] <- NA
     
+    session$userData$popup <- FALSE 
+    
     if (nrow(numeric_table) > 0 &&
         all(is.na(numeric_table))) {
-      if (!isTRUE(shiny::isolate(session$userData$popup))) {
-        shiny::showNotification(
-          paste("No data collected for", DataOpts$Param, "at selected sites."), 
-          type = "warning", 
-          duration = 15)
-        session$userData$popup <- TRUE }
+       if (!isTRUE(shiny::isolate(session$userData$popup))) {
+      shiny::showNotification(
+        paste("No data collected for", DataOpts$Param, "at selected sites."), 
+        type = "warning", 
+        duration = 10, 
+        id= "noDataPopup")
+
+    session$userData$popup <- TRUE }
     } else {
-      session$userData$popup <- FALSE }
+    session$userData$popup <- FALSE }
     }, priority = 1)
+
   
 ### Summary text ###
   summary_text_data <- reactive({
@@ -417,10 +422,13 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     #   chr. A character string containing reactive formatted HTML text.
     #
     # Example:
+    #     DataOpts$Park<-"ANTI"
+    #     DataOpts$Site<- "NCRN_ANTI_ANCR",
+    #     DataOpts$Param<- "DOmg",
     #   summary_text_data <- reactive({
-    #     DataOpts$Park= "ANTI",
-    #     DataOpts$Site= "NCRN_ANTI_ANCR",
-    #     DataOpts$Param= "DOmg",
+    #     DataOpts$Park,
+    #     DataOpts$Site,
+    #     DataOpts$Param,
     #     DataOpts$Years= 2008
     #   })
     #
@@ -465,7 +473,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
             dplyr::filter(Site == site_code)
           if (nrow(site_data) == 0 ||
               all(is.na(site_data$avg_mean))) {
-                        paste0("<li><b>", site_name, ":</b> Data not collected </li>")
+                        paste0("<li><b>", site_name, " -</b> Data not collected </li>")
           } else {
                         paste0("<li><b>", site_name, " -</b> Mean: ", round(site_data$avg_mean, 2), " ", summary_units,
                         ", Median: ", round(site_data$avg_median, 2), " ", summary_units, ".</li>") }

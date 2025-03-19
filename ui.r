@@ -22,8 +22,42 @@ shinyUI(
         ))
       )
     ),
- # mainPanel(
-    tabsetPanel(  
+    
+  
+ #mainPanel(
+  tabsetPanel(  
+    tabPanel(h4("Summary"),
+      column(3, div(style='padding: 5px 10px',class="panel panel-default", 
+                             
+        h3("Select Site Data"),
+                    
+        radioButtons(inputId="SummaryBoxBy", label="Compare by:", choices=c("year", "month", "site"), selected = "year", inline = T),
+                    
+        parkChooserUI("SummaryPark"),
+        siteChooserUI("SummarySite"),
+        paramChooserUI("SummaryParam"),
+        yearChooserUI("SummaryYears") 
+        )),
+      
+      column(9,
+          uiOutput("summary_text"),
+          DT::dataTableOutput("SummaryTable")
+    
+          ,tags$style(HTML("
+          .shiny-notification {
+          background-color: #D0342C;
+          color: white;
+          font-size: 18px;
+          border-radius: 10px;
+          padding: 15px;
+          }
+          .shiny-notification-close {
+           color: white;
+           } 
+           ")),
+           )
+        ),
+    
       tabPanel(h4("Time Series Plot"),
         column(3, div(style='padding: 5px 10px',class="panel panel-default", 
           
@@ -88,7 +122,7 @@ shinyUI(
         column(3, div(style='padding: 5px 10px',class="panel panel-default", 
                              
           h3("Comparison:"),
-          radioButtons(inputId="BoxBy", label="Compare by:", choices=c('year', "month", "site"), selected = "year", inline = T),
+          radioButtons(inputId="BoxBy", label="Compare by:", choices=c("year", "month", "site"), selected = "year", inline = T),
           
           h3("Select Site Data"),
            

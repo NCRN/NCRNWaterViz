@@ -452,35 +452,50 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     avg_summary <- raw_data %>%
       dplyr::group_by(Site, SiteName) %>%
       dplyr::summarize(
-        avg_mean = base::mean(Value, na.rm = TRUE),
+        avg_mean = mean(Value, na.rm = TRUE),
         avg_median = stats::median(Value, na.rm = TRUE)
       )
     summary_units <- unique(NCRNWater::getCharInfo(WaterData,parkcode=DataOpts$Park, charname=DataOpts$Param, info="Units"))
     
     site_list <- paste(
       sapply(1:length(avg_summary$Site), function(i) { 
-                        paste0("<li><b>", avg_summary$SiteName[i], " -</b> Mean: ", round(avg_summary$avg_mean[i], 2), " ", summary_units,
-                        ", Median: ", round(avg_summary$avg_median[i], 2), " ", summary_units, ".</li>") }), 
+          site_name <- site_info$SiteName[i]
+          site_code <- site_info$Site[i]
+          site_data <- avg_summary %>%
+            dplyr::filter(Site == site_code)
+          if (nrow(site_data) == 0 ||
+              all(is.na(site_data$avg_mean))) {
+                        paste0("<li><b>", site_name, ":</b> Data not collected </li>")
+          } else {
+                        paste0("<li><b>", site_name, " -</b> Mean: ", round(site_data$avg_mean, 2), " ", summary_units,
+                        ", Median: ", round(site_data$avg_median, 2), " ", summary_units, ".</li>") }
+      }), 
       collapse = "")
 
     #Highest/Lowest values
     highest_value <- raw_data[which.max(raw_data$Value), ]
     lowest_value <- raw_data[which.min(raw_data$Value), ]
   
-    #Highest/Lowest Dates
+    highest_lowest_sentence <- ""
+      if (nrow(highest_value) > 0 & nrow(lowest_value) > 0) {
     highest_month <- format(as.Date(highest_value$Date), "%B")
     highest_year <- format(as.Date(highest_value$Date), "%Y")
     lowest_month <- format(as.Date(lowest_value$Date), "%B")
     lowest_year <- format(as.Date(lowest_value$Date), "%Y")
+    
+    highest_lowest_sentence <- paste0(
+            "<p>The highest ", FullParamName, " value across selected sites was ", round(highest_value$Value, 2), " " 
+            ,summary_units, " at ", highest_value$SiteName, " in ", highest_month, " ", highest_year
+            ,", while the lowest value was ", round(lowest_value$Value, 2), " ", summary_units, " at ", lowest_value$SiteName 
+            ," in ", lowest_month, " ", lowest_year, ".</p>")}
 
     #Generate text
     HTML(paste0(
-          "<p><b><span style='font-size: 18px;'>Summary Report:</b></p>"
-          ,"<p>The mean and median values for ", FullParamName, " at the selected sites and years are as follows:</p>" 
-          ,"<ul>", site_list, "</ul>"
-          ,"<p>The highest ", FullParamName, " value across selected sites was ", round(highest_value$Value, 2), " ", summary_units, " at ", highest_value$SiteName, " in ", highest_month, " ", highest_year
-          ,", while the lowest value was ", round(lowest_value$Value, 2), " ", summary_units, " at ", lowest_value$SiteName, " in ", lowest_month, " ", lowest_year, ".</p>"))
-  })
+            "<p><b><span style='font-size: 18px;'>Summary Report:</b></p>"
+            ,"<p>The mean and median values for ", FullParamName, " at the selected sites and years are as follows:</p>" 
+            ,"<ul>", site_list, "</ul>", highest_lowest_sentence)
+            )
+    })
   
   output$summary_text <- shiny::renderText({
     # Renders the reactive summary text created by summary_text_data(). Displays mean and median values for parameter at selected site(s), along with the 

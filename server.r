@@ -875,7 +875,15 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     #   DataOpts$Site, chr, required. The character string provided by paramChooser() in global.R
     #   WaterData, list, required. The list of NCRN water quality data assembled from /wqp_ncrnwater_metadata.csv and /wqp.csv
     # Returns:
-    #   list. A plotly histogram displaying percentages of observations per year exceeding a threshold at a site
+    #   list. A plotly histogram displaying percentages of observations per year exceeding a threshold at a site, containing:
+    #     x, list. Containing the data and formatting layout of the histogram
+    #     width, int, optional. An optional plotly parameter
+    #     height, int, optional. An optional plotly parameter
+    #     sizingPolicy, list. Containing default sizing and formatting information
+    #     dependencies, list. Containing html information
+    #     elementId, int, optional. An optional plotly parameter
+    #     preRenderHook, function. Containing functions to build plotly output
+    #     jsHooks, list, optional. An optional plotly feature
     # Example:
     #   DataOpts$Park<- "GWMP"  
     #   DataOpts$Site<- "NCRN_GWMP_TURU"

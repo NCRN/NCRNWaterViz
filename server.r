@@ -38,7 +38,7 @@ GraphOpts<-reactiveValues(Legend=TRUE, FontSize=1.5, GoodColor="Blue", BadColor=
  
 #### Reactive Values for Choosing Data ####
 
-DataOpts<-reactiveValues(Park=NA, Site=NA, Param=NA, Years=NA, USGSload=FALSE, USGSdata=NA)
+DataOpts<-reactiveValues(Park=NA, Site=NA, Param=NA, Agg=NA, DateRange=NA, Years=NA, USGSload=FALSE, USGSdata=NA)
 
 #### UI Controls ####  
 
@@ -123,14 +123,54 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
        need(DataOpts$Site, message="Choose a Site"),
        need(DataOpts$Param, message="Choose a Water Quality Parameter")
      )  
-    df1 <- getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
+    df1 <- getWData(WaterData, parkcode=DataOpts$Park, sitecode=NA, charname=DataOpts$Param)
     df <- suppressWarnings(df1 %>% mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
                               group_by(month) %>% mutate(num_meas = sum(!is.na(Value))) %>% 
                               ungroup()) %>% mutate(num_mos = length(unique(month)))
     
     return(df)
-    
     })
+  
+#### Housekeeping of data --Multiple site selections ####
+ DataUseMultiple <-reactive({
+   # Get data to use in a tab that allows for multiple site selections and reacts to user input.
+   # Args:
+   #  DataOpts$Park, chr, required. The character string provided by parkChooser() in global.R.
+   #  DataOpts$Site, chr or vector if multiple sites selected, required. The character string provided by siteChooser() in global.R.
+   #  DataOpts$Param, chr, required. The character string provided by paramChooser() in global.R.
+   # 
+   # Return:
+   #  df, data.frame. A dataframe that includes water records for multiple sites.
+   #
+   # Examples:
+   #  table <- DataUseMultiple (
+   #    DataOpts$Park = "ANTI",
+   #    DataOpts$Site = "NCRN_ANTI_ANCR",
+   #    DataOpts$Param = "DOmg"
+   #    )
+   #    SummaryParam<-shiny::callModule(paramChooser, id="SummaryParam",data=WaterData, park=reactive(DataOpts$Park), site=reactive(DataOpts$Site), chosen=reactive(DataOpts$Param))
+   #
+     shiny::validate(
+       need(DataOpts$Park, message="Choose a Park"),
+       need(DataOpts$Site, message="Choose a Site"),
+       need(DataOpts$Param, message="Choose a Water Quality Parameter")
+     )  
+
+    combined_data <- data.frame()
+    for (site in DataOpts$Site) {
+      site_data <- getWData(WaterData, parkcode=DataOpts$Park, sitecode= site, charname=DataOpts$Param)
+      combined_data <- dplyr::bind_rows(combined_data, site_data)
+    }
+
+    df <- suppressWarnings(combined_data %>% 
+                             dplyr::mutate(Year = lubridate::year(Date)) %>%
+                             dplyr::mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
+                             group_by(month) %>% dplyr::mutate(num_meas = sum(!is.na(Value))) %>% 
+                             ungroup()) %>% dplyr::mutate(num_mos = length(unique(month)))
+    return(df)
+  })
+
+#### Thresholds ####
   
   Thresholds<-reactive({
     c(getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="LowerPoint"),
@@ -182,8 +222,322 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   OutCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$OutColor,]$Rcolor})
   ThCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$ThColor,]$Rcolor})
   TrCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$TrColor,]$Rcolor})
+  
+#### Summary Table ####
+  SummaryPark<-shiny::callModule(parkChooser, id="SummaryPark", data=WaterData, chosen=reactive(DataOpts$Park))
+  SummarySite<-shiny::callModule(siteChooser, id="SummarySite", data=WaterData, park=reactive(DataOpts$Park), chosen=reactive(DataOpts$Site))
+  SummaryParam<-shiny::callModule(paramChooser, id="SummaryParam",data=WaterData, park=reactive(DataOpts$Park), site=reactive(DataOpts$Site), 
+                           chosen=reactive(DataOpts$Param))
+  SummaryYears<-shiny::callModule(yearChooser, id="SummaryYears", data=DataUseMultiple, chosen=reactive(DataOpts$Years) )
+  
+  #SummaryDateRange<-callModule(daterangeChooser, id="SummaryDateRange", data=DataUseMultiple, chosen=reactive(DataOpts$DateRange))
 
-#### Summaries of Seaonality and Trends ####
+  shiny::observeEvent(SummaryPark(), DataOpts$Park<-SummaryPark() )
+  shiny::observeEvent(SummarySite(), DataOpts$Site<-SummarySite() )
+  shiny::observeEvent(SummaryParam(), DataOpts$Param<-SummaryParam() )
+  shiny::observeEvent(SummaryYears(), DataOpts$Years<-SummaryYears() )
+
+  summary <- shiny::reactive({
+    # A reactive function that calculates summary statistics based on user selected site(s) and aggregation method (year, month, or site). 
+    # Args:
+    #  DataOpts$Years, int, required. The character string provided by yearChooser() in global.R. 
+    #  input$SummaryBoxBy, chr, required. Determines aggregation type and formats accordingly if month or year is selected. 
+    #  
+    # Returns:
+    #  data_values, data.frame. Calculated statistical values and contains: 
+    #     Aggregation, chr, "compare by" grouping variable (year, month, site)
+    #     Site, chr, name for selected sites
+    #     Minimum, num, minimum value
+    #     Q1, num, 1st Quartile (25th percentile)
+    #     Mean, num, mean value
+    #     Median, num, median value
+    #     Q3, num, 3rd Quartile (75th percentile)
+    #     Maximum, num, maximum value
+    #     SD, num, standard deviation
+    #     n_site_visit, int, count of observations for unique site visits
+    #     n, int, count of total observations
+    #
+    # Example:
+    #   DataOpts$Years <- 2010,
+    #   input$SummaryBoxBy <- "month"
+    #   
+    #   summary <- reactive({
+    #     DataOpts$Years, 
+    #     input$SummaryBoxBy
+    #    })
+    #
+    
+    data_values <- DataUseMultiple () %>%
+    
+    dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #year filtering
+
+    #Aggregation
+    dplyr::mutate(Date = as.Date(Date)) %>%
+    dplyr::mutate(Aggregation = dplyr::case_when(input$SummaryBoxBy == "month" ~ format(Date, "%b"),
+                                   input$SummaryBoxBy == "year" ~ format(Date, "%Y"), TRUE ~ as.character(Site))) %>%
+     
+    dplyr::group_by(Aggregation, Site) %>%
+      dplyr::summarise(
+      Minimum = round(min(Value, na.rm = TRUE), 2),   
+      Q1 = round(stats::quantile(Value, 0.25, na.rm = TRUE), 2),   
+      Mean = round(mean(Value, na.rm = TRUE), 2),   
+      Median = round(stats::median(Value, na.rm = TRUE), 2),   
+      Q3 = round(stats::quantile(Value, 0.75, na.rm = TRUE),2),  
+      Maximum = round(max(Value, na.rm = TRUE), 2),  
+      SD = round(stats::sd(Value, na.rm = TRUE), 2),
+      n_site_visit = dplyr::n_distinct(Date),
+      n = dplyr::n(), .groups = "drop") %>%
+      dplyr::arrange(factor(Aggregation, levels = month.name), Site) 
+  
+  return(data_values) 
+})
+
+### Summary table output ####
+  output$SummaryTable <-DT::renderDataTable({
+    # Outputs a table with summary values from summary() and handles missing, infinite, and NAN values. 
+    # Converts abbreviated site names, characteristics, and months to full names, as well as grouping within table based on selected aggregation.  
+    # Args:
+    #  DataOpts$Park, chr, required. The character string provided by parkChooser() in global.R. 
+    #  input$SummaryBoxBy, chr, required. Determines aggregation type and formats table style according to selection. 
+    # 
+    # Return:
+    #  DT::datatable. A formatted data table with statistical values according to user input and grouped according to aggregation type (year, month, site).
+    # 
+    # Example:
+    #   DataOpts$Park <- "ANTI",
+    #   input$SummaryBoxBy <- "year"
+    #   
+    #   output$SummaryTable <-DT::renderDataTable({
+    #      DataOpts$Park,
+    #      input$SummaryBoxBy
+    #   })
+    
+    table <- summary()
+    
+    table <- table %>%
+      dplyr::mutate(SD = ifelse(!is.na(Mean) & is.na(SD), "Not available", SD),
+             Minimum = ifelse(is.na(Minimum) | Minimum == Inf | Minimum == -Inf, "Data not collected", Minimum),
+             Maximum = ifelse(is.na(Maximum) | Maximum == Inf | Maximum == -Inf, "Data not collected", Maximum),
+             dplyr::across(everything(), ~ifelse(is.na(.), "Data not collected", .)))
+    
+    table <- table %>%
+      dplyr::mutate(Aggregation = ifelse(Aggregation %in% month.abb, 
+                                month.name[match(Aggregation, month.abb)], Aggregation))
+
+   #SiteCodes to full site names
+    site_codes <- NCRNWater::getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteCode")
+    site_names <- NCRNWater::getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteName")
+    
+    site_info <- data.frame(SiteCode = site_codes, SiteName = site_names, stringsAsFactors = FALSE)
+ 
+    table <- table %>%
+      dplyr::left_join(site_info, by = c("Site" = "SiteCode")) %>%
+      dplyr::mutate(Site = ifelse(!is.na(SiteName), SiteName, Site)) %>% 
+      dplyr::select(-SiteName)
+      
+    #Table grouping
+    if (input$SummaryBoxBy %in% c("month", "year")) {
+      group_headers <- table %>%
+      dplyr::distinct(Aggregation) %>%
+      dplyr::mutate(Site = Aggregation, Minimum = NA, Q1 = NA, Mean = NA, Median = NA, Q3 = NA, Maximum = NA, SD = NA, n_site_visit = NA, n = NA)
+
+    summary_table <- dplyr::bind_rows(group_headers, table) %>%
+      dplyr::mutate(Aggregation = factor(Aggregation, levels = c(month.name, 
+                                                          sort(unique(as.character(table$Aggregation[!table$Aggregation %in% month.name])))))) %>%
+      
+      dplyr::arrange(Aggregation, dplyr::desc(is.na(Minimum)), Site) %>%
+      dplyr::mutate(is_group = Site == Aggregation)
+    } else {
+    summary_table <- table %>%
+      dplyr::arrange(Site) %>%
+      dplyr::mutate(is_group = FALSE)
+    }
+    summary_table <- summary_table %>%
+      dplyr::select(-Aggregation, -is_group)
+
+    DT::datatable(summary_table, extensions=c("Buttons", "KeyTable"),
+                 #caption=tags$caption(h3(Title())),
+                 class="stripe hover order-column cell-border",
+                 rownames=F, options=list(paging = FALSE, autoWidth=TRUE, ordering= FALSE, 
+                                          dom= "Bltipr", buttons=c("copy","csv","excel","pdf","print"), keys = TRUE)) %>%
+    #,server=F)
+  
+    DT::formatStyle("Site", fontWeight = if(input$SummaryBoxBy %in% c("month", "year")) {
+      DT::styleEqual(group_headers$Site, rep("bold", nrow(group_headers)))
+    } else if (input$SummaryBoxBy == "site") { "bold" } else { NULL }
+      ,backgroundColor = if(input$SummaryBoxBy %in% c("month", "year")) {
+       DT::styleEqual(group_headers$Site, rep("#f0f0f0", nrow(group_headers)))
+      } else {
+        NULL
+      }
+     )
+    })
+  
+  #Notification pop-up when all data is missing in table
+  shiny::observe({
+    # An observation that outputs a pop-up notification if all data in summary table is NA for selected site(s) and parameter. Only accounts for numeric columns and cleans up inf and NaN values.
+    # Args:
+    #  session$userData$popup, session, required. Stores user specific session data and controls whether a notification should or should not be displayed.
+    #  DataOpts$Param, chr, required. The character string provided by paramChooser() in global.R that indicates user parameter selection. 
+    # 
+    # Returns:
+    #  NULL, no pop-up notification if numeric value is present in summary table.
+    #  or
+    #  Pop-up notification, indicates that no data was recorded at selected site(s) for selected parameter. 
+    #
+    # Example:
+    #  DataOpts$Param <- "DOmg"
+    #
+    #  shiny::observe({
+    #     if (!session$userData$popup)
+    #     shiny::showNotification(
+    #     paste("No data collected for", DataOpts$Param, "at selected sites."), type = "warning")
+    #     session$userData$popup <- TRUE
+    #   })
+    
+    shiny::req(summary(), DataOpts$Param)
+    notifs <- summary()
+    
+    numeric_table <- notifs %>%
+      dplyr::select(-c(n, n_site_visit, Aggregation, Site))
+    
+    numeric_table <- as.data.frame(numeric_table)
+    numeric_table[is.infinite(as.matrix(numeric_table)) | is.nan(as.matrix(numeric_table))] <- NA
+    
+    session$userData$popup <- FALSE 
+    
+    if (nrow(numeric_table) > 0 &&
+        all(is.na(numeric_table))) {
+       if (!isTRUE(shiny::isolate(session$userData$popup))) {
+      shiny::showNotification(
+        paste("No data collected for", DataOpts$Param, "at selected sites."), 
+        type = "warning", 
+        duration = 10, 
+        id= "noDataPopup")
+
+    session$userData$popup <- TRUE }
+    } else {
+    session$userData$popup <- FALSE }
+    }, priority = 1)
+
+  
+### Summary text ###
+  summary_text_data <- reactive({
+    # Generates a reactive summary text to display mean and median values for the selected parameter and site(s), along with the 
+    #       highest and lowest recorded values across sites, including the month and year they occurred. 
+    # Args:
+    #   DataOpts$Park, chr, required. The character string provided by parkChooser() in global.R.
+    #   DataOpts$Site, chr or vector if multiple sites selected, required. The character string provided by siteChooser() in global.R.
+    #   DataOpts$Param, chr, required. The character string provided by paramChooser() in global.R.
+    #   DataOpts$Years, int. The character string provided by yearChooser() in global.R. 
+    #                              Default set to the minimum and maximum recorded years for selected sites and parameter, can be modified accordingly.
+    #   
+    # Returns:
+    #   chr. A character string containing reactive formatted HTML text.
+    #
+    # Example:
+    #     DataOpts$Park<-"ANTI"
+    #     DataOpts$Site<- "NCRN_ANTI_ANCR",
+    #     DataOpts$Param<- "DOmg",
+    #     DataOpts$Years<- 2008,   
+    #
+    #   summary_text_data <- reactive({
+    #     DataOpts$Park,
+    #     DataOpts$Site,
+    #     DataOpts$Param,
+    #     DataOpts$Years
+    #   })
+    
+    req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
+    raw_data <- DataUseMultiple () %>%
+      dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2])
+    
+    summary_data <- summary()
+    
+    #Full characteristic name
+    char_info <- data.frame(
+      Char = NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, info = "CharName"),
+      CharName = NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, info = "DisplayName"), stringsAsFactors = FALSE)
+    
+    FullParamName <- char_info$CharName[match(DataOpts$Param, char_info$Char)]
+    
+    #Full site names
+    site_info <- data.frame(
+      Site = NCRNWater::getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteCode"),
+      SiteName = NCRNWater::getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteName"), stringsAsFactors = FALSE)
+
+    summary_data <- summary_data %>%
+      dplyr::left_join(site_info, by = "Site") 
+    
+    raw_data <- raw_data %>%
+      dplyr::left_join(site_info, by = "Site") 
+
+    avg_summary <- raw_data %>%
+      dplyr::group_by(Site, SiteName) %>%
+      dplyr::summarize(
+        avg_mean = mean(Value, na.rm = TRUE),
+        avg_median = stats::median(Value, na.rm = TRUE)
+      )
+    summary_units <- unique(NCRNWater::getCharInfo(WaterData,parkcode=DataOpts$Park, charname=DataOpts$Param, info="Units"))
+    
+    site_list <- paste(
+      sapply(1:length(avg_summary$Site), function(i) { 
+          site_name <- site_info$SiteName[i]
+          site_code <- site_info$Site[i]
+          site_data <- avg_summary %>%
+            dplyr::filter(Site == site_code)
+          if (nrow(site_data) == 0 ||
+              all(is.na(site_data$avg_mean))) {
+                        paste0("<li><b>", site_name, " -</b> Data not collected </li>")
+          } else {
+                        paste0("<li><b>", site_name, " -</b> Mean: ", round(site_data$avg_mean, 2), " ", summary_units,
+                        ", Median: ", round(site_data$avg_median, 2), " ", summary_units, ".</li>") }
+      }), 
+      collapse = "")
+
+    #Highest/Lowest values
+    highest_value <- raw_data[which.max(raw_data$Value), ]
+    lowest_value <- raw_data[which.min(raw_data$Value), ]
+  
+    highest_lowest_sentence <- ""
+      if (nrow(highest_value) > 0 & nrow(lowest_value) > 0) {
+    highest_month <- format(as.Date(highest_value$Date), "%B")
+    highest_year <- format(as.Date(highest_value$Date), "%Y")
+    lowest_month <- format(as.Date(lowest_value$Date), "%B")
+    lowest_year <- format(as.Date(lowest_value$Date), "%Y")
+    
+    highest_lowest_sentence <- paste0(
+            "<p>The highest ", FullParamName, " value across selected sites was ", round(highest_value$Value, 2), " " 
+            ,summary_units, " at ", highest_value$SiteName, " in ", highest_month, " ", highest_year
+            ,", while the lowest value was ", round(lowest_value$Value, 2), " ", summary_units, " at ", lowest_value$SiteName 
+            ," in ", lowest_month, " ", lowest_year, ".</p>")}
+
+    #Generate text
+    HTML(paste0(
+            "<p><b><span style='font-size: 18px;'>Summary Report:</b></p>"
+            ,"<p>The mean and median values for ", FullParamName, " at the selected sites and years are as follows:</p>" 
+            ,"<ul>", site_list, "</ul>", highest_lowest_sentence)
+            )
+    })
+  
+  output$summary_text <- shiny::renderText({
+    # Renders the reactive summary text created by summary_text_data(). Displays mean and median values for parameter at selected site(s), along with the 
+    #       highest and lowest recorded values across sites, including the month and year they occurred.
+    # Args: 
+    #   None
+    #
+    # Return:
+    #  chr. A character string containing the reactive HTML text from summary_text_data() for output in UI.  
+    # 
+    # Example:
+    #  output$summary_text <-shiny::renderText({
+    #      summary_text_data()
+    #   })
+    
+    summary_text_data()
+})
+  
+#### Summaries of Seasonality and Trends ####
   output$SeasonOut<-renderText({
 
     req(input$Trends, isTruthy(TrendsOut()), 
@@ -283,7 +637,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   })      
   
   output$SeriesRefSummary<-renderUI(HTML(RefSummary()))
-  
+
   
 #### Time Series Plot ####
     WaterSeriesOut<-reactive({

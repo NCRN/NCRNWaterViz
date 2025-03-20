@@ -139,16 +139,6 @@
       ],
       "Hash": "4ac8e423216b8b70cb9653d1b3f71eb9"
     },
-    "askpass": {
-      "Package": "askpass",
-      "Version": "1.2.1",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Requirements": [
-        "sys"
-      ],
-      "Hash": "c39f4155b3ceb1a9a2799d700fbd4b6a"
-    },
     "base64enc": {
       "Package": "base64enc",
       "Version": "0.1-3",
@@ -308,27 +298,6 @@
       ],
       "Hash": "ab12c7b080a57475248a30f4db6298c0"
     },
-    "curl": {
-      "Package": "curl",
-      "Version": "6.2.0",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Requirements": [
-        "R"
-      ],
-      "Hash": "b580cbb010099fd990df6bfe44459e1a"
-    },
-    "data.table": {
-      "Package": "data.table",
-      "Version": "1.16.4",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Requirements": [
-        "R",
-        "methods"
-      ],
-      "Hash": "38bbf05fc2503143db4c734a7e5cab66"
-    },
     "deldir": {
       "Package": "deldir",
       "Version": "2.0-4",
@@ -383,7 +352,7 @@
       "Requirements": [
         "R"
       ],
-      "Hash": "e9651417729bbe7472e32b5027370e79"
+      "Hash": "3c7d0f7ed35323fa2f7b45bf600c9ddc"
     },
     "fansi": {
       "Package": "fansi",
@@ -401,14 +370,14 @@
       "Package": "farver",
       "Version": "2.1.2",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "CRAN",
       "Hash": "680887028577f3fa2a81e410ed0d6e42"
     },
     "fastmap": {
       "Package": "fastmap",
       "Version": "1.2.0",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "CRAN",
       "Hash": "aa5e1cd11c2d15497494c5292d7ffcc8"
     },
     "fontawesome": {
@@ -598,21 +567,6 @@
         "utils"
       ],
       "Hash": "d55aa087c47a63ead0f6fc10f8fa1ee0"
-    },
-    "httr": {
-      "Package": "httr",
-      "Version": "1.4.7",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Requirements": [
-        "R",
-        "R6",
-        "curl",
-        "jsonlite",
-        "mime",
-        "openssl"
-      ],
-      "Hash": "ac107251d9d9fd72f0ca8049988f1d7f"
     },
     "interp": {
       "Package": "interp",
@@ -943,16 +897,6 @@
       ],
       "Hash": "725efbc803caacc7a7f72452e0f6d3cf"
     },
-    "openssl": {
-      "Package": "openssl",
-      "Version": "2.3.2",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Requirements": [
-        "askpass"
-      ],
-      "Hash": "bc54d87ebf858b28de18df4bca6528d3"
-    },
     "pillar": {
       "Package": "pillar",
       "Version": "1.10.1",
@@ -978,38 +922,6 @@
         "utils"
       ],
       "Hash": "01f28d4278f15c76cddbea05899c5d6f"
-    },
-    "plotly": {
-      "Package": "plotly",
-      "Version": "4.10.4",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Requirements": [
-        "R",
-        "RColorBrewer",
-        "base64enc",
-        "crosstalk",
-        "data.table",
-        "digest",
-        "dplyr",
-        "ggplot2",
-        "htmltools",
-        "htmlwidgets",
-        "httr",
-        "jsonlite",
-        "lazyeval",
-        "magrittr",
-        "promises",
-        "purrr",
-        "rlang",
-        "scales",
-        "tibble",
-        "tidyr",
-        "tools",
-        "vctrs",
-        "viridisLite"
-      ],
-      "Hash": "a1ac5c03ad5ad12b9d1597e00e23c3dd"
     },
     "png": {
       "Package": "png",
@@ -1452,19 +1364,6 @@
         "rlang"
       ],
       "Hash": "c03fa420630029418f7e6da3667aac4a"
-    },
-    "viridis": {
-      "Package": "viridis",
-      "Version": "0.6.5",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Requirements": [
-        "R",
-        "ggplot2",
-        "gridExtra",
-        "viridisLite"
-      ],
-      "Hash": "acd96d9fa70adeea4a5a1150609b9745"
     },
     "viridisLite": {
       "Package": "viridisLite",

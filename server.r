@@ -287,7 +287,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       n_site_visit = dplyr::n_distinct(Date),
       n = dplyr::n(), .groups = "drop") %>%
       dplyr::arrange(factor(Aggregation, levels = month.name), Site) 
-  
+
   return(data_values) 
 })
 
@@ -975,7 +975,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
  #### NPS Data ####
   NPSGeoData<-data.frame(ParkCode=getSiteInfo(WaterData, info="ParkCode"), SiteCode=getSiteInfo(WaterData, info="SiteCode"), SiteName=getSiteInfo(WaterData, info= "SiteName"), 
                          latitude=getSiteInfo(WaterData, info="lat"), longitude=getSiteInfo(WaterData, info="long"), stringsAsFactors = F)
-  
+
   #CharIndex is a true/false of characters that have thresholds
   CharIndex<-{getCharInfo(WaterData,info="LowerPoint") %>% is.na %>% not} | {getCharInfo(WaterData,info="UpperPoint") %>% is.na %>% not} 
   NPSchars<-getCharInfo(WaterData, info="CharName")[CharIndex] %>% unique
@@ -994,16 +994,43 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 
   #### the Map ####
   output$WaterMap<-renderLeaflet({ 
-    netlat<-dplyr::case_when(Network == "NCRN" ~ 39.25, 
-                             Network == "NETN" ~ 42.5)
-    netlon<-dplyr::case_when(Network == "NCRN" ~ -77,
-                             Network == "NETN" ~ -71.6)
+    #buffer_factor<- 0.05
+    netlat<- mean(NPSGeoData$latitude, na.rm = TRUE)
+    netlon<- mean(NPSGeoData$longitude, na.rm = TRUE)
     
-    netzoom<-dplyr::case_when(Network == "NCRN" ~ 9,
-                              Network == "NETN" ~ 7)
+    min_lat<- min(NPSGeoData$latitude, na.rm = TRUE)
+    max_lat<- max(NPSGeoData$latitude, na.rm = TRUE)
+    min_lon<- min(NPSGeoData$longitude, na.rm = TRUE)
+    max_lon<- max(NPSGeoData$longitude, na.rm = TRUE)
+
+    lat_range<- max_lat - min_lat
+    lon_range<- max_lon - min_lon
     
+    max_range<- max(lat_range, lon_range)
+    
+    netzoom<- dplyr::case_when(
+      max_range > 10 ~ 5,
+      max_range > 5 ~7,
+      max_range > 3 ~8,
+      max_range > 2 ~9,
+      max_range > 1.5 ~10,
+      max_range > 1 ~ 9,
+      max_range > 0.5 ~10,
+      TRUE ~11
+    )
+  
+  #netzoom<- ifelse(max(lat_range, long_range) >5, 7, 9)
+
+# netlat<-dplyr::case_when(Network == "NCRN" ~ 39.25,
+#                          Network == "NETN" ~ 42.5)
+# netlon<-dplyr::case_when(Network == "NCRN" ~ -77,
+#                          Network == "NETN" ~ -71.6)
+# 
+# netzoom<-dplyr::case_when(Network == "NCRN" ~ 9,
+#                           Network == "NETN" ~ 7)
+
     leaflet() %>% 
-    setView(lng = netlon, lat = netlat, zoom = netzoom) %>% 
+    setView(lng = netlon, lat = netlat , zoom = netzoom) %>% 
       
     addTiles() # temporary workaround to provide a basemap
     # broken map tiles:

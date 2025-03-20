@@ -12,6 +12,7 @@ library(purrr)
 library(magrittr)
 library(openair)
 library(NADA)
+library(plotly)
 
 #### Get data ####
 WaterData<-suppressWarnings(importNCRNWater(paste0("./Data/", Network), Data=dataname, MetaData = metadataname, wqx=wqx_bool))
@@ -914,7 +915,403 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       rownames=F, options=list(autoWidth=TRUE, dom="Bltirp", buttons=c("copy","csv","excel","pdf","print"), keys=TRUE)
                   ),server=F
   )
+
+#### Exceedances Controls ####
   
+  ExceedancesPark<-shiny::callModule(parkChooser, id="DataParkExceedances", data=WaterData, chosen=reactive(DataOpts$Park))
+  ExceedancesSite<-shiny::callModule(siteChooser, id="DataSiteExceedances", data=WaterData, park=reactive(DataOpts$Park), chosen=reactive(DataOpts$Site))
+  ExceedancesParam<-shiny::callModule(paramChooser, id="DataParamExceedances",data=WaterData, park=reactive(DataOpts$Park), site=reactive(DataOpts$Site), 
+                       chosen=reactive(DataOpts$Param))
+  
+  shiny::observeEvent(ExceedancesPark(), DataOpts$Park<-ExceedancesPark() )
+  shiny::observeEvent(ExceedancesSite(), DataOpts$Site<-ExceedancesSite() )
+  shiny::observeEvent(ExceedancesParam(), DataOpts$Param<-ExceedancesParam() )
+  
+### Exceedances Prep ###
+  
+  ExceedancesPrep<- function(Park, Site, Param, WaterData){
+    # A data prep function that returns data.frame and character outputs about threshold exceedances at user selected inputs (park, site, & param)
+    # Args:
+    #   Park, chr, required. The character string provided by ExceedancesPark() and parkChooser() in global.R
+    #   Site, chr, required. The character string provided by ExceedancesSite() and siteChooser() in global.R
+    #   Param, chr, required. The character string provided by ExceedancesParam() and paramChooser() in global.R
+    #   WaterData, list, required. The list of NCRN water quality data assembled from /wqp_ncrnwater_metadata.csv and /wqp.csv
+    # Returns:
+    #   tmp, list. Temporary package containing:
+    #     exdf, data.frame. Water quality site observations exceeding water quality thresholds and threshold information, containing:
+    #       OrganizationFormalName, chr, NPS program name
+    #       ActivityMediaSubdivisionName, chr, unique site and date code for an observation event
+    #       Date, Date, date of observation
+    #       Characteristic, chr, water quality parameter display name
+    #       Value, num, numeric value of a water quality parameter observation
+    #       ResultMeasure.MeasureUnitCode, chr, unit of a water quality parameter value
+    #       LowerThreshold, chr, description of the lower water quality threshold, if applicable
+    #       UpperThreshold, chr, description of the upper water quality threshold, if applicable
+    #     df, data.frame. All water quality site observations at user selected inputs, containing:
+    #       OrganizationFormalName, chr, NPS program name
+    #       ActivityMediaSubdivisionName, chr, unique site and date code for an observation event
+    #       Date, Date, date of observation
+    #       Characteristic, chr, water quality parameter display name
+    #       Value, num, numeric value of a water quality parameter observation
+    #       ResultMeasure.MeasureUnitCode, chr, unit of a water quality parameter value
+    #     lowerthreshold, chr, description of the lower water quality threshold, if applicable
+    #     upperthreshold, chr, description of the upper water quality threshold, if applicable
+    #     lowerpoint, chr, value of the lower water quality threshold, if applicable
+    #     upperpoint, chr, value of the upper water quality threshold, if applicable
+    #     unit, chr, unit of a water quality parameter value
+    #     sitename, chr, site display name
+    #     characteristic, chr, water quality parameter display name
+    # Example:
+    #   DataOpts$Park<- "GWMP"
+    #   DataOpts$Site<- "NCRN_GWMP_TURU"
+    #   DataOpts$Param<- "TotalP"
+    #   WaterData<- NCRN::getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
+    #   tmp <- ExceedancesPrep(DataOpts$Park, DataOpts$Site, DataOpts$Param, WaterData)
+    #   exdf<- tmp$exdf
+    df2 <- getWData(WaterData, parkcode=Park, sitecode=Site, charname=Param)
+    df1 <- suppressWarnings(df2 %>% 
+                              dplyr::mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
+                              dplyr::group_by(month) %>%
+                              dplyr::mutate(num_meas = sum(!is.na(Value))) %>% 
+                              dplyr::ungroup()) %>% dplyr::mutate(num_mos = length(unique(month)))
+    df <- df1[, c("OrganizationFormalName", "ActivityMediaSubdivisionName", "Date", "Characteristic", "Value", "ResultMeasure.MeasureUnitCode")]
+    df <- subset(df, !is.na(Value))
+    
+    LowerThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info="LowerDescription")
+    UpperThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info="UpperDescription")
+    LowerPoint<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info="LowerPoint")
+    UpperPoint<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info="UpperPoint")
+    Unit<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info="Units")
+    Sitename<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info = "SiteName")
+    Characteristic<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info = "DisplayName")
+    
+    if(any(df$Value <= LowerPoint, na.rm = TRUE)) {
+      lowerdf<- df[df$Value < LowerPoint, ]
+      lowerdf$LowerThreshold <- LowerThreshold
+    } else{
+      lowerdf<- df[0, ]
+    }
+    
+    if(any(df$Value >= UpperPoint, na.rm = TRUE)) {
+      upperdf<- df[df$Value > UpperPoint, ]
+      upperdf$UpperThreshold <- UpperThreshold
+    } else {
+      upperdf<- df[0, ]
+    }
+    
+    exdf<- dplyr::bind_rows(lowerdf, upperdf)
+    
+    tmp <- list(
+      'exdf'=exdf
+      ,'df'=df
+      ,'lowerthreshold'=LowerThreshold
+      ,'upperthreshold'=UpperThreshold
+      ,'lowerpoint'=LowerPoint
+      ,'upperpoint'=UpperPoint
+      ,'unit'=Unit
+      ,'characteristic'=Characteristic
+      ,'sitename'=Sitename
+      )
+    return(tmp)
+  }
+    
+### Exceedances Data Use Function ###
+  
+  ExceedancesDataUse<- shiny::reactive({
+    # A reactive function that returns a data.frame output to the Exceedances tab and that establishes the conditions to display warning messages
+    # Args:
+    #   DataOpts$Park, chr, required. The character string provided by parkChooser() in global.R
+    #   DataOpts$Site, chr, required. The character string provided by siteChooser() in global.R
+    #   DataOpts$Site, chr, required. The character string provided by paramChooser() in global.R
+    #   WaterData, list, required. The list of NCRN water quality data assembled from /wqp_ncrnwater_metadata.csv and /wqp.csv
+    # Returns:
+    #   exdf, data.frame. Water quality site observations exceeding water quality thresholds and threshold information in reverse chronological order, containing:
+    #     OrganizationFormalName, chr, NPS program name
+    #     ActivityMediaSubdivisionName, chr, unique site and date code for an observation event
+    #     Date, Date, date of observation
+    #     Characteristic, chr, water quality parameter display name
+    #     Value, num, numeric value of a water quality parameter observation
+    #     ResultMeasure.MeasureUnitCode, chr, unit of a water quality parameter value
+    #     LowerThreshold, chr, description of the lower water quality threshold, if applicable
+    #     UpperThreshold, chr, description of the upper water quality threshold, if applicable
+    # Example:
+    #   DataOpts$Park<- "GWMP"
+    #   DataOpts$Site<- "NCRN_GWMP_TURU"
+    #   DataOpts$Param<- "TotalP"
+    #   WaterData<- NCRN::getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
+    #   output$ExceedancesTable <-DT::renderDataTable(
+    #     expr=datatable(ExceedancesDataUse(), extensions=c("Buttons","KeyTable"),caption=htmltools::tags$caption(htmltools::h3(Title())),
+    #                   class="stripe hover order-column cell-border",filter="top",
+    #                   rownames=F, options=list(autoWidth=TRUE, dom="Bltirp", buttons=c("copy","csv","excel","pdf","print"), keys=TRUE)
+    #     ),server=F)  
+    shiny::validate(
+      need(DataOpts$Park, message="Choose a Park"),
+      need(DataOpts$Site, message="Choose a Site"),
+      need(DataOpts$Param, message="Choose a Water Quality Parameter"))  
+    
+    tmp <- ExceedancesPrep(DataOpts$Park, DataOpts$Site, DataOpts$Param, WaterData)
+    exdf <- tmp$exdf
+    df <- tmp$df
+    LowerThreshold <- tmp$lowerthreshold
+    UpperThreshold <- tmp$upperthreshold
+    LowerPoint <- tmp$lowerpoint
+    UpperPoint <- tmp$upperpoint
+    Unit <- tmp$unit
+    Characteristic <- tmp$characteristic
+    Sitename <- tmp$sitename
+
+    exdf<- exdf %>%
+      dplyr::arrange(desc(Date))
+
+      if(!is.na(LowerPoint) & all(df$Value > LowerPoint)) {
+        shiny::showNotification(
+          paste0("No measurements of ", Characteristic, " at ", Sitename, " fall below the water quality threshold of ", LowerPoint, " ", Unit)
+          ,type = "error"
+          ,duration = 10
+          ,id = "n1")
+      }
+
+      if(!is.na(UpperPoint) & all(df$Value < UpperPoint)) {
+        shiny::showNotification(
+          paste0("No measurements of ", Characteristic, " at ", Sitename, " exceed the water quality threshold of ", UpperPoint, " ", Unit)
+          ,type = "error"
+          ,duration = 10
+          ,id = "n2")
+      }
+
+      if(is.na(LowerPoint) & is.na(UpperPoint)) {
+        shiny::showNotification(
+          paste0("There is no recorded water quality threshold for ", Characteristic, " at ", Sitename, ".")
+          ,type = "error"
+          ,duration = 10
+          ,id = "n3")
+      }
+    
+    return(exdf)
+    
+  })
+  
+### Exceedances Data Table Output ###
+  
+  output$ExceedancesTable <-DT::renderDataTable(
+    expr=datatable(ExceedancesDataUse(), extensions=c("Buttons","KeyTable"),caption=htmltools::tags$caption(htmltools::h3(Title())),
+                   class="stripe hover order-column cell-border",filter="top",
+                   rownames=F, options=list(autoWidth=TRUE, dom="Bltirp", buttons=c("copy","csv","excel","pdf","print"), keys=TRUE)
+    ),server=F
+  )  
+  
+### SummarizeExceedances() Function ###
+  
+  SummarizeExceedances<- function(df, exdf){
+    # A function that returns a data.frame containing counts and percentages of observations and exceedances per year of observation
+    # Args:
+    #   df, data.frame, required. All water quality site observations at user selected inputs
+    #   exdf, data.frame, required. Water quality site observations exceeding water quality thresholds and threshold information
+    # Returns:
+    #   histdata, dataframe. Counts and percents of observations and exceedances per year of water quality observation
+    # Example:
+    #   DataOpts$Park<- "GWMP"
+    #   DataOpts$Site<- "NCRN_GWMP_TURU"
+    #   DataOpts$Param<- "TotalP"
+    #   WaterData<- NCRN::getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
+    #   tmp<- ExceedancesPrep(DataOpts$Park, DataOpts$Site, DataOpts$Param, WaterData)
+    #   exdf<- tmp$exdf
+    #   df<- tmp$df
+    #   histdata<- SummarizeExceedances(df, exdf)
+    histyears<- data.frame(Year = lubridate::year(df$Date))
+    totcount<- histyears %>%
+      dplyr::count(Year) %>%
+      dplyr::rename("ntot" = "n")
+    totcount <- subset(totcount, !is.na(Year))
+    
+    excount <- exdf %>%
+      dplyr::mutate(Year = lubridate::year(Date)) %>%
+      dplyr::count(Year) %>%
+      dplyr::rename("nex" = "n")
+    excount <- subset(excount, !is.na(Year))
+    
+    histdata<- dplyr::left_join(totcount, excount, by = "Year")
+    histdata[is.na(histdata)] <- 0
+    histdata<- histdata %>%
+      dplyr::mutate(percent_ex = (nex / ntot) * 100) %>%
+      dplyr::mutate(formatted_percent_ex = scales::percent(percent_ex / 100, accuracy = 0.01))
+    
+    return(histdata)
+  }
+  
+### Exceedances Text Function ###
+  
+  exceedances_text<- shiny::reactive({
+    # A reactive function that outputs dynamic text summarizing threshold exceedances for a water quality parameter at a site
+    # Args:
+    #   DataOpts$Park, chr, required. The character string provided by parkChooser() in global.R
+    #   DataOpts$Site, chr, required. The character string provided by siteChooser() in global.R
+    #   DataOpts$Site, chr, required. The character string provided by paramChooser() in global.R
+    #   WaterData, list, required. The list of NCRN water quality data assembled from /wqp_ncrnwater_metadata.csv and /wqp.csv
+    # Returns:
+    #   chr. A character string containing reactive formatted HTML text
+    # Example:
+    #   DataOpts$Park<- "GWMP"  
+    #   DataOpts$Site<- "NCRN_GWMP_TURU"
+    #   DataOpts$Param<- "TotalP"
+    #   WaterData<- NCRN::getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
+    #   output$exceedances_summary<- shiny::renderText({
+    #     exceedances_text()
+    #   })
+    shiny::validate(
+      need(DataOpts$Park, message=""),
+      need(DataOpts$Site, message=""),
+      need(DataOpts$Param, message=""))
+    
+    tmp <- ExceedancesPrep(DataOpts$Park, DataOpts$Site, DataOpts$Param, WaterData)
+    exdf <- tmp$exdf
+    df <- tmp$df
+    LowerThreshold <- tmp$lowerthreshold
+    UpperThreshold <- tmp$upperthreshold
+    LowerPoint <- tmp$lowerpoint
+    UpperPoint <- tmp$upperpoint
+    Unit <- tmp$unit
+    Characteristic <- tmp$characteristic
+    Sitename <- tmp$sitename
+    
+  histdata<- SummarizeExceedances(df, exdf)
+
+  # Text prep
+  recent_year<- max(histdata$Year)
+  oldest_year<- min(histdata$Year)
+  nex<- histdata[histdata$Year == recent_year, "nex"]
+  ntot<- histdata[histdata$Year == recent_year, "ntot"]
+  recent_freq<- sprintf("%.2f%%", (nex/ntot)*100)
+  sum_nex<- sum(histdata$nex)
+  sum_ntot<- sum(histdata$ntot)
+  sum_freq<- sprintf("%.2f%%", (sum_nex/sum_ntot)*100)
+  freq_comp<- ifelse((nex/ntot) > (sum_nex/sum_ntot), "greater than",
+                       ifelse((nex/ntot) == (sum_nex/sum_ntot), "equal to", "less than"))
+  grammar1<- if(nex==1) {
+    paste("There was", nex, "exceedance of the ")
+  } else {
+    paste("There were", nex, "exceedances of the ")
+  }
+  grammar2<- if(sum_nex==1) {
+    paste("There has been", sum_nex, "exceedance of the ")
+  } else {
+    paste("There have been", sum_nex, "exceedances of the ")
+  }
+    
+  # Writing text
+  summary<- c(
+    paste0(grammar1, Characteristic, " water quality threshold among ", ntot, " observations at ", Sitename, " in ", recent_year, ".")
+    ,paste0(grammar2, Characteristic, " water quality threshold among ", sum_ntot, " observations at ", Sitename, " since monitoring began in ", oldest_year, ".")
+    ,paste0("<u>", recent_freq, "</u>", " of observations exceeded the water quality threshold in ", recent_year, ", ", freq_comp, " the overall exceedance percentage of ", "<u>", sum_freq, "</u>", ".")
+  )
+  summary_bullets<- paste0("<li>", summary, "</li>", collapse = "")
+   
+  HTML(paste0(
+    "<p><b><span style='font-size: 18px;'>Exceedances Summary:</b></p>",
+    "<ul>", summary_bullets, "</ul>"
+  ))
+   
+  })
+  
+  ### HTML Text Tutput ###
+  
+  output$exceedances_summary<- shiny::renderText({
+    exceedances_text()
+  })
+  
+  ### Exceedances Histogram ###
+  
+  exceedances_hist_plot<- shiny::reactive({
+    # A reactive function that outputs an interactive histogram displaying the percentage of observations per year which a parameter exceeds a threshold at a site
+    # Args:
+    #   DataOpts$Park, chr, required. The character string provided by parkChooser() in global.R
+    #   DataOpts$Site, chr, required. The character string provided by siteChooser() in global.R
+    #   DataOpts$Site, chr, required. The character string provided by paramChooser() in global.R
+    #   WaterData, list, required. The list of NCRN water quality data assembled from /wqp_ncrnwater_metadata.csv and /wqp.csv
+    # Returns:
+    #   list. A plotly histogram displaying percentages of observations per year exceeding a threshold at a site, containing:
+    #     x, list. Containing the data and formatting layout of the histogram
+    #     width, int, optional. An optional plotly parameter
+    #     height, int, optional. An optional plotly parameter
+    #     sizingPolicy, list. Containing default sizing and formatting information
+    #     dependencies, list. Containing html information
+    #     elementId, int, optional. An optional plotly parameter
+    #     preRenderHook, function. Containing functions to build plotly output
+    #     jsHooks, list, optional. An optional plotly feature
+    # Example:
+    #   DataOpts$Park<- "GWMP"  
+    #   DataOpts$Site<- "NCRN_GWMP_TURU"
+    #   DataOpts$Param<- "TotalP"
+    #   WaterData<- NCRN::getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
+    #   output$hist<- renderPlotly({
+    #     exceedances_hist_plot()
+    #   })
+    shiny::validate(
+      need(DataOpts$Park, message=""),
+      need(DataOpts$Site, message=""),
+      need(DataOpts$Param, message=""))
+    
+    tmp <- ExceedancesPrep(DataOpts$Park, DataOpts$Site, DataOpts$Param, WaterData)
+    exdf <- tmp$exdf
+    df <- tmp$df
+    LowerThreshold <- tmp$lowerthreshold
+    UpperThreshold <- tmp$upperthreshold
+    LowerPoint <- tmp$lowerpoint
+    UpperPoint <- tmp$upperpoint
+    Unit <- tmp$unit
+    Characteristic <- tmp$characteristic
+    Sitename <- tmp$sitename
+    
+  histdata<- SummarizeExceedances(df, exdf)
+    
+  # Plot prep
+    ExPoint<- dplyr::case_when(
+      is.na(UpperPoint) == TRUE & !is.na(LowerPoint) == TRUE ~ LowerPoint
+      ,!is.na(UpperPoint) == TRUE & is.na(LowerPoint) == TRUE ~ UpperPoint
+      ,!is.na(UpperPoint) == TRUE & !is.na(LowerPoint) == TRUE & any(exdf$Value <= LowerPoint, na.rm=TRUE) & all(exdf$Value < UpperPoint, na.rm=TRUE) ~ LowerPoint
+      ,!is.na(UpperPoint) == TRUE & !is.na(LowerPoint) == TRUE & any(exdf$Value >= UpperPoint, na.rm=TRUE) & all(exdf$Value > LowerPoint, na.rm=TRUE) ~ UpperPoint
+      # ,!is.na(UpperPoint) == TRUE & !is.na(LowerPoint) == TRUE & any(exdf$Value >= UpperPoint, na.rm=TRUE) & any(exdf$Value <= LowerPoint, na.rm=TRUE) ~ paste0(str(LowerPoint), " and ", str(UpperPoint))
+    )
+    
+  # Plotting
+    p<- ggplot2::ggplot(histdata, aes(x = Year, y = percent_ex,
+                              text = paste0(Year, ", ", Characteristic, "\n",
+                                            ntot, " total observation(s)", "\n",
+                                            formatted_percent_ex, " of observations exceeding ", ExPoint, " ", Unit))) +
+        geom_bar(stat = "identity", fill = "lightgray") +
+        ylim(0, 100) +
+        labs(
+          title = paste0("Percent of ", Characteristic, " observations exceeding the water quality threshold at ", Sitename),
+          x = "Year",
+          y = "% observations") +
+        theme_minimal() +
+        theme(
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank())
+    
+    plotly::ggplotly(p, tooltip = "text")
+  
+})
+  
+  ### Plot Output###
+  
+  show_plot<- shiny::reactiveVal(FALSE)
+  
+  output$exceedances_hist<- shiny::renderUI({
+    if (show_plot()) {
+      plotlyOutput("hist")
+    }
+  })
+  
+  output$hist<- renderPlotly({
+    exceedances_hist_plot()
+  })
+  
+  shiny::observeEvent(input$hist_button, {
+    show_plot(!show_plot())
+    new_label<- ifelse(show_plot(), "Hide Histogram", "Show Histogram")
+    shiny::updateActionButton(session, "hist_button", label = new_label)
+  })
   
 #### Mapping ####
   

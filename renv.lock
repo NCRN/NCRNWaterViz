@@ -70,15 +70,40 @@
       ],
       "Hash": "c1c223f694cf3880a017d692c8db6b14"
     },
+    "NCRNWater": {
+      "Package": "NCRNWater",
+      "Version": "0.27.1",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteRepo": "NCRNWater",
+      "RemoteUsername": "NCRN",
+      "RemoteSha": "87a16069713e2ea188d8bb8a2ae0cab97a43af4f",
+      "Requirements": [
+        "R",
+        "dplyr",
+        "ggplot2",
+        "lubridate",
+        "magrittr",
+        "methods",
+        "plotly",
+        "purrr",
+        "readr",
+        "season",
+        "tidyr",
+        "viridis"
+      ],
+      "Hash": "fb3872b03d75fa972ee2cd2281469e9b"
+    },
     "R6": {
       "Package": "R6",
-      "Version": "2.5.1",
+      "Version": "2.6.0",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "R"
       ],
-      "Hash": "470851b6d5d0ac559e9d01bb352b4021"
+      "Hash": "245934b1f739076a00b61ee7d9cd5233"
     },
     "RColorBrewer": {
       "Package": "RColorBrewer",
@@ -175,7 +200,7 @@
       "Package": "cachem",
       "Version": "1.1.0",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Requirements": [
         "fastmap",
         "rlang"
@@ -184,14 +209,14 @@
     },
     "cli": {
       "Package": "cli",
-      "Version": "3.6.3",
+      "Version": "3.6.4",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "R",
         "utils"
       ],
-      "Hash": "b21916dd77a27642b447374a5d30ecf3"
+      "Hash": "491c34d3d9dd0d2fe13d9f278bb90795"
     },
     "clipr": {
       "Package": "clipr",
@@ -221,7 +246,7 @@
       "Package": "colorspace",
       "Version": "2.1-1",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Requirements": [
         "R",
         "grDevices",
@@ -246,7 +271,7 @@
       "Requirements": [
         "R"
       ],
-      "Hash": "5191c4236d3accc9085530daf66eae8f"
+      "Hash": "9df43854f1c84685d095ed6270b52387"
     },
     "crayon": {
       "Package": "crayon",
@@ -425,11 +450,25 @@
       ],
       "Hash": "5899f1eaa825580172bb56c08266f37c"
     },
+    "gridExtra": {
+      "Package": "gridExtra",
+      "Version": "2.3",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "grDevices",
+        "graphics",
+        "grid",
+        "gtable",
+        "utils"
+      ],
+      "Hash": "7d7f283939f563670a697165b2cf5560"
+    },
     "gtable": {
       "Package": "gtable",
       "Version": "0.3.6",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Requirements": [
         "R",
         "cli",
@@ -719,7 +758,7 @@
       "Package": "lubridate",
       "Version": "1.9.4",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Requirements": [
         "R",
         "generics",
@@ -998,13 +1037,13 @@
     },
     "renv": {
       "Package": "renv",
-      "Version": "1.0.7",
+      "Version": "1.0.11",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "utils"
       ],
-      "Hash": "397b7b2a265bc5a7a06852524dabae20"
+      "Hash": "47623f66b4e80b3b0587bc5d7b309888"
     },
     "rlang": {
       "Package": "rlang",
@@ -1192,6 +1231,13 @@
         "utils"
       ],
       "Hash": "e6e3071f471513e4b85f98ca041303c7"
+    },
+    "sys": {
+      "Package": "sys",
+      "Version": "3.4.3",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "de342ebfebdbf40477d0758d05426646"
     },
     "terra": {
       "Package": "terra",

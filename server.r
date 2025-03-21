@@ -288,7 +288,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       n_site_visit = dplyr::n_distinct(Date),
       n = dplyr::n(), .groups = "drop") %>%
       dplyr::arrange(factor(Aggregation, levels = month.name), Site) 
-  
+
   return(data_values) 
 })
 
@@ -1372,7 +1372,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
  #### NPS Data ####
   NPSGeoData<-data.frame(ParkCode=getSiteInfo(WaterData, info="ParkCode"), SiteCode=getSiteInfo(WaterData, info="SiteCode"), SiteName=getSiteInfo(WaterData, info= "SiteName"), 
                          latitude=getSiteInfo(WaterData, info="lat"), longitude=getSiteInfo(WaterData, info="long"), stringsAsFactors = F)
-  
+
   #CharIndex is a true/false of characters that have thresholds
   CharIndex<-{getCharInfo(WaterData,info="LowerPoint") %>% is.na %>% not} | {getCharInfo(WaterData,info="UpperPoint") %>% is.na %>% not} 
   NPSchars<-getCharInfo(WaterData, info="CharName")[CharIndex] %>% unique
@@ -1380,7 +1380,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   output$MapChars<-renderUI( selectizeInput(inputId="MapChar",label="Charactersitic to Map", choices=NPSchars[order(names(NPSchars))] ))
   
   #coloring
-  MapColors<-colorNumeric(palette="viridis", domain=c(0,1)) # NPS % meets threshol
+  MapColors<-colorNumeric(palette="viridis", domain=c(0,1)) # NPS % meets threshold
   MapColors2<-colorFactor(palette="viridis", domain=c("<5th percentile","5th - 25th percentile", 
           "25th - 50th percentile", "50th - 75th percentile", "75th - 95th percentile", "> 95th percentile" ), ordered = T )  # USGS percentile category for discharge
   
@@ -1390,25 +1390,68 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   })
 
   #### the Map ####
-  output$WaterMap<-renderLeaflet({ 
-    netlat<-dplyr::case_when(Network == "NCRN" ~ 39.25, 
-                             Network == "NETN" ~ 42.5)
-    netlon<-dplyr::case_when(Network == "NCRN" ~ -77,
-                             Network == "NETN" ~ -71.6)
+  output$WaterMap<-leaflet::renderLeaflet({ 
+    # Renders a map widget centered on water monitoring sites, with dynamic zoom and basemap options.  
+    # Args:
+    #  NPSGeoData$latitude, num, required. The latitude coordinates of water monitoring sites for the NCRN dataset. 
+    #  NPSGeoData$longitude, num, required. The longitude coordinates of water monitoring sites for the NCRN dataset.  
+    # 
+    # Returns:
+    #  A Leaflet map with configured basemap layers ("map", imagery", "slate") and zoom extent.
+    #
+    # Example:
+    # netlat<- mean(NPSGeoData$latitude, na.rm = TRUE)
+    # netlon<- mean(NPSGeoData$longitude, na.rm = TRUE)
+    #   })
     
-    netzoom<-dplyr::case_when(Network == "NCRN" ~ 9,
-                              Network == "NETN" ~ 7)
+    #buffer_factor<- 0.05
+    netlat<- mean(NPSGeoData$latitude, na.rm = TRUE)
+    netlon<- mean(NPSGeoData$longitude, na.rm = TRUE)
     
+    min_lat<- min(NPSGeoData$latitude, na.rm = TRUE)
+    max_lat<- max(NPSGeoData$latitude, na.rm = TRUE)
+    min_lon<- min(NPSGeoData$longitude, na.rm = TRUE)
+    max_lon<- max(NPSGeoData$longitude, na.rm = TRUE)
+
+    lat_range<- max_lat - min_lat
+    lon_range<- max_lon - min_lon
+    
+    max_range<- max(lat_range, lon_range)
+    
+    netzoom<- dplyr::case_when(
+     # max_range > 10 ~5,
+     # max_range > 5 ~7,
+      max_range > 2.5 ~8,
+      max_range > 1.5 ~9,
+      max_range > 1 ~9,
+      max_range > 0.5 ~10,
+      TRUE ~10
+    )
+  
+  #netzoom<- ifelse(max(lat_range, long_range) >5, 7, 9)
+
+  # netlat<-dplyr::case_when(Network == "NCRN" ~ 39.25,
+  #                          Network == "NETN" ~ 42.5)
+  # netlon<-dplyr::case_when(Network == "NCRN" ~ -77,
+  #                          Network == "NETN" ~ -71.6)
+  # netzoom<-dplyr::case_when(Network == "NCRN" ~ 9,
+  #                          Network == "NETN" ~ 7)
+
     leaflet() %>% 
-    setView(lng = netlon, lat = netlat, zoom = netzoom) %>% 
-      
-    addTiles() # temporary workaround to provide a basemap
+      leaflet::addTiles(group="Map", urlTemplate="https://atlas-stg.geoplatform.gov/styles/v1/atlas-user/ck58pyquo009v01p99xebegr9/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiYXRsYXMtdXNlciIsImEiOiJjazFmdGx2bjQwMDAwMG5wZmYwbmJwbmE2In0.lWXK2UexpXuyVitesLdwUg", attribution="National Park Service, © Mapbox, and © OpenStreetMap", options=tileOptions(minZoom=netzoom) ) %>%
+      leaflet::addTiles(group="Imagery", urlTemplate="https://atlas-stg.geoplatform.gov/styles/v1/atlas-user/ck72fwp2642dv07o7tbqinvz4/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiYXRsYXMtdXNlciIsImEiOiJjazFmdGx2bjQwMDAwMG5wZmYwbmJwbmE2In0.lWXK2UexpXuyVitesLdwUg", attribution="National Park Service, © Mapbox, and © OpenStreetMap", options=tileOptions(minZoom=netzoom) ) %>%
+      leaflet::addTiles(group="Slate", urlTemplate = "https://atlas-stg.geoplatform.gov/styles/v1/atlas-user/ck5cpvc2e0avf01p9zaw4co8o/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiYXRsYXMtdXNlciIsImEiOiJjazFmdGx2bjQwMDAwMG5wZmYwbmJwbmE2In0.lWXK2UexpXuyVitesLdwUg", attribution ="National Park Service, © Mapbox, and © OpenStreetMap", options=tileOptions(minZoom=netzoom) ) %>%
+      leaflet::addLayersControl(map=., baseGroups=c("Map","Imagery","Slate"), options=layersControlOptions(collapsed=T)) %>%
+
+    # addTiles() # temporary workaround to provide a basemap
     # broken map tiles:
-    # addTiles(group="Map", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.397cfb9a,nps.3cf3d4ab,nps.b0add3e6/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q",attribution=NPSAttrib, options=tileOptions(minZoom=netzoom)) %>% 
-    # addTiles(group="Imagery", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.2c589204,nps.25abf75b,nps.7531d30a/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q",attribution=NPSAttrib, options=tileOptions(minZoom=netzoom)) %>% 
-    # addTiles(group="Slate", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.9e521899,nps.17f575d9,nps.e091bdaf/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q", attribution=NPSAttrib, options=tileOptions(minZoom=netzoom) ) %>% 
-    # addLayersControl(map=., baseGroups=c("Map","Imagery","Slate"), options=layersControlOptions(collapsed=T))
-  })
+    # addTiles(group="Map", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.397cfb9a,nps.3cf3d4ab,nps.b0add3e6/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q",attribution=NPSAttrib, options=tileOptions(minZoom=netzoom)) %>%
+    # addTiles(group="Imagery", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.2c589204,nps.25abf75b,nps.7531d30a/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q",attribution=NPSAttrib, options=tileOptions(minZoom=netzoom)) %>%
+    # addTiles(group="Slate", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.9e521899,nps.17f575d9,nps.e091bdaf/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q", attribution=NPSAttrib, options=tileOptions(minZoom=netzoom) ) %>%
+    # addLayersControl(map=., baseGroups=c("Map","Imagery","Slate"), options=layersControlOptions(collapsed=T)) %>%
+
+    leaflet::setView(lng = netlon, lat = netlat , zoom = netzoom) 
+     })
 
   NPSAttrib<-HTML("<a href='https://www.nps.gov/npmap/disclaimer/'>Disclaimer</a> | 
       &copy; <a href='http://mapbox.com/about/maps' target='_blank'>Mapbox</a>

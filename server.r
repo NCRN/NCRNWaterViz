@@ -983,7 +983,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   output$MapChars<-renderUI( selectizeInput(inputId="MapChar",label="Charactersitic to Map", choices=NPSchars[order(names(NPSchars))] ))
   
   #coloring
-  MapColors<-colorNumeric(palette="viridis", domain=c(0,1)) # NPS % meets threshol
+  MapColors<-colorNumeric(palette="viridis", domain=c(0,1)) # NPS % meets threshold
   MapColors2<-colorFactor(palette="viridis", domain=c("<5th percentile","5th - 25th percentile", 
           "25th - 50th percentile", "50th - 75th percentile", "75th - 95th percentile", "> 95th percentile" ), ordered = T )  # USGS percentile category for discharge
   
@@ -1022,14 +1022,13 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     max_range<- max(lat_range, lon_range)
     
     netzoom<- dplyr::case_when(
-      max_range > 10 ~ 5,
-      max_range > 5 ~7,
-      max_range > 3 ~8,
-      max_range > 2 ~9,
-      max_range > 1.5 ~10,
-      max_range > 1 ~ 9,
+     # max_range > 10 ~5,
+     # max_range > 5 ~7,
+      max_range > 2.5 ~8,
+      max_range > 1.5 ~9,
+      max_range > 1 ~9,
       max_range > 0.5 ~10,
-      TRUE ~11
+      TRUE ~10
     )
   
   #netzoom<- ifelse(max(lat_range, long_range) >5, 7, 9)
@@ -1039,7 +1038,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   # netlon<-dplyr::case_when(Network == "NCRN" ~ -77,
   #                          Network == "NETN" ~ -71.6)
   # netzoom<-dplyr::case_when(Network == "NCRN" ~ 9,
-  #                           Network == "NETN" ~ 7)
+  #                          Network == "NETN" ~ 7)
 
     leaflet() %>% 
       leaflet::addTiles(group="Map", urlTemplate="https://atlas-stg.geoplatform.gov/styles/v1/atlas-user/ck58pyquo009v01p99xebegr9/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiYXRsYXMtdXNlciIsImEiOiJjazFmdGx2bjQwMDAwMG5wZmYwbmJwbmE2In0.lWXK2UexpXuyVitesLdwUg", attribution="National Park Service, © Mapbox, and © OpenStreetMap", options=tileOptions(minZoom=netzoom) ) %>%

@@ -481,8 +481,8 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     
     site_list <- paste(
       sapply(1:length(avg_summary$Site), function(i) { 
-          site_name <- site_info$SiteName[i]
-          site_code <- site_info$Site[i]
+          site_name <- site_info$SiteName[match(avg_summary$Site[i], site_info$Site)]
+          site_code <- avg_summary$Site[i]
           site_data <- avg_summary %>%
             dplyr::filter(Site == site_code)
           if (nrow(site_data) == 0 ||

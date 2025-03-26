@@ -269,26 +269,41 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     data_values <- DataUseMultiple () %>%
     
     dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #year filtering
-
-    #Aggregation
+      
     dplyr::mutate(Date = as.Date(Date)) %>%
     dplyr::mutate(Aggregation = dplyr::case_when(input$SummaryBoxBy == "month" ~ format(Date, "%b"),
-                                   input$SummaryBoxBy == "year" ~ format(Date, "%Y"), TRUE ~ as.character(Site))) %>%
-     
+                                                   input$SummaryBoxBy == "year" ~ format(Date, "%Y"), TRUE ~ as.character(Site))) %>%
+    dplyr::group_by(Aggregation, Site, Date) %>%
+    dplyr::summarise(
+        SiteVisitMean = mean(Value, na.rm = TRUE))
+
+    data_values_summary <- data_values %>%
     dplyr::group_by(Aggregation, Site) %>%
       dplyr::summarise(
-      Minimum = round(min(Value, na.rm = TRUE), 2),   
-      Q1 = round(stats::quantile(Value, 0.25, na.rm = TRUE), 2),   
-      Mean = round(mean(Value, na.rm = TRUE), 2),   
-      Median = round(stats::median(Value, na.rm = TRUE), 2),   
-      Q3 = round(stats::quantile(Value, 0.75, na.rm = TRUE),2),  
-      Maximum = round(max(Value, na.rm = TRUE), 2),  
-      SD = round(stats::sd(Value, na.rm = TRUE), 2),
-      n_site_visit = dplyr::n_distinct(Date),
-      n = dplyr::n(), .groups = "drop") %>%
-      dplyr::arrange(factor(Aggregation, levels = month.name), Site) 
-  
-  return(data_values) 
+      Minimum = round(min(SiteVisitMean, na.rm = TRUE), 2),   
+      Q1 = round(stats::quantile(SiteVisitMean, 0.25, na.rm = TRUE), 2),   
+      Mean = round(mean(SiteVisitMean, na.rm = TRUE), 2),   
+      Median = round(stats::median(SiteVisitMean, na.rm = TRUE), 2),   
+      Q3 = round(stats::quantile(SiteVisitMean, 0.75, na.rm = TRUE),2),  
+      Maximum = round(max(SiteVisitMean, na.rm = TRUE), 2),  
+      SD = round(stats::sd(SiteVisitMean, na.rm = TRUE), 2), 
+      n_site_visit = dplyr::n_distinct(Date), .groups = "drop") 
+
+      n_count = DataUseMultiple() %>%
+        dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #year filtering
+        
+        dplyr::mutate(Date = as.Date(Date)) %>%
+      dplyr::mutate(Aggregation = dplyr::case_when(input$SummaryBoxBy == "month" ~ format(Date, "%b"),
+                                 input$SummaryBoxBy == "year" ~ format(Date, "%Y"), TRUE ~ as.character(Site))) %>%
+      dplyr::group_by(Aggregation, Site) %>%
+        dplyr::summarise(n = dplyr::n(), .groups = "drop")
+        
+      final_summary <- 
+        dplyr::left_join(data_values_summary, n_count, by = c("Aggregation", "Site"))
+
+   #   dplyr::arrange(factor(Aggregation, levels = month.name), Site) 
+
+  return(final_summary) 
 })
 
 ### Summary table output ####
@@ -315,62 +330,62 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     
     table <- table %>%
       dplyr::mutate(SD = ifelse(!is.na(Mean) & is.na(SD), "Not available", SD),
-             Minimum = ifelse(is.na(Minimum) | Minimum == Inf | Minimum == -Inf, "Data not collected", Minimum),
-             Maximum = ifelse(is.na(Maximum) | Maximum == Inf | Maximum == -Inf, "Data not collected", Maximum),
-             dplyr::across(everything(), ~ifelse(is.na(.), "Data not collected", .)))
+                    Minimum = ifelse(is.na(Minimum) | Minimum == Inf | Minimum == -Inf, "Data not collected", Minimum),
+                    Maximum = ifelse(is.na(Maximum) | Maximum == Inf | Maximum == -Inf, "Data not collected", Maximum),
+                    dplyr::across(everything(), ~ifelse(is.na(.), "Data not collected", .)))
     
     table <- table %>%
       dplyr::mutate(Aggregation = ifelse(Aggregation %in% month.abb, 
-                                month.name[match(Aggregation, month.abb)], Aggregation))
-
-   #SiteCodes to full site names
+                                         month.name[match(Aggregation, month.abb)], Aggregation))
+    
+    #SiteCodes to full site names
     site_codes <- NCRNWater::getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteCode")
     site_names <- NCRNWater::getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteName")
     
     site_info <- data.frame(SiteCode = site_codes, SiteName = site_names, stringsAsFactors = FALSE)
- 
+    
     table <- table %>%
       dplyr::left_join(site_info, by = c("Site" = "SiteCode")) %>%
       dplyr::mutate(Site = ifelse(!is.na(SiteName), SiteName, Site)) %>% 
       dplyr::select(-SiteName)
-      
+    
     #Table grouping
     if (input$SummaryBoxBy %in% c("month", "year")) {
       group_headers <- table %>%
-      dplyr::distinct(Aggregation) %>%
-      dplyr::mutate(Site = Aggregation, Minimum = NA, Q1 = NA, Mean = NA, Median = NA, Q3 = NA, Maximum = NA, SD = NA, n_site_visit = NA, n = NA)
-
-    summary_table <- dplyr::bind_rows(group_headers, table) %>%
-      dplyr::mutate(Aggregation = factor(Aggregation, levels = c(month.name, 
-                                                          sort(unique(as.character(table$Aggregation[!table$Aggregation %in% month.name])))))) %>%
+        dplyr::distinct(Aggregation) %>%
+        dplyr::mutate(Site = Aggregation, Minimum = NA, Q1 = NA, Mean = NA, Median = NA, Q3 = NA, Maximum = NA, SD = NA, n_site_visit = NA, n = NA)
       
-      dplyr::arrange(Aggregation, dplyr::desc(is.na(Minimum)), Site) %>%
-      dplyr::mutate(is_group = Site == Aggregation)
+      summary_table <- dplyr::bind_rows(group_headers, table) %>%
+        dplyr::mutate(Aggregation = factor(Aggregation, levels = c(month.name, 
+                                                                   sort(unique(as.character(table$Aggregation[!table$Aggregation %in% month.name])))))) %>%
+        
+        dplyr::arrange(Aggregation, dplyr::desc(is.na(Minimum)), Site) %>%
+        dplyr::mutate(is_group = Site == Aggregation)
     } else {
-    summary_table <- table %>%
-      dplyr::arrange(Site) %>%
-      dplyr::mutate(is_group = FALSE)
+      summary_table <- table %>%
+        dplyr::arrange(Site) %>%
+        dplyr::mutate(is_group = FALSE)
     }
     summary_table <- summary_table %>%
       dplyr::select(-Aggregation, -is_group)
-
+    
     DT::datatable(summary_table, extensions=c("Buttons", "KeyTable"),
-                 #caption=tags$caption(h3(Title())),
-                 class="stripe hover order-column cell-border",
-                 rownames=F, options=list(paging = FALSE, autoWidth=TRUE, ordering= FALSE, 
-                                          dom= "Bltipr", buttons=c("copy","csv","excel","pdf","print"), keys = TRUE)) %>%
-    #,server=F)
-  
-    DT::formatStyle("Site", fontWeight = if(input$SummaryBoxBy %in% c("month", "year")) {
-      DT::styleEqual(group_headers$Site, rep("bold", nrow(group_headers)))
-    } else if (input$SummaryBoxBy == "site") { "bold" } else { NULL }
+                  #caption=tags$caption(h3(Title())),
+                  class="stripe hover order-column cell-border",
+                  rownames=F, options=list(paging = FALSE, autoWidth=TRUE, ordering= FALSE, 
+                                           dom= "Bltipr", buttons=c("copy","csv","excel","pdf","print"), keys = TRUE)) %>%
+      #,server=F)
+      
+      DT::formatStyle("Site", fontWeight = if(input$SummaryBoxBy %in% c("month", "year")) {
+        DT::styleEqual(group_headers$Site, rep("bold", nrow(group_headers)))
+      } else if (input$SummaryBoxBy == "site") { "bold" } else { NULL }
       ,backgroundColor = if(input$SummaryBoxBy %in% c("month", "year")) {
-       DT::styleEqual(group_headers$Site, rep("#f0f0f0", nrow(group_headers)))
+        DT::styleEqual(group_headers$Site, rep("#f0f0f0", nrow(group_headers)))
       } else {
         NULL
       }
-     )
-    })
+      )
+  })
   
   #Notification pop-up when all data is missing in table
   shiny::observe({

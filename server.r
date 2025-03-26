@@ -330,62 +330,85 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     
     table <- table %>%
       dplyr::mutate(SD = ifelse(!is.na(Mean) & is.na(SD), "Not available", SD),
-                    Minimum = ifelse(is.na(Minimum) | Minimum == Inf | Minimum == -Inf, "Data not collected", Minimum),
-                    Maximum = ifelse(is.na(Maximum) | Maximum == Inf | Maximum == -Inf, "Data not collected", Maximum),
-                    dplyr::across(everything(), ~ifelse(is.na(.), "Data not collected", .)))
+             Minimum = ifelse(is.na(Minimum) | Minimum == Inf | Minimum == -Inf, "Data not collected", Minimum),
+             Maximum = ifelse(is.na(Maximum) | Maximum == Inf | Maximum == -Inf, "Data not collected", Maximum),
+             dplyr::across(everything(), ~ifelse(is.na(.), "Data not collected", .)))
     
     table <- table %>%
       dplyr::mutate(Aggregation = ifelse(Aggregation %in% month.abb, 
-                                         month.name[match(Aggregation, month.abb)], Aggregation))
-    
-    #SiteCodes to full site names
+                                month.name[match(Aggregation, month.abb)], Aggregation))
+
+   #SiteCodes to full site names
     site_codes <- NCRNWater::getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteCode")
     site_names <- NCRNWater::getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteName")
     
     site_info <- data.frame(SiteCode = site_codes, SiteName = site_names, stringsAsFactors = FALSE)
-    
+ 
     table <- table %>%
       dplyr::left_join(site_info, by = c("Site" = "SiteCode")) %>%
       dplyr::mutate(Site = ifelse(!is.na(SiteName), SiteName, Site)) %>% 
       dplyr::select(-SiteName)
-    
+      
     #Table grouping
     if (input$SummaryBoxBy %in% c("month", "year")) {
       group_headers <- table %>%
-        dplyr::distinct(Aggregation) %>%
-        dplyr::mutate(Site = Aggregation, Minimum = NA, Q1 = NA, Mean = NA, Median = NA, Q3 = NA, Maximum = NA, SD = NA, n_site_visit = NA, n = NA)
+      dplyr::distinct(Aggregation) %>%
+      dplyr::mutate(Site = Aggregation, Minimum = NA, Q1 = NA, Mean = NA, Median = NA, Q3 = NA, Maximum = NA, SD = NA, n_site_visit = NA, n = NA)
+
+    summary_table <- dplyr::bind_rows(group_headers, table) %>%
+      dplyr::mutate(Aggregation = factor(Aggregation, levels = c(month.name, 
+                                                          sort(unique(as.character(table$Aggregation[!table$Aggregation %in% month.name])))))) %>%
       
-      summary_table <- dplyr::bind_rows(group_headers, table) %>%
-        dplyr::mutate(Aggregation = factor(Aggregation, levels = c(month.name, 
-                                                                   sort(unique(as.character(table$Aggregation[!table$Aggregation %in% month.name])))))) %>%
-        
-        dplyr::arrange(Aggregation, dplyr::desc(is.na(Minimum)), Site) %>%
-        dplyr::mutate(is_group = Site == Aggregation)
+      dplyr::arrange(Aggregation, dplyr::desc(is.na(Minimum)), Site) %>%
+      dplyr::mutate(is_group = Site == Aggregation)
     } else {
-      summary_table <- table %>%
-        dplyr::arrange(Site) %>%
-        dplyr::mutate(is_group = FALSE)
+    summary_table <- table %>%
+      dplyr::arrange(Site) %>%
+      dplyr::mutate(is_group = FALSE)
     }
     summary_table <- summary_table %>%
       dplyr::select(-Aggregation, -is_group)
-    
+
+      tooltips <- list(
+        "Minimum" = "The smallest recorded value",
+        "Q1" = "The first quartile (25th percentile)",
+        "Mean" = "The average value based on site visit",
+        "Median" = "The middle value when sorted",
+        "Q3" = "The third quartile (75th percentile)",
+        "Maximum" = "The largest recorded value",
+        "SD" = "Standard deviation, measuring variability",
+        "n_site_visit" = "Count of site visits",
+        "n" = "Total number of observations"
+      )
+      tooltips_json <- jsonlite::toJSON(tooltips, auto_unbox = TRUE)
     DT::datatable(summary_table, extensions=c("Buttons", "KeyTable"),
-                  #caption=tags$caption(h3(Title())),
-                  class="stripe hover order-column cell-border",
-                  rownames=F, options=list(paging = FALSE, autoWidth=TRUE, ordering= FALSE, 
-                                           dom= "Bltipr", buttons=c("copy","csv","excel","pdf","print"), keys = TRUE)) %>%
-      #,server=F)
-      
-      DT::formatStyle("Site", fontWeight = if(input$SummaryBoxBy %in% c("month", "year")) {
-        DT::styleEqual(group_headers$Site, rep("bold", nrow(group_headers)))
-      } else if (input$SummaryBoxBy == "site") { "bold" } else { NULL }
+                 #caption=tags$caption(h3(Title())),
+                 class="stripe hover order-column cell-border",
+                 rownames=F, options=list(paging = FALSE, autoWidth=TRUE, ordering= FALSE, 
+                                          dom= "Bltipr", buttons=c("copy","csv","excel","pdf","print"), keys = TRUE,
+                                          headerCallback = JS("function(thead, data, start, end, display){", 
+                                                              "$('th', thead).each(function(index){",
+                                                              " var tooltips = ",
+                                                              tooltips_json,";",
+                                                              " var colName = $
+                                                              (this).text().trim();",
+                                                              " if(tooltips[colName]) {",
+                                                              " $(this).attr('title', tooltips[colName]);",
+                                                              " }",
+                                                              "});",
+                                                              "}"))) %>%
+    #,server=F)
+  
+    DT::formatStyle("Site", fontWeight = if(input$SummaryBoxBy %in% c("month", "year")) {
+      DT::styleEqual(group_headers$Site, rep("bold", nrow(group_headers)))
+    } else if (input$SummaryBoxBy == "site") { "bold" } else { NULL }
       ,backgroundColor = if(input$SummaryBoxBy %in% c("month", "year")) {
-        DT::styleEqual(group_headers$Site, rep("#f0f0f0", nrow(group_headers)))
+       DT::styleEqual(group_headers$Site, rep("#f0f0f0", nrow(group_headers)))
       } else {
         NULL
       }
-      )
-  })
+     )
+    })
   
   #Notification pop-up when all data is missing in table
   shiny::observe({

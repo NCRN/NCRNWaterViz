@@ -372,13 +372,13 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       tooltips <- list(
         "Minimum" = "The smallest recorded value",
         "Q1" = "The first quartile (25th percentile)",
-        "Mean" = "The average value based on site visit",
+        "Mean" = "The average value",
         "Median" = "The middle value when sorted",
         "Q3" = "The third quartile (75th percentile)",
         "Maximum" = "The largest recorded value",
         "SD" = "Standard deviation, measuring variability",
         "n_site_visit" = "Count of site visits",
-        "n" = "Total number of observations"
+        "n" = "Count of observations"
       )
       tooltips_json <- jsonlite::toJSON(tooltips, auto_unbox = TRUE)
     DT::datatable(summary_table, extensions=c("Buttons", "KeyTable"),
@@ -489,8 +489,6 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     raw_data <- DataUseMultiple () %>%
       dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2])
     
-    summary_data <- summary()
-    
     #Full characteristic name
     char_info <- data.frame(
       Char = NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, info = "CharName"),
@@ -502,58 +500,68 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     site_info <- data.frame(
       Site = NCRNWater::getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteCode"),
       SiteName = NCRNWater::getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteName"), stringsAsFactors = FALSE)
-
-    summary_data <- summary_data %>%
-      dplyr::left_join(site_info, by = "Site") 
     
     raw_data <- raw_data %>%
       dplyr::left_join(site_info, by = "Site") 
-
-    avg_summary <- raw_data %>%
-      dplyr::group_by(Site, SiteName) %>%
-      dplyr::summarize(
-        avg_mean = mean(Value, na.rm = TRUE),
-        avg_median = stats::median(Value, na.rm = TRUE)
+    
+    #Site visit average
+    site_visit_data <- raw_data %>%
+      group_by(Site, SiteName, Date) %>%
+      summarise(text_sitevisit_mean = mean(Value, na.rm = TRUE), .groups = "drop")
+    
+    #Summary text calculated values
+    text_summary_stats <- site_visit_data %>%
+      group_by(Site, SiteName) %>%
+      summarise(
+        Mean = mean(text_sitevisit_mean, na.rm = TRUE),
+        Median = stats::median(text_sitevisit_mean, na.rm = TRUE),
+        Maximum = max(text_sitevisit_mean, na.rm = TRUE),
+        Minimum = min(text_sitevisit_mean, na.rm = TRUE),
+        Date_max = Date[which.max(text_sitevisit_mean)],
+        Date_min = Date[which.min(text_sitevisit_mean)],
+        .groups = "drop"
       )
+
     summary_units <- unique(NCRNWater::getCharInfo(WaterData,parkcode=DataOpts$Park, charname=DataOpts$Param, info="Units"))
     
     site_list <- paste(
-      sapply(1:length(avg_summary$Site), function(i) { 
-          site_name <- site_info$SiteName[match(avg_summary$Site[i], site_info$Site)]
-          site_code <- avg_summary$Site[i]
-          site_data <- avg_summary %>%
+      sapply(1:length(text_summary_stats$Site), function(i) { 
+          site_name <- site_info$SiteName[match(text_summary_stats$Site[i], site_info$Site)]
+          site_code <- text_summary_stats$Site[i]
+          site_data <- text_summary_stats %>%
             dplyr::filter(Site == site_code)
           if (nrow(site_data) == 0 ||
-              all(is.na(site_data$avg_mean))) {
+              all(is.na(site_data$Mean))) {
                         paste0("<li><b>", site_name, " -</b> Data not collected </li>")
           } else {
-                        paste0("<li><b>", site_name, " -</b> Mean: ", round(site_data$avg_mean, 2), " ", summary_units,
-                        ", Median: ", round(site_data$avg_median, 2), " ", summary_units, ".</li>") }
+                        paste0("<li><b>", site_name, " -</b> Mean: ", round(site_data$Mean, 2), " ", summary_units,
+                        ", Median: ", round(site_data$Median, 2), " ", summary_units, ".</li>") }
       }), 
       collapse = "")
 
     #Highest/Lowest values
-    highest_value <- raw_data[which.max(raw_data$Value), ]
-    lowest_value <- raw_data[which.min(raw_data$Value), ]
-  
+    highest_value <- text_summary_stats[which.max(text_summary_stats$Maximum), ]
+    lowest_value <- text_summary_stats[which.min(text_summary_stats$Minimum), ]
+
     highest_lowest_sentence <- ""
       if (nrow(highest_value) > 0 & nrow(lowest_value) > 0) {
-    highest_month <- format(as.Date(highest_value$Date), "%B")
-    highest_year <- format(as.Date(highest_value$Date), "%Y")
-    lowest_month <- format(as.Date(lowest_value$Date), "%B")
-    lowest_year <- format(as.Date(lowest_value$Date), "%Y")
+    highest_month <- format(as.Date(highest_value$Date_max), "%B")
+    highest_year <- format(as.Date(highest_value$Date_max), "%Y")
+    lowest_month <- format(as.Date(lowest_value$Date_min), "%B")
+    lowest_year <- format(as.Date(lowest_value$Date_min), "%Y")
     
     highest_lowest_sentence <- paste0(
-            "<p>The highest ", FullParamName, " value across selected sites was ", round(highest_value$Value, 2), " " 
+            "<p>The highest ", FullParamName, " value across selected sites was ", round(highest_value$Maximum, 2), " " 
             ,summary_units, " at ", highest_value$SiteName, " in ", highest_month, " ", highest_year
-            ,", while the lowest value was ", round(lowest_value$Value, 2), " ", summary_units, " at ", lowest_value$SiteName 
+            ,", while the lowest value was ", round(lowest_value$Minimum, 2), " ", summary_units, " at ", lowest_value$SiteName 
             ," in ", lowest_month, " ", lowest_year, ".</p>")}
 
     #Generate text
     HTML(paste0(
             "<p><b><span style='font-size: 18px;'>Summary Report:</b></p>"
             ,"<p>The mean and median values for ", FullParamName, " at the selected sites and years are as follows:</p>" 
-            ,"<ul>", site_list, "</ul>", highest_lowest_sentence)
+            ,"<ul>", site_list, "</ul>", highest_lowest_sentence, 
+            "<p>*Summary statistics calculated by grouping site observations, averaging observations by site visit, and aggregating accordingly.</p>")
             )
     })
   

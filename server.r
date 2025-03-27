@@ -286,7 +286,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       Median = round(stats::median(SiteVisitMean, na.rm = TRUE), 2),   
       Q3 = round(stats::quantile(SiteVisitMean, 0.75, na.rm = TRUE),2),  
       Maximum = round(max(SiteVisitMean, na.rm = TRUE), 2),  
-      SD = round(stats::sd(SiteVisitMean, na.rm = TRUE), 2), 
+      Standard_Deviation = round(stats::sd(SiteVisitMean, na.rm = TRUE), 2), 
       n_site_visit = dplyr::n_distinct(Date), .groups = "drop") 
 
       n_count = DataUseMultiple() %>%
@@ -329,7 +329,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     table <- summary()
     
     table <- table %>%
-      dplyr::mutate(SD = ifelse(!is.na(Mean) & is.na(SD), "Not available", SD),
+      dplyr::mutate(Standard_Deviation = ifelse(!is.na(Mean) & is.na(Standard_Deviation), "Not available", Standard_Deviation),
              Minimum = ifelse(is.na(Minimum) | Minimum == Inf | Minimum == -Inf, "Data not collected", Minimum),
              Maximum = ifelse(is.na(Maximum) | Maximum == Inf | Maximum == -Inf, "Data not collected", Maximum),
              dplyr::across(everything(), ~ifelse(is.na(.), "Data not collected", .)))
@@ -353,7 +353,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     if (input$SummaryBoxBy %in% c("month", "year")) {
       group_headers <- table %>%
       dplyr::distinct(Aggregation) %>%
-      dplyr::mutate(Site = Aggregation, Minimum = NA, Q1 = NA, Mean = NA, Median = NA, Q3 = NA, Maximum = NA, SD = NA, n_site_visit = NA, n = NA)
+      dplyr::mutate(Site = Aggregation, Minimum = NA, Q1 = NA, Mean = NA, Median = NA, Q3 = NA, Maximum = NA, Standard_Deviation = NA, n_site_visit = NA, n = NA)
 
     summary_table <- dplyr::bind_rows(group_headers, table) %>%
       dplyr::mutate(Aggregation = factor(Aggregation, levels = c(month.name, 
@@ -370,13 +370,14 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       dplyr::select(-Aggregation, -is_group)
 
       tooltips <- list(
+        "Site" = "Monitoring location where data was collected",
         "Minimum" = "The smallest recorded value",
         "Q1" = "The first quartile (25th percentile)",
         "Mean" = "The average value",
-        "Median" = "The middle value when sorted",
+        "Median" = "The central value in a sorted dataset",
         "Q3" = "The third quartile (75th percentile)",
         "Maximum" = "The largest recorded value",
-        "SD" = "Standard deviation, measuring variability",
+        "Standard_Deviation" = "Measure of variability",
         "n_site_visit" = "Count of site visits",
         "n" = "Count of observations"
       )
@@ -561,7 +562,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
             "<p><b><span style='font-size: 18px;'>Summary Report:</b></p>"
             ,"<p>The mean and median values for ", FullParamName, " at the selected sites and years are as follows:</p>" 
             ,"<ul>", site_list, "</ul>", highest_lowest_sentence, 
-            "<p>*Summary statistics calculated by grouping site observations, averaging observations by site visit, and aggregating accordingly.</p>")
+            "<p>*Summary statistics derived from site visit averages, calculated by grouping data by site, date, and selected aggregation type.</p>")
             )
     })
   

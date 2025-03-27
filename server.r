@@ -374,7 +374,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
         "Minimum" = "The smallest recorded value",
         "Q1" = "The first quartile (25th percentile)",
         "Mean" = "The average value",
-        "Median" = "The central value in a sorted dataset",
+        "Median" = "Central value in the sorted dataset",
         "Q3" = "The third quartile (75th percentile)",
         "Maximum" = "The largest recorded value",
         "Standard_Deviation" = "Measure of variability",

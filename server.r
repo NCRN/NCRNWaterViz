@@ -500,27 +500,26 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     site_info <- data.frame(
       Site = NCRNWater::getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteCode"),
       SiteName = NCRNWater::getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteName"), stringsAsFactors = FALSE)
-    
-    raw_data <- raw_data %>%
-      dplyr::left_join(site_info, by = "Site") 
-    
+
     #Site visit average
     site_visit_data <- raw_data %>%
-      group_by(Site, SiteName, Date) %>%
-      summarise(text_sitevisit_mean = mean(Value, na.rm = TRUE), .groups = "drop")
+      dplyr::group_by(Site, Date) %>%
+      dplyr::summarise(text_sitevisit_mean = mean(Value, na.rm = TRUE), .groups = "drop")
     
     #Summary text calculated values
     text_summary_stats <- site_visit_data %>%
-      group_by(Site, SiteName) %>%
-      summarise(
+      dplyr::group_by(Site) %>%
+      dplyr::summarise(
         Mean = mean(text_sitevisit_mean, na.rm = TRUE),
         Median = stats::median(text_sitevisit_mean, na.rm = TRUE),
         Maximum = max(text_sitevisit_mean, na.rm = TRUE),
         Minimum = min(text_sitevisit_mean, na.rm = TRUE),
         Date_max = Date[which.max(text_sitevisit_mean)],
         Date_min = Date[which.min(text_sitevisit_mean)],
-        .groups = "drop"
-      )
+        .groups = "drop") %>%
+      dplyr::right_join(site_info %>%
+      dplyr::filter(Site %in% DataOpts$Site), by = "Site")
+      
 
     summary_units <- unique(NCRNWater::getCharInfo(WaterData,parkcode=DataOpts$Park, charname=DataOpts$Param, info="Units"))
     
@@ -530,6 +529,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
           site_code <- text_summary_stats$Site[i]
           site_data <- text_summary_stats %>%
             dplyr::filter(Site == site_code)
+          
           if (nrow(site_data) == 0 ||
               all(is.na(site_data$Mean))) {
                         paste0("<li><b>", site_name, " -</b> Data not collected </li>")

@@ -117,7 +117,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   
   observeEvent(input$AboutSummary, showModal(
     modalDialog(title="About the Table", footer=tagAppendAttributes( modalButton(tags$div("Close")), class="btn btn-primary"),
-                includeHTML("./www/AboutSummary.html")                  
+                includeHTML("./www/AboutSummary.Rhtml")                  
     )
   ))
   

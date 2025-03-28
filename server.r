@@ -270,26 +270,41 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     data_values <- DataUseMultiple () %>%
     
     dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #year filtering
-
-    #Aggregation
+      
     dplyr::mutate(Date = as.Date(Date)) %>%
     dplyr::mutate(Aggregation = dplyr::case_when(input$SummaryBoxBy == "month" ~ format(Date, "%b"),
-                                   input$SummaryBoxBy == "year" ~ format(Date, "%Y"), TRUE ~ as.character(Site))) %>%
-     
+                                                   input$SummaryBoxBy == "year" ~ format(Date, "%Y"), TRUE ~ as.character(Site))) %>%
+    dplyr::group_by(Aggregation, Site, Date) %>%
+    dplyr::summarise(
+        SiteVisitMean = mean(Value, na.rm = TRUE))
+
+    data_values_summary <- data_values %>%
     dplyr::group_by(Aggregation, Site) %>%
       dplyr::summarise(
-      Minimum = round(min(Value, na.rm = TRUE), 2),   
-      Q1 = round(stats::quantile(Value, 0.25, na.rm = TRUE), 2),   
-      Mean = round(mean(Value, na.rm = TRUE), 2),   
-      Median = round(stats::median(Value, na.rm = TRUE), 2),   
-      Q3 = round(stats::quantile(Value, 0.75, na.rm = TRUE),2),  
-      Maximum = round(max(Value, na.rm = TRUE), 2),  
-      SD = round(stats::sd(Value, na.rm = TRUE), 2),
-      n_site_visit = dplyr::n_distinct(Date),
-      n = dplyr::n(), .groups = "drop") %>%
-      dplyr::arrange(factor(Aggregation, levels = month.name), Site) 
+      Minimum = round(min(SiteVisitMean, na.rm = TRUE), 2),   
+      Q1 = round(stats::quantile(SiteVisitMean, 0.25, na.rm = TRUE), 2),   
+      Mean = round(mean(SiteVisitMean, na.rm = TRUE), 2),   
+      Median = round(stats::median(SiteVisitMean, na.rm = TRUE), 2),   
+      Q3 = round(stats::quantile(SiteVisitMean, 0.75, na.rm = TRUE),2),  
+      Maximum = round(max(SiteVisitMean, na.rm = TRUE), 2),  
+      Standard_Deviation = round(stats::sd(SiteVisitMean, na.rm = TRUE), 2), 
+      n_site_visit = dplyr::n_distinct(Date), .groups = "drop") 
 
-  return(data_values) 
+      n_count = DataUseMultiple() %>%
+        dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #year filtering
+        
+        dplyr::mutate(Date = as.Date(Date)) %>%
+      dplyr::mutate(Aggregation = dplyr::case_when(input$SummaryBoxBy == "month" ~ format(Date, "%b"),
+                                 input$SummaryBoxBy == "year" ~ format(Date, "%Y"), TRUE ~ as.character(Site))) %>%
+      dplyr::group_by(Aggregation, Site) %>%
+        dplyr::summarise(n = dplyr::n(), .groups = "drop")
+        
+      final_summary <- 
+        dplyr::left_join(data_values_summary, n_count, by = c("Aggregation", "Site"))
+
+   #   dplyr::arrange(factor(Aggregation, levels = month.name), Site) 
+
+  return(final_summary) 
 })
 
 ### Summary table output ####
@@ -315,7 +330,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     table <- summary()
     
     table <- table %>%
-      dplyr::mutate(SD = ifelse(!is.na(Mean) & is.na(SD), "Not available", SD),
+      dplyr::mutate(Standard_Deviation = ifelse(!is.na(Mean) & is.na(Standard_Deviation), "Not available", Standard_Deviation),
              Minimum = ifelse(is.na(Minimum) | Minimum == Inf | Minimum == -Inf, "Data not collected", Minimum),
              Maximum = ifelse(is.na(Maximum) | Maximum == Inf | Maximum == -Inf, "Data not collected", Maximum),
              dplyr::across(everything(), ~ifelse(is.na(.), "Data not collected", .)))
@@ -339,7 +354,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     if (input$SummaryBoxBy %in% c("month", "year")) {
       group_headers <- table %>%
       dplyr::distinct(Aggregation) %>%
-      dplyr::mutate(Site = Aggregation, Minimum = NA, Q1 = NA, Mean = NA, Median = NA, Q3 = NA, Maximum = NA, SD = NA, n_site_visit = NA, n = NA)
+      dplyr::mutate(Site = Aggregation, Minimum = NA, Q1 = NA, Mean = NA, Median = NA, Q3 = NA, Maximum = NA, Standard_Deviation = NA, n_site_visit = NA, n = NA)
 
     summary_table <- dplyr::bind_rows(group_headers, table) %>%
       dplyr::mutate(Aggregation = factor(Aggregation, levels = c(month.name, 
@@ -355,11 +370,35 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     summary_table <- summary_table %>%
       dplyr::select(-Aggregation, -is_group)
 
+      tooltips <- list(
+        "Site" = "Monitoring location where data was collected",
+        "Minimum" = "The smallest recorded value",
+        "Q1" = "The first quartile (25th percentile)",
+        "Mean" = "The average value",
+        "Median" = "Central value in the sorted dataset",
+        "Q3" = "The third quartile (75th percentile)",
+        "Maximum" = "The largest recorded value",
+        "Standard_Deviation" = "Measure of variability",
+        "n_site_visit" = "Count of site visits",
+        "n" = "Count of observations"
+      )
+      tooltips_json <- jsonlite::toJSON(tooltips, auto_unbox = TRUE)
     DT::datatable(summary_table, extensions=c("Buttons", "KeyTable"),
                  #caption=tags$caption(h3(Title())),
                  class="stripe hover order-column cell-border",
                  rownames=F, options=list(paging = FALSE, autoWidth=TRUE, ordering= FALSE, 
-                                          dom= "Bltipr", buttons=c("copy","csv","excel","pdf","print"), keys = TRUE)) %>%
+                                          dom= "Bltipr", buttons=c("copy","csv","excel","pdf","print"), keys = TRUE,
+                                          headerCallback = JS("function(thead, data, start, end, display){", 
+                                                              "$('th', thead).each(function(index){",
+                                                              " var tooltips = ",
+                                                              tooltips_json,";",
+                                                              " var colName = $
+                                                              (this).text().trim();",
+                                                              " if(tooltips[colName]) {",
+                                                              " $(this).attr('title', tooltips[colName]);",
+                                                              " }",
+                                                              "});",
+                                                              "}"))) %>%
     #,server=F)
   
     DT::formatStyle("Site", fontWeight = if(input$SummaryBoxBy %in% c("month", "year")) {
@@ -452,8 +491,6 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     raw_data <- DataUseMultiple () %>%
       dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2])
     
-    summary_data <- summary()
-    
     #Full characteristic name
     char_info <- data.frame(
       Char = NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, info = "CharName"),
@@ -466,57 +503,67 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       Site = NCRNWater::getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteCode"),
       SiteName = NCRNWater::getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteName"), stringsAsFactors = FALSE)
 
-    summary_data <- summary_data %>%
-      dplyr::left_join(site_info, by = "Site") 
+    #Site visit average
+    site_visit_data <- raw_data %>%
+      dplyr::group_by(Site, Date) %>%
+      dplyr::summarise(text_sitevisit_mean = mean(Value, na.rm = TRUE), .groups = "drop")
     
-    raw_data <- raw_data %>%
-      dplyr::left_join(site_info, by = "Site") 
+    #Summary text calculated values
+    text_summary_stats <- site_visit_data %>%
+      dplyr::group_by(Site) %>%
+      dplyr::summarise(
+        Mean = mean(text_sitevisit_mean, na.rm = TRUE),
+        Median = stats::median(text_sitevisit_mean, na.rm = TRUE),
+        Maximum = max(text_sitevisit_mean, na.rm = TRUE),
+        Minimum = min(text_sitevisit_mean, na.rm = TRUE),
+        Date_max = Date[which.max(text_sitevisit_mean)],
+        Date_min = Date[which.min(text_sitevisit_mean)],
+        .groups = "drop") %>%
+      dplyr::right_join(site_info %>%
+      dplyr::filter(Site %in% DataOpts$Site), by = "Site")
+      
 
-    avg_summary <- raw_data %>%
-      dplyr::group_by(Site, SiteName) %>%
-      dplyr::summarize(
-        avg_mean = mean(Value, na.rm = TRUE),
-        avg_median = stats::median(Value, na.rm = TRUE)
-      )
     summary_units <- unique(NCRNWater::getCharInfo(WaterData,parkcode=DataOpts$Park, charname=DataOpts$Param, info="Units"))
     
     site_list <- paste(
-      sapply(1:length(avg_summary$Site), function(i) { 
-          site_name <- site_info$SiteName[match(avg_summary$Site[i], site_info$Site)]
-          site_code <- avg_summary$Site[i]
-          site_data <- avg_summary %>%
+      sapply(1:length(text_summary_stats$Site), function(i) { 
+          site_name <- site_info$SiteName[match(text_summary_stats$Site[i], site_info$Site)]
+          site_code <- text_summary_stats$Site[i]
+          site_data <- text_summary_stats %>%
             dplyr::filter(Site == site_code)
+          
           if (nrow(site_data) == 0 ||
-              all(is.na(site_data$avg_mean))) {
+              all(is.na(site_data$Mean))) {
                         paste0("<li><b>", site_name, " -</b> Data not collected </li>")
           } else {
-                        paste0("<li><b>", site_name, " -</b> Mean: ", round(site_data$avg_mean, 2), " ", summary_units,
-                        ", Median: ", round(site_data$avg_median, 2), " ", summary_units, ".</li>") }
+                        paste0("<li><b>", site_name, " -</b> Mean: ", round(site_data$Mean, 2), " ", summary_units,
+                        ", Median: ", round(site_data$Median, 2), " ", summary_units, ".</li>") }
       }), 
       collapse = "")
 
     #Highest/Lowest values
-    highest_value <- raw_data[which.max(raw_data$Value), ]
-    lowest_value <- raw_data[which.min(raw_data$Value), ]
-  
+    highest_value <- text_summary_stats[which.max(text_summary_stats$Maximum), ]
+    lowest_value <- text_summary_stats[which.min(text_summary_stats$Minimum), ]
+
     highest_lowest_sentence <- ""
       if (nrow(highest_value) > 0 & nrow(lowest_value) > 0) {
-    highest_month <- format(as.Date(highest_value$Date), "%B")
-    highest_year <- format(as.Date(highest_value$Date), "%Y")
-    lowest_month <- format(as.Date(lowest_value$Date), "%B")
-    lowest_year <- format(as.Date(lowest_value$Date), "%Y")
+    highest_month <- format(as.Date(highest_value$Date_max), "%B")
+    highest_year <- format(as.Date(highest_value$Date_max), "%Y")
+    lowest_month <- format(as.Date(lowest_value$Date_min), "%B")
+    lowest_year <- format(as.Date(lowest_value$Date_min), "%Y")
     
     highest_lowest_sentence <- paste0(
-            "<p>The highest ", FullParamName, " value across selected sites was ", round(highest_value$Value, 2), " " 
+            "<p>The highest ", FullParamName, " value across selected sites was ", round(highest_value$Maximum, 2), " " 
             ,summary_units, " at ", highest_value$SiteName, " in ", highest_month, " ", highest_year
-            ,", while the lowest value was ", round(lowest_value$Value, 2), " ", summary_units, " at ", lowest_value$SiteName 
+            ,", while the lowest value was ", round(lowest_value$Minimum, 2), " ", summary_units, " at ", lowest_value$SiteName 
             ," in ", lowest_month, " ", lowest_year, ".</p>")}
 
     #Generate text
     HTML(paste0(
             "<p><b><span style='font-size: 18px;'>Summary Report:</b></p>"
             ,"<p>The mean and median values for ", FullParamName, " at the selected sites and years are as follows:</p>" 
-            ,"<ul>", site_list, "</ul>", highest_lowest_sentence)
+            ,"<ul>", site_list, "</ul>", highest_lowest_sentence, 
+            "<p>*Summary statistics derived from site visit averages, calculated by grouping data by site, date, and selected aggregation type.</p>")
             )
     })
   

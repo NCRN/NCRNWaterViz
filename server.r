@@ -1063,7 +1063,12 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       href='http://insidemaps.nps.gov/places/editor/#background=mapbox-satellite&map=4/-95.97656/39.02772&overlays=park-tiles-overlay'
       target='_blank'>Improve Park Tiles</a>")
   
-  observe({
+
+    selected_park<-shiny::callModule(mapChooser, id="MapParks", data=WaterData, chosen=reactive(DataOpts$Park))
+    shiny::observeEvent(selected_park(), DataOpts$Park<-selected_park() )
+  
+   
+   observe({
     if(input$MapNPS){
       leafletProxy("WaterMap") %>% 
         clearGroup("NPS") %>% 

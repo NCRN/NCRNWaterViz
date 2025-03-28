@@ -115,5 +115,19 @@ paramChooser<-function(input, output, session, data, park, site, chosen){
   
   return(reactive(input$ParamIn))
 }
-  
+
+#### Map Module ####
+
+mapChooserUI<-function(id){
+  ns<-NS(id)
+  selectizeInput(inputId=ns("MapIn"),label="Select Parks:" , choices=NULL, multiple = TRUE, selected = NULL)
+}
+
+mapChooser<-function(input,output,session, data, park, chosen){
+  observe({updateSelectizeInput(session, "MapIn", selected=chosen(),
+                                choices=c("Choose a Park"="", c(`names<-`(getParkInfo(data, info="ParkCode"), getParkInfo(data, info="ParkShortName"))))
+  )})
+  return(reactive(input$MapIn))
+}
+
   

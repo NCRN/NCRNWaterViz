@@ -33,11 +33,14 @@ shinyUI(
                     
         radioButtons(inputId="SummaryBoxBy", label="Compare by:", choices=c("year", "month", "site"), selected = "year", inline = T),
                     
-        parkChooserUI("SummaryPark"),
-        siteChooserUI("SummarySite"),
-        paramChooserUI("SummaryParam"),
-        yearChooserUI("SummaryYears") 
-        )),
+                            parkChooserUI("SummaryPark"),
+                            siteChooserUI("SummarySite"),
+                            paramChooserUI("SummaryParam"),
+                            yearChooserUI("SummaryYears"),
+      splitLayout(cellWidths="35%",
+                  h3("About:"),
+                  actionButton(inputId="AboutSummary", label="About this Table...", class="btn btn-primary",style="margin-top: 15px")
+      ))),
       
       column(9,
           uiOutput("summary_text"),
@@ -55,7 +58,7 @@ shinyUI(
            color: white;
            } 
            ")),
-           )
+           ),
         ),
     
       tabPanel(h4("Time Series Plot"),

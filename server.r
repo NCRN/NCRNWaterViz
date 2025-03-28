@@ -115,6 +115,12 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     )
   ))
   
+  observeEvent(input$AboutSummary, showModal(
+    modalDialog(title="About the Table", footer=tagAppendAttributes( modalButton(tags$div("Close")), class="btn btn-primary"),
+                includeHTML("./www/AboutSummary.html")                  
+    )
+  ))
+  
 #### Housekeeping of data ####
   DataUse<-reactive({ 
      shiny::validate(
@@ -567,7 +573,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
             "<p><b><span style='font-size: 18px;'>Summary Report:</b></p>"
             ,"<p>The mean and median values for ", FullParamName, " at the selected sites and years are as follows:</p>" 
             ,"<ul>", site_list, "</ul>", highest_lowest_sentence, 
-            "<p>*Summary statistics derived from site visit averages, calculated by grouping data by site, date, and selected aggregation type.</p>")
+            "<p>*Summary statistics of site visit averages.</p>")
             )
     })
   

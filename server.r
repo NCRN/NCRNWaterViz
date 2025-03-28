@@ -287,7 +287,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       Q3 = round(stats::quantile(SiteVisitMean, 0.75, na.rm = TRUE),2),  
       Maximum = round(max(SiteVisitMean, na.rm = TRUE), 2),  
       Standard_Deviation = round(stats::sd(SiteVisitMean, na.rm = TRUE), 2), 
-      n_site_visit = dplyr::n_distinct(Date), .groups = "drop") 
+      Site_Visits = dplyr::n_distinct(Date), .groups = "drop") 
 
       n_count = DataUseMultiple() %>%
         dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #year filtering
@@ -296,8 +296,8 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       dplyr::mutate(Aggregation = dplyr::case_when(input$SummaryBoxBy == "month" ~ format(Date, "%b"),
                                  input$SummaryBoxBy == "year" ~ format(Date, "%Y"), TRUE ~ as.character(Site))) %>%
       dplyr::group_by(Aggregation, Site) %>%
-        dplyr::summarise(n = dplyr::n(), .groups = "drop")
-        
+        dplyr::summarise(Total_Measurements = dplyr::n(), .groups = "drop")
+      
       final_summary <- 
         dplyr::left_join(data_values_summary, n_count, by = c("Aggregation", "Site"))
 
@@ -353,7 +353,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     if (input$SummaryBoxBy %in% c("month", "year")) {
       group_headers <- table %>%
       dplyr::distinct(Aggregation) %>%
-      dplyr::mutate(Site = Aggregation, Minimum = NA, Q1 = NA, Mean = NA, Median = NA, Q3 = NA, Maximum = NA, Standard_Deviation = NA, n_site_visit = NA, n = NA)
+      dplyr::mutate(Site = Aggregation, Minimum = NA, Q1 = NA, Mean = NA, Median = NA, Q3 = NA, Maximum = NA, Standard_Deviation = NA, Site_Visits = NA, Total_Measurements = NA)
 
     summary_table <- dplyr::bind_rows(group_headers, table) %>%
       dplyr::mutate(Aggregation = factor(Aggregation, levels = c(month.name, 
@@ -371,28 +371,32 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 
       tooltips <- list(
         "Site" = "Monitoring location where data was collected",
-        "Minimum" = "The smallest recorded value",
+        "Minimum" = "Lowest recorded value",
         "Q1" = "The first quartile (25th percentile)",
         "Mean" = "The average value",
         "Median" = "Central value in the sorted dataset",
         "Q3" = "The third quartile (75th percentile)",
-        "Maximum" = "The largest recorded value",
-        "Standard_Deviation" = "Measure of variability",
-        "n_site_visit" = "Count of site visits",
-        "n" = "Count of observations"
+        "Maximum" = "Highest recorded value",
+        "Standard<br>Deviation" = "Measure of variability",
+        "Site<br>Visits" = "Number of site visits",
+        "Total<br>Measurements" = "Number of measurements"
       )
       tooltips_json <- jsonlite::toJSON(tooltips, auto_unbox = TRUE)
-    DT::datatable(summary_table, extensions=c("Buttons", "KeyTable"),
+      DT::datatable(summary_table, colnames = c("Site", "Minimum", "Q1", "Mean", "Median", "Q3", "Maximum", "Standard<br>Deviation", "Site<br>Visits", "Total<br>Measurements"), escape = FALSE,
+                 extensions=c("Buttons", "KeyTable"),
                  #caption=tags$caption(h3(Title())),
                  class="stripe hover order-column cell-border",
                  rownames=F, options=list(paging = FALSE, autoWidth=TRUE, ordering= FALSE, 
                                           dom= "Bltipr", buttons=c("copy","csv","excel","pdf","print"), keys = TRUE,
                                           headerCallback = JS("function(thead, data, start, end, display){", 
+                                                              "$(thead).find('th').css('text-align', 'center');",
+                                                              "$(thead).find('th').filter(function() { 
+                                                              return $(this).html().trim() === 'Site'; }).css('text-align', 'left');",
                                                               "$('th', thead).each(function(index){",
                                                               " var tooltips = ",
                                                               tooltips_json,";",
                                                               " var colName = $
-                                                              (this).text().trim();",
+                                                              (this).html().trim();",
                                                               " if(tooltips[colName]) {",
                                                               " $(this).attr('title', tooltips[colName]);",
                                                               " }",
@@ -400,7 +404,8 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
                                                               "}"))) %>%
     #,server=F)
   
-    DT::formatStyle("Site", fontWeight = if(input$SummaryBoxBy %in% c("month", "year")) {
+      DT::formatStyle(columns = setdiff(names(summary_table), "Site"), textAlign = "center") %>%
+      formatStyle(columns = "Site", textAlign = "left", fontWeight = if(input$SummaryBoxBy %in% c("month", "year")) {
       DT::styleEqual(group_headers$Site, rep("bold", nrow(group_headers)))
     } else if (input$SummaryBoxBy == "site") { "bold" } else { NULL }
       ,backgroundColor = if(input$SummaryBoxBy %in% c("month", "year")) {
@@ -437,7 +442,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     notifs <- summary()
     
     numeric_table <- notifs %>%
-      dplyr::select(-c(n, n_site_visit, Aggregation, Site))
+      dplyr::select(-c(Total_Measurements, Site_Visits, Aggregation, Site))
     
     numeric_table <- as.data.frame(numeric_table)
     numeric_table[is.infinite(as.matrix(numeric_table)) | is.nan(as.matrix(numeric_table))] <- NA

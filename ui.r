@@ -43,14 +43,21 @@ shinyUI(
       ))),
       
       column(9,
-          uiOutput("summary_text"),
-          DT::dataTableOutput("SummaryTable")
-    
-         ,tags$head(
-          tags$style(HTML("
+            div(class = "summary-box",
+              uiOutput("summary_text")),
+             DT::dataTableOutput("SummaryTable")
+
+       ,tags$head(
+        tags$style(HTML("
+          .summary-box {
+          background-color: #f5f3e5;
+          padding: 10px;
+          border-radius: 5px;
+          margin-bottom: 15px;
+          }
           .dt-buttons {
-            float: right !important;
-            }
+          float: right !important;
+          }
           .shiny-notification {
           background-color: #D0342C;
           color: white;
@@ -62,9 +69,8 @@ shinyUI(
            color: white;
            } 
            "))),
-           ),
         ),
-    
+      ),
       tabPanel(h4("Time Series Plot"),
         column(3, div(style='padding: 5px 10px',class="panel panel-default", 
           

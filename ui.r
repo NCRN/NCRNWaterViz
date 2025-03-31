@@ -46,7 +46,11 @@ shinyUI(
           uiOutput("summary_text"),
           DT::dataTableOutput("SummaryTable")
     
-          ,tags$style(HTML("
+         ,tags$head(
+          tags$style(HTML("
+          .dt-buttons {
+            float: right !important;
+            }
           .shiny-notification {
           background-color: #D0342C;
           color: white;
@@ -57,7 +61,7 @@ shinyUI(
           .shiny-notification-close {
            color: white;
            } 
-           ")),
+           "))),
            ),
         ),
     

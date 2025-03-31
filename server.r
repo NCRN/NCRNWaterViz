@@ -393,7 +393,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
                  #caption=tags$caption(h3(Title())),
                  class="stripe hover order-column cell-border",
                  rownames=F, options=list(paging = FALSE, autoWidth=TRUE, ordering= FALSE, 
-                                          dom= "Bltipr", buttons=c("copy","csv","excel","pdf","print"), keys = TRUE,
+                                          dom= "<'dt-buttons'B>ltipr", buttons=c("copy","csv","excel","pdf","print"), keys = TRUE,
                                           headerCallback = JS("function(thead, data, start, end, display){", 
                                                               "$(thead).find('th').css('text-align', 'center');",
                                                               "$(thead).find('th').filter(function() { 

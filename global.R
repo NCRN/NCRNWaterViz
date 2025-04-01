@@ -117,17 +117,29 @@ paramChooser<-function(input, output, session, data, park, site, chosen){
 }
 
 #### Map Module ####
+# 
+# mapChooserUI<-function(id){
+#   ns<-NS(id)
+#   selectizeInput(inputId=ns("MapIn"),label="Select Parks:" , choices=NULL, multiple = TRUE, selected = NULL)
+# }
+# 
+# mapChooser<-function(input,output,session, data, park, chosen){
+#   observe({updateSelectizeInput(session, "MapIn", selected=chosen(),
+#                                 choices=c("Choose a Park"="", c(`names<-`(getParkInfo(data, info="ParkCode"), getParkInfo(data, info="ParkShortName"))))
+#   )})
+#   return(reactive(input$MapIn))
+# }
 
-mapChooserUI<-function(id){
-  ns<-NS(id)
-  selectizeInput(inputId=ns("MapIn"),label="Select Parks:" , choices=NULL, multiple = TRUE, selected = NULL)
-}
 
-mapChooser<-function(input,output,session, data, park, chosen){
-  observe({updateSelectizeInput(session, "MapIn", selected=chosen(),
-                                choices=c("Choose a Park"="", c(`names<-`(getParkInfo(data, info="ParkCode"), getParkInfo(data, info="ParkShortName"))))
-  )})
-  return(reactive(input$MapIn))
-}
-
-  
+# mapChooserUI<-function(id){
+#   ns<-NS(id)
+#   checkboxGroupInput(inputId=ns("MapIn"),label="Select Parks:" , choices=NULL, inline = TRUE)
+# }
+# 
+# mapChooser<-function(input,output,session, data, park, chosen){
+#   observe({updateCheckboxGroupInput(session, "MapIn",
+#                                 choices=c("Choose a Park"="", c(`names<-`(getParkInfo(data, info="ParkCode"), getParkInfo(data, info="ParkShortName"))))
+#   )})
+#   return(reactive(input$MapIn))
+# }
+# 

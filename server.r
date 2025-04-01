@@ -975,7 +975,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
  #### NPS Data ####
   NPSGeoData<-data.frame(ParkCode=getSiteInfo(WaterData, info="ParkCode"), SiteCode=getSiteInfo(WaterData, info="SiteCode"), SiteName=getSiteInfo(WaterData, info= "SiteName"), 
                          latitude=getSiteInfo(WaterData, info="lat"), longitude=getSiteInfo(WaterData, info="long"), stringsAsFactors = F)
-
+print(NPSGeoData)
   #CharIndex is a true/false of characters that have thresholds
   CharIndex<-{getCharInfo(WaterData,info="LowerPoint") %>% is.na %>% not} | {getCharInfo(WaterData,info="UpperPoint") %>% is.na %>% not} 
   NPSchars<-getCharInfo(WaterData, info="CharName")[CharIndex] %>% unique
@@ -1062,29 +1062,54 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       <a class='improve-park-tiles' 
       href='http://insidemaps.nps.gov/places/editor/#background=mapbox-satellite&map=4/-95.97656/39.02772&overlays=park-tiles-overlay'
       target='_blank'>Improve Park Tiles</a>")
-  
-
-    selected_park<-shiny::callModule(mapChooser, id="MapParks", data=WaterData, chosen=reactive(DataOpts$Park))
-    shiny::observeEvent(selected_park(), DataOpts$Park<-selected_park() )
-  
    
-   observe({
-    if(input$MapNPS){
-      leafletProxy("WaterMap") %>% 
-        clearGroup("NPS") %>% 
-        addCircleMarkers(data=NPSGeoData, group="NPS", 
-                         layerId=NPSGeoData$SiteCode, 
-                         fillColor=MapColors(ExceedData()$Acceptable/ExceedData()$Total),
-                         fillOpacity=.8, stroke=FALSE) %>% 
-        
-        addLegend(position="topright", pal=MapColors, values=c(0,1), opacity=1,
-                    layerId="npsLegend",title=paste0("<svg height='15' width='20'>
-                    <circle cx='10' cy='10' r='5', stroke='black' fill='black'/></svg> NPS: % of Acceptable <br>Measurements"),
-                  labFormat=labelFormat(suffix="%", transform= function(x) 100*x))
-        } else {leafletProxy("WaterMap") %>% clearGroup("NPS") %>% removeControl(layerId="npsLegend")}
+  #  observe({
+  #   if(input$MapNPS){
+  #     leafletProxy("WaterMap") %>% 
+  #       clearGroup("NPS") %>% 
+  #       addCircleMarkers(data=NPSGeoData, group="NPS", 
+  #                        layerId=NPSGeoData$SiteCode, 
+  #                        fillColor=MapColors(ExceedData()$Acceptable/ExceedData()$Total),
+  #                        fillOpacity=.8, stroke=FALSE) %>% 
+  #       
+  #       addLegend(position="topright", pal=MapColors, values=c(0,1), opacity=1,
+  #                   layerId="npsLegend",title=paste0("<svg height='15' width='20'>
+  #                   <circle cx='10' cy='10' r='5', stroke='black' fill='black'/></svg> NPS: % of Acceptable <br>Measurements"),
+  #                 labFormat=labelFormat(suffix="%", transform= function(x) 100*x))
+  #       } else {leafletProxy("WaterMap") %>% clearGroup("NPS") %>% removeControl(layerId="npsLegend")}
+  # })
+  
+ # selected_park<-shiny::callModule(mapChooser, id="MapParks", data=NPSGeoData)
+  observe({
+    req(NPSGeoData)
+    updateCheckboxGroupInput(session, "MapIn", choices = unique(NPSGeoData$ParkCode), inline = FALSE)
+    print(NPSGeoData$ParkCode)
   })
   
-
+  observe({
+    if(input$MapNPS){
+    parks <- input$MapIn
+    filtered_data <- if (is.null(parks) || length(parks) == 0) {
+      NPSGeoData
+    } else {
+      NPSGeoData[NPSGeoData$ParkCode %in% parks, ]
+    }
+    
+    leafletProxy("WaterMap") %>%
+      clearGroup("NPS") %>%
+      addCircleMarkers(data = filtered_data, group = "NPS", 
+                       layerId = filtered_data$SiteCode, 
+                       fillColor = MapColors(ExceedData()$Acceptable/ExceedData()$Total),
+                       fillOpacity = 0.8, stroke = FALSE) %>%
+      
+      addLegend(position="topright", pal=MapColors, values=c(0,1), opacity=1,
+                layerId="npsLegend",title=paste0("<svg height='15' width='20'>
+                    <circle cx='10' cy='10' r='5', stroke='black' fill='black'/></svg> NPS: % of Acceptable <br>Measurements"),
+                      labFormat=labelFormat(suffix="%", transform= function(x) 100*x))
+                } else {
+                leafletProxy("WaterMap") %>% clearGroup("NPS") %>% removeControl(layerId="npsLegend")}
+  })
+  
   
   observe({
     if(input$MapUSGS){
@@ -1128,8 +1153,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
         )
     }
   })
-  
-  
+
 
 }) #End of Shiny Server function
     

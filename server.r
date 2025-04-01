@@ -286,14 +286,27 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     data_values_summary <- data_values %>%
     dplyr::group_by(Aggregation, Site) %>%
       dplyr::summarise(
-      Minimum = round(min(SiteVisitMean, na.rm = TRUE), 2),   
-      Q1 = round(stats::quantile(SiteVisitMean, 0.25, na.rm = TRUE), 2),   
-      Mean = round(mean(SiteVisitMean, na.rm = TRUE), 2),   
-      Median = round(stats::median(SiteVisitMean, na.rm = TRUE), 2),   
-      Q3 = round(stats::quantile(SiteVisitMean, 0.75, na.rm = TRUE),2),  
-      Maximum = round(max(SiteVisitMean, na.rm = TRUE), 2),  
-      Standard_Deviation = round(stats::sd(SiteVisitMean, na.rm = TRUE), 2), 
-      Site_Visits = dplyr::n_distinct(Date), .groups = "drop") 
+        Minimum = min(SiteVisitMean, na.rm = TRUE),
+        Q1 = stats::quantile(SiteVisitMean, 0.25, na.rm = TRUE),
+        Mean = mean(SiteVisitMean, na.rm = TRUE),
+        Median = stats::median(SiteVisitMean, na.rm = TRUE),
+        Q3 = stats::quantile(SiteVisitMean, 0.75, na.rm = TRUE),
+        Maximum = max(SiteVisitMean, na.rm = TRUE),
+        Standard_Deviation = stats::sd(SiteVisitMean, na.rm = TRUE),
+        Site_Visits = dplyr::n_distinct(Date), .groups = "drop")
+    
+      data_values_summary <- data_values_summary %>%
+        dplyr::mutate(
+          Standard_Deviation = as.character(Standard_Deviation),
+          Standard_Deviation = case_when(
+            (!is.na(Mean) & is.na(as.numeric(Standard_Deviation))) ~ "Not available",
+          is.na(as.numeric(Standard_Deviation)) ~ "Data not collected",
+          TRUE ~ formatC(as.numeric(Standard_Deviation), format = "f", digits = 2)),
+          Minimum = ifelse(is.na(Minimum) | Minimum == Inf | Minimum == -Inf, "Data not collected",
+                           formatC(Minimum, format = "f", digits = 2)),   
+          Maximum = ifelse(is.na(Maximum) | Maximum == Inf | Maximum == -Inf, "Data not collected",
+                           formatC(Maximum, format = "f", digits = 2))) %>%
+      dplyr::mutate(across(c(Q1, Mean, Median, Q3), ~ifelse(is.na(.), "Data not collected", formatC(., format = "f", digits = 2))))
 
       n_count = DataUseMultiple() %>%
         dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #year filtering
@@ -333,13 +346,13 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     #   })
     
     table <- summary()
-    
-    table <- table %>%
-      dplyr::mutate(Standard_Deviation = ifelse(!is.na(Mean) & is.na(Standard_Deviation), "Not available", Standard_Deviation),
-             Minimum = ifelse(is.na(Minimum) | Minimum == Inf | Minimum == -Inf, "Data not collected", Minimum),
-             Maximum = ifelse(is.na(Maximum) | Maximum == Inf | Maximum == -Inf, "Data not collected", Maximum),
-             dplyr::across(everything(), ~ifelse(is.na(.), "Data not collected", .)))
-    
+
+    # table <- table %>%
+    #   dplyr::mutate(Standard_Deviation = ifelse(!is.na(Mean) & is.na(Standard_Deviation), "Not available", Standard_Deviation),
+    #          Minimum = ifelse(is.na(Minimum) | Minimum == Inf | Minimum == -Inf, "Data not collected", Minimum),
+    #          Maximum = ifelse(is.na(Maximum) | Maximum == Inf | Maximum == -Inf, "Data not collected", Maximum),
+    #          dplyr::across(everything(), ~ifelse(is.na(.), "Data not collected", .)))
+
     table <- table %>%
       dplyr::mutate(Aggregation = ifelse(Aggregation %in% month.abb, 
                                 month.name[match(Aggregation, month.abb)], Aggregation))
@@ -388,7 +401,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
         "Total<br>Measurements" = "Number of measurements"
       )
       tooltips_json <- jsonlite::toJSON(tooltips, auto_unbox = TRUE)
-      DT::datatable(summary_table, colnames = c("Site", "Minimum", "Q1", "Mean", "Median", "Q3", "Maximum", "Standard<br>Deviation", "Site<br>Visits", "Total<br>Measurements"), escape = FALSE,
+      dt<- DT::datatable(summary_table, colnames = c("Site", "Minimum", "Q1", "Mean", "Median", "Q3", "Maximum", "Standard<br>Deviation", "Site<br>Visits", "Total<br>Measurements"), escape = FALSE,
                  extensions=c("Buttons", "KeyTable"),
                  #caption=tags$caption(h3(Title())),
                  class="stripe hover order-column cell-border",
@@ -409,11 +422,13 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
                                                               "});",
                                                               "}"))) %>%
     #,server=F)
-  
+
       DT::formatStyle(columns = setdiff(names(summary_table), "Site"), textAlign = "center") %>%
       formatStyle(columns = "Site", textAlign = "left", fontWeight = if(input$SummaryBoxBy %in% c("month", "year")) {
       DT::styleEqual(group_headers$Site, rep("bold", nrow(group_headers)))
-    } else if (input$SummaryBoxBy == "site") { "bold" } else { NULL }
+      } else if (input$SummaryBoxBy == "site") { "bold" 
+      } else { 
+        NULL }
       ,backgroundColor = if(input$SummaryBoxBy %in% c("month", "year")) {
        DT::styleEqual(group_headers$Site, rep("#f0f0f0", nrow(group_headers)))
       } else {

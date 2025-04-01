@@ -165,8 +165,9 @@ shinyUI(
           checkboxInput(inputId="MapNPS", label="Map NPS Water Monitoring", value=T),
           uiOutput("MapChars"),
 
-          checkboxGroupInput(inputId="MapIn",label="Select Parks:" , choices=NULL, inline = FALSE),
-          
+          div(style = "display: block", checkboxGroupInput(inputId="MapIn",label="Select Parks:" , choices=NULL, inline = FALSE),
+              actionButton("refreshParks", "Refresh", class = "btn btn-primary", style = "margin-top: 10px;")),
+              
           # to hide the "US Geological Survey Stream Gages" checkbox, we'll make it only conditionally-visible
           # this approach leaves all of the downstream code intact to avoid breaking dependencies
           # take the contents out of the conditionalPanel and reload the app to restore functionality

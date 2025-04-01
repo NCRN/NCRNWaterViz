@@ -1079,11 +1079,12 @@ print(NPSGeoData)
   #       } else {leafletProxy("WaterMap") %>% clearGroup("NPS") %>% removeControl(layerId="npsLegend")}
   # })
   
- # selected_park<-shiny::callModule(mapChooser, id="MapParks", data=NPSGeoData)
   observe({
     req(NPSGeoData)
     updateCheckboxGroupInput(session, "MapIn", choices = unique(NPSGeoData$ParkCode), inline = FALSE)
-    print(NPSGeoData$ParkCode)
+  })
+  observeEvent(input$refreshParks, {
+    updateCheckboxGroupInput(session, "MapIn", selected = character(0))
   })
   
   observe({
@@ -1106,8 +1107,8 @@ print(NPSGeoData)
                 layerId="npsLegend",title=paste0("<svg height='15' width='20'>
                     <circle cx='10' cy='10' r='5', stroke='black' fill='black'/></svg> NPS: % of Acceptable <br>Measurements"),
                       labFormat=labelFormat(suffix="%", transform= function(x) 100*x))
-                } else {
-                leafletProxy("WaterMap") %>% clearGroup("NPS") %>% removeControl(layerId="npsLegend")}
+      } else {
+    leafletProxy("WaterMap") %>% clearGroup("NPS") %>% removeControl(layerId="npsLegend")}
   })
   
   

@@ -166,7 +166,7 @@ shinyUI(
           uiOutput("MapChars"),
 
           div(style = "display: block", checkboxGroupInput(inputId="MapIn",label="Select Parks:" , choices=NULL, inline = FALSE),
-              actionButton("refreshParks", "Refresh", class = "btn btn-primary", style = "margin-top: 10px;")),
+              actionButton("refreshParks", "Reset park selections", class = "btn btn-primary", style = "margin-top: 10px;")),
               
           # to hide the "US Geological Survey Stream Gages" checkbox, we'll make it only conditionally-visible
           # this approach leaves all of the downstream code intact to avoid breaking dependencies

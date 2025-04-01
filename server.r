@@ -1083,6 +1083,7 @@ print(NPSGeoData)
     req(NPSGeoData)
     updateCheckboxGroupInput(session, "MapIn", choices = unique(NPSGeoData$ParkCode), inline = FALSE)
   })
+  
   observeEvent(input$refreshParks, {
     updateCheckboxGroupInput(session, "MapIn", selected = character(0))
   })

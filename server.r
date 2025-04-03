@@ -1026,7 +1026,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     lon_range<- max_lon - min_lon
     
     max_range<- max(lat_range, lon_range)
-    
+    print(max_range)
     netzoom<- dplyr::case_when(
      # max_range > 10 ~5,
      # max_range > 5 ~7,
@@ -1036,7 +1036,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       max_range > 0.5 ~10,
       TRUE ~10
     )
-    
+
     map_values$netlat <- netlat
     map_values$netlon <- netlon
     map_values$netzoom <- netzoom
@@ -1050,8 +1050,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   # netzoom<-dplyr::case_when(Network == "NCRN" ~ 9,
   #                          Network == "NETN" ~ 7)
 
-    leaflet() %>% 
-  #  leaflet(options = leafletOptions(minZoom = 2, maxZoom = 18)) %>%
+    leaflet() %>%
       leaflet::addTiles(group="Map", urlTemplate="https://atlas-stg.geoplatform.gov/styles/v1/atlas-user/ck58pyquo009v01p99xebegr9/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiYXRsYXMtdXNlciIsImEiOiJjazFmdGx2bjQwMDAwMG5wZmYwbmJwbmE2In0.lWXK2UexpXuyVitesLdwUg", attribution="National Park Service, © Mapbox, and © OpenStreetMap") %>%
       leaflet::addTiles(group="Imagery", urlTemplate="https://atlas-stg.geoplatform.gov/styles/v1/atlas-user/ck72fwp2642dv07o7tbqinvz4/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiYXRsYXMtdXNlciIsImEiOiJjazFmdGx2bjQwMDAwMG5wZmYwbmJwbmE2In0.lWXK2UexpXuyVitesLdwUg", attribution="National Park Service, © Mapbox, and © OpenStreetMap") %>%
       leaflet::addTiles(group="Slate", urlTemplate = "https://atlas-stg.geoplatform.gov/styles/v1/atlas-user/ck5cpvc2e0avf01p9zaw4co8o/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiYXRsYXMtdXNlciIsImEiOiJjazFmdGx2bjQwMDAwMG5wZmYwbmJwbmE2In0.lWXK2UexpXuyVitesLdwUg", attribution ="National Park Service, © Mapbox, and © OpenStreetMap") %>%
@@ -1098,7 +1097,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   observe({
     req(input$WaterMap_zoom)
     zoom_level <- input$WaterMap_zoom
-    show_labels <- zoom_level > 11
+    show_labels <- zoom_level > 10.5
 
    # if(input$MapNPS){
     parks <- input$MapIn
@@ -1106,6 +1105,12 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       NPSGeoData
     } else {
       NPSGeoData[NPSGeoData$ParkName %in% parks, ]
+    }
+    
+    label_color <- if ("Slate" %in% input$WaterMap_groups || "Imagery" %in% input$WaterMap_groups) {
+      "white" 
+    } else {
+      "black"
     }
     
     leafletProxy("WaterMap") %>%
@@ -1125,8 +1130,8 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       addLabelOnlyMarkers(data = filtered_data, group = "Sites", 
                           lng = ~longitude, lat = ~latitude,
                           label = ~SiteName,
-                          labelOptions = labelOptions(noHide = TRUE, direction = "center", offset= c(0, 22)
-                                                      , style = list("font-weight"="bold", "color"="white", "text-shadow"="5px 5px 7px black", "background"="transparent", "border"="none", "padding"="0px", "box-shadow"="none"))) 
+                          labelOptions = labelOptions(noHide = TRUE, textOnly = TRUE, direction = "center", offset= c(0, 22)
+                                                      , style = list("font-weight"="bold", "font-size"="13px", "color"=label_color))) 
         } else {
         leafletProxy("WaterMap") %>%
             clearGroup("Sites")

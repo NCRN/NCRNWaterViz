@@ -973,9 +973,9 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   })
   
  #### NPS Data ####
-  NPSGeoData<-data.frame(ParkCode=getSiteInfo(WaterData, info="ParkCode"), SiteCode=getSiteInfo(WaterData, info="SiteCode"), SiteName=getSiteInfo(WaterData, info= "SiteName"), 
+  NPSGeoData<-data.frame(ParkCode=getSiteInfo(WaterData, info="ParkCode"), SiteCode=getSiteInfo(WaterData, info="SiteCode"), ParkName=getSiteInfo(WaterData, info = "ParkShortName"), SiteName=getSiteInfo(WaterData, info= "SiteName"), 
                          latitude=getSiteInfo(WaterData, info="lat"), longitude=getSiteInfo(WaterData, info="long"), stringsAsFactors = F)
-print(NPSGeoData)
+
   #CharIndex is a true/false of characters that have thresholds
   CharIndex<-{getCharInfo(WaterData,info="LowerPoint") %>% is.na %>% not} | {getCharInfo(WaterData,info="UpperPoint") %>% is.na %>% not} 
   NPSchars<-getCharInfo(WaterData, info="CharName")[CharIndex] %>% unique
@@ -992,12 +992,13 @@ print(NPSGeoData)
     exceed(WaterData, charname=input$MapChar)
   })
 
-  #### the Map ####
   map_values <- reactiveValues(
     netlon = NA, 
     netlat = NA, 
     netzoom = NA
   )
+  
+  #### the Map ####
   output$WaterMap<-leaflet::renderLeaflet({ 
     # Renders a map widget centered on water monitoring sites, with dynamic zoom and basemap options.  
     # Args:
@@ -1062,7 +1063,7 @@ print(NPSGeoData)
     # addTiles(group="Slate", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.9e521899,nps.17f575d9,nps.e091bdaf/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q", attribution=NPSAttrib, options=tileOptions(minZoom=netzoom) ) %>%
     # addLayersControl(map=., baseGroups=c("Map","Imagery","Slate"), options=layersControlOptions(collapsed=T)) %>%
 
-    leaflet::setView(lng = netlon, lat = netlat , zoom = netzoom) 
+    leaflet::setView(lng = netlon, lat = netlat , zoom = netzoom)
      })
 
   NPSAttrib<-HTML("<a href='https://www.nps.gov/npmap/disclaimer/'>Disclaimer</a> | 
@@ -1090,7 +1091,7 @@ print(NPSGeoData)
   
   observe({
     req(NPSGeoData)
-    updateCheckboxGroupInput(session, "MapIn", choices = unique(NPSGeoData$ParkCode), inline = FALSE)
+    updateCheckboxGroupInput(session, "MapIn", choices = unique(NPSGeoData$ParkName), inline = FALSE)
   })
   
   observe({

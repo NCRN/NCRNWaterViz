@@ -1051,9 +1051,10 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   #                          Network == "NETN" ~ 7)
 
     leaflet() %>% 
-      leaflet::addTiles(group="Map", urlTemplate="https://atlas-stg.geoplatform.gov/styles/v1/atlas-user/ck58pyquo009v01p99xebegr9/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiYXRsYXMtdXNlciIsImEiOiJjazFmdGx2bjQwMDAwMG5wZmYwbmJwbmE2In0.lWXK2UexpXuyVitesLdwUg", attribution="National Park Service, © Mapbox, and © OpenStreetMap", options=tileOptions(minZoom=netzoom) ) %>%
-      leaflet::addTiles(group="Imagery", urlTemplate="https://atlas-stg.geoplatform.gov/styles/v1/atlas-user/ck72fwp2642dv07o7tbqinvz4/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiYXRsYXMtdXNlciIsImEiOiJjazFmdGx2bjQwMDAwMG5wZmYwbmJwbmE2In0.lWXK2UexpXuyVitesLdwUg", attribution="National Park Service, © Mapbox, and © OpenStreetMap", options=tileOptions(minZoom=netzoom) ) %>%
-      leaflet::addTiles(group="Slate", urlTemplate = "https://atlas-stg.geoplatform.gov/styles/v1/atlas-user/ck5cpvc2e0avf01p9zaw4co8o/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiYXRsYXMtdXNlciIsImEiOiJjazFmdGx2bjQwMDAwMG5wZmYwbmJwbmE2In0.lWXK2UexpXuyVitesLdwUg", attribution ="National Park Service, © Mapbox, and © OpenStreetMap", options=tileOptions(minZoom=netzoom) ) %>%
+  #  leaflet(options = leafletOptions(minZoom = 2, maxZoom = 18)) %>%
+      leaflet::addTiles(group="Map", urlTemplate="https://atlas-stg.geoplatform.gov/styles/v1/atlas-user/ck58pyquo009v01p99xebegr9/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiYXRsYXMtdXNlciIsImEiOiJjazFmdGx2bjQwMDAwMG5wZmYwbmJwbmE2In0.lWXK2UexpXuyVitesLdwUg", attribution="National Park Service, © Mapbox, and © OpenStreetMap") %>%
+      leaflet::addTiles(group="Imagery", urlTemplate="https://atlas-stg.geoplatform.gov/styles/v1/atlas-user/ck72fwp2642dv07o7tbqinvz4/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiYXRsYXMtdXNlciIsImEiOiJjazFmdGx2bjQwMDAwMG5wZmYwbmJwbmE2In0.lWXK2UexpXuyVitesLdwUg", attribution="National Park Service, © Mapbox, and © OpenStreetMap") %>%
+      leaflet::addTiles(group="Slate", urlTemplate = "https://atlas-stg.geoplatform.gov/styles/v1/atlas-user/ck5cpvc2e0avf01p9zaw4co8o/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiYXRsYXMtdXNlciIsImEiOiJjazFmdGx2bjQwMDAwMG5wZmYwbmJwbmE2In0.lWXK2UexpXuyVitesLdwUg", attribution ="National Park Service, © Mapbox, and © OpenStreetMap") %>%
       leaflet::addLayersControl(map=., baseGroups=c("Map","Imagery","Slate"), options=layersControlOptions(collapsed=T)) %>%
 
     # addTiles() # temporary workaround to provide a basemap

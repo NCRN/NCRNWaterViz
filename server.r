@@ -975,7 +975,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
  #### NPS Data ####
   NPSGeoData<-data.frame(ParkCode=getSiteInfo(WaterData, info="ParkCode"), SiteCode=getSiteInfo(WaterData, info="SiteCode"), SiteName=getSiteInfo(WaterData, info= "SiteName"), 
                          latitude=getSiteInfo(WaterData, info="lat"), longitude=getSiteInfo(WaterData, info="long"), stringsAsFactors = F)
-
+print(NPSGeoData)
   #CharIndex is a true/false of characters that have thresholds
   CharIndex<-{getCharInfo(WaterData,info="LowerPoint") %>% is.na %>% not} | {getCharInfo(WaterData,info="UpperPoint") %>% is.na %>% not} 
   NPSchars<-getCharInfo(WaterData, info="CharName")[CharIndex] %>% unique
@@ -993,6 +993,11 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   })
 
   #### the Map ####
+  map_values <- reactiveValues(
+    netlon = NA, 
+    netlat = NA, 
+    netzoom = NA
+  )
   output$WaterMap<-leaflet::renderLeaflet({ 
     # Renders a map widget centered on water monitoring sites, with dynamic zoom and basemap options.  
     # Args:
@@ -1030,6 +1035,10 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       max_range > 0.5 ~10,
       TRUE ~10
     )
+    
+    map_values$netlat <- netlat
+    map_values$netlon <- netlon
+    map_values$netzoom <- netzoom
   
   #netzoom<- ifelse(max(lat_range, long_range) >5, 7, 9)
 
@@ -1088,7 +1097,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     req(input$WaterMap_zoom)
     zoom_level <- input$WaterMap_zoom
     show_labels <- zoom_level > 11
-    print(show_labels)
+
    # if(input$MapNPS){
     parks <- input$MapIn
     filtered_data <- if (is.null(parks) || length(parks) == 0) {
@@ -1107,46 +1116,25 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
                 layerId="npsLegend",title=paste0("<svg height='15' width='20'>
                     <circle cx='10' cy='10' r='5', stroke='black' fill='black'/></svg> NPS: % of Acceptable <br>Measurements"),
                 labFormat=labelFormat(suffix="%", transform= function(x) 100*x)) 
-     # } else {
-     #  leafletProxy("WaterMap") %>%
-     #    clearGroup("NPS") %>%
-     #   # clearGroup("Sites") %>%
-     #    removeControl(layerId="npsLegend")}
-    #%>%
     
-      # leafletProxy("WaterMap") %>%    
-      # clearGroup("Sites") %>% 
         if (show_labels) {
           leafletProxy("WaterMap") %>%    
             clearGroup("Sites") %>% 
       addLabelOnlyMarkers(data = filtered_data, group = "Sites", 
                           lng = ~longitude, lat = ~latitude,
-                          label = ~SiteCode,
-                          labelOptions = labelOptions(noHide = TRUE, direction = "center", #offset= c(0, 15)
-                                                      , style = list("font-weight"="bold", "color"="black", "background"="transparent", "border"="none", "padding"="0px", "box-shadow"="none"))) 
+                          label = ~SiteName,
+                          labelOptions = labelOptions(noHide = TRUE, direction = "center", offset= c(0, 22)
+                                                      , style = list("font-weight"="bold", "color"="white", "text-shadow"="5px 5px 7px black", "background"="transparent", "border"="none", "padding"="0px", "box-shadow"="none"))) 
         } else {
         leafletProxy("WaterMap") %>%
             clearGroup("Sites")
       }
-      #  }
-
-      # addLegend(position="topright", pal=MapColors, values=c(0,1), opacity=1,
-      #           layerId="npsLegend",title=paste0("<svg height='15' width='20'>
-      #               <circle cx='10' cy='10' r='5', stroke='black' fill='black'/></svg> NPS: % of Acceptable <br>Measurements"),
-      #                 labFormat=labelFormat(suffix="%", transform= function(x) 100*x))
-    #   } else {
-    # leafletProxy("WaterMap") %>%
-    #       clearGroup("NPS") %>%
-    #       clearGroup("Sites") %>%
-    #       removeControl(layerId="npsLegend")}
   })
   
   observe({
     req(input$MapIn)
     selected_parks <- NPSGeoData %>%
-      filter(ParkCode %in% input$MapIn)
-   print(input$MapIn)
-   print(nrow(selected_parks))
+    filter(ParkCode %in% input$MapIn)
     if (nrow(selected_parks) > 0 ) {
       minLat <- min(selected_parks$latitude, na.rm = TRUE)
       maxLat <- max(selected_parks$latitude, na.rm = TRUE)
@@ -1184,28 +1172,13 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     }
   })
   
-  # 
-  # observe({
-  #   zoom_level <- input$WaterMap_zoom
-  #   show_labels <- zoom_level >10
-  #   if (zoom_level >= 10) {
-  #     leafletProxy("WaterMap") %>%
-  #       showGroup("Sites")
-  #   } else {
-  #     leafletProxy("WaterMap") %>%
-  #       hideGroup("Sites")
-  #   }
-  # }) 
-  # 
-  
   observeEvent(input$refreshParks, {
     updateCheckboxGroupInput(session, "MapIn", selected = character(0))
-    # leafletProxy("WaterMap") %>%
-    #   fitBounds(
-    #     lng1= min(NPSGeoData$longitude, na.rm = TRUE),
-    #     lat1= min(NPSGeoData$longitude, na.rm = TRUE),
-    #     lng2= min(NPSGeoData$longitude, na.rm = TRUE),
-    #     lat2= min(NPSGeoData$longitude, na.rm = TRUE))
+     leafletProxy("WaterMap") %>%
+       setView(lng = map_values$netlon, lat = map_values$netlat, zoom = map_values$netzoom) %>%
+       clearGroup("Sites") %>%
+       clearGroup("NPS") %>%
+       removeControl(layerId="npsLegend")
   })
   
   observe({

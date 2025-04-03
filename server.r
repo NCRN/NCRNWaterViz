@@ -1085,7 +1085,11 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   })
   
   observe({
-    if(input$MapNPS){
+    req(input$WaterMap_zoom)
+    zoom_level <- input$WaterMap_zoom
+    show_labels <- zoom_level > 11
+    print(show_labels)
+   # if(input$MapNPS){
     parks <- input$MapIn
     filtered_data <- if (is.null(parks) || length(parks) == 0) {
       NPSGeoData
@@ -1099,16 +1103,44 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
                        layerId = filtered_data$SiteCode, 
                        fillColor = MapColors(ExceedData()$Acceptable/ExceedData()$Total),
                        fillOpacity = 0.8, stroke = FALSE) %>%
-      
       addLegend(position="topright", pal=MapColors, values=c(0,1), opacity=1,
                 layerId="npsLegend",title=paste0("<svg height='15' width='20'>
                     <circle cx='10' cy='10' r='5', stroke='black' fill='black'/></svg> NPS: % of Acceptable <br>Measurements"),
-                      labFormat=labelFormat(suffix="%", transform= function(x) 100*x))
-      } else {
-    leafletProxy("WaterMap") %>% clearGroup("NPS") %>% removeControl(layerId="npsLegend")}
+                labFormat=labelFormat(suffix="%", transform= function(x) 100*x)) 
+     # } else {
+     #  leafletProxy("WaterMap") %>%
+     #    clearGroup("NPS") %>%
+     #   # clearGroup("Sites") %>%
+     #    removeControl(layerId="npsLegend")}
+    #%>%
+    
+      # leafletProxy("WaterMap") %>%    
+      # clearGroup("Sites") %>% 
+        if (show_labels) {
+          leafletProxy("WaterMap") %>%    
+            clearGroup("Sites") %>% 
+      addLabelOnlyMarkers(data = filtered_data, group = "Sites", 
+                          lng = ~longitude, lat = ~latitude,
+                          label = ~SiteCode,
+                          labelOptions = labelOptions(noHide = TRUE, direction = "center", #offset= c(0, 15)
+                                                      , style = list("font-weight"="bold", "color"="black", "background"="transparent", "border"="none", "padding"="0px", "box-shadow"="none"))) 
+        } else {
+        leafletProxy("WaterMap") %>%
+            clearGroup("Sites")
+      }
+      #  }
+
+      # addLegend(position="topright", pal=MapColors, values=c(0,1), opacity=1,
+      #           layerId="npsLegend",title=paste0("<svg height='15' width='20'>
+      #               <circle cx='10' cy='10' r='5', stroke='black' fill='black'/></svg> NPS: % of Acceptable <br>Measurements"),
+      #                 labFormat=labelFormat(suffix="%", transform= function(x) 100*x))
+    #   } else {
+    # leafletProxy("WaterMap") %>%
+    #       clearGroup("NPS") %>%
+    #       clearGroup("Sites") %>%
+    #       removeControl(layerId="npsLegend")}
   })
   
-
   observe({
     req(input$MapIn)
     selected_parks <- NPSGeoData %>%
@@ -1121,19 +1153,19 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       minLon <- min(selected_parks$longitude, na.rm = TRUE)
       maxLon <- max(selected_parks$longitude, na.rm = TRUE)
     
-      park_lat_range<- maxLat - minLat
-      park_lon_range<- maxLon - minLon
-      park_max_range<- max(park_lat_range, park_lon_range)
-      
-    #   park_zoom_level<- dplyr::case_when(
-    #     # max_range > 10 ~5,
-    #     # max_range > 5 ~7,
-    #     park_max_range > 2.5 ~8,
-    #     park_max_range > 1.5 ~9,
-    #     park_max_range > 1 ~9,
-    #     park_max_range > 0.5 ~10,
-    #     TRUE ~10
-    #   )
+      # park_lat_range<- maxLat - minLat
+      # park_lon_range<- maxLon - minLon
+      # park_max_range<- max(park_lat_range, park_lon_range)
+      # 
+      # park_zoom_level<- dplyr::case_when(
+      #   # max_range > 10 ~5,
+      #   # max_range > 5 ~7,
+      #   park_max_range > 2.5 ~8,
+      #   park_max_range > 1.5 ~9,
+      #   park_max_range > 1 ~9,
+      #   park_max_range > 0.5 ~10,
+      #   TRUE ~10
+      # )
     #   
     #   leafletProxy("WaterPark") %>%
     #     setView(lng = mean(c(minLon, maxLon)), 
@@ -1151,6 +1183,20 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
                 lat2 = maxLat + latPadding)
     }
   })
+  
+  # 
+  # observe({
+  #   zoom_level <- input$WaterMap_zoom
+  #   show_labels <- zoom_level >10
+  #   if (zoom_level >= 10) {
+  #     leafletProxy("WaterMap") %>%
+  #       showGroup("Sites")
+  #   } else {
+  #     leafletProxy("WaterMap") %>%
+  #       hideGroup("Sites")
+  #   }
+  # }) 
+  # 
   
   observeEvent(input$refreshParks, {
     updateCheckboxGroupInput(session, "MapIn", selected = character(0))

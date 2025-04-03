@@ -1104,7 +1104,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     filtered_data <- if (is.null(parks) || length(parks) == 0) {
       NPSGeoData
     } else {
-      NPSGeoData[NPSGeoData$ParkCode %in% parks, ]
+      NPSGeoData[NPSGeoData$ParkName %in% parks, ]
     }
     
     leafletProxy("WaterMap") %>%
@@ -1135,7 +1135,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   observe({
     req(input$MapIn)
     selected_parks <- NPSGeoData %>%
-    filter(ParkCode %in% input$MapIn)
+    filter(ParkName %in% input$MapIn)
     if (nrow(selected_parks) > 0 ) {
       minLat <- min(selected_parks$latitude, na.rm = TRUE)
       maxLat <- max(selected_parks$latitude, na.rm = TRUE)

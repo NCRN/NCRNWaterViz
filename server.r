@@ -975,7 +975,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
  #### NPS Data ####
   NPSGeoData<-data.frame(ParkCode=getSiteInfo(WaterData, info="ParkCode"), SiteCode=getSiteInfo(WaterData, info="SiteCode"), SiteName=getSiteInfo(WaterData, info= "SiteName"), 
                          latitude=getSiteInfo(WaterData, info="lat"), longitude=getSiteInfo(WaterData, info="long"), stringsAsFactors = F)
-print(NPSGeoData)
+
   #CharIndex is a true/false of characters that have thresholds
   CharIndex<-{getCharInfo(WaterData,info="LowerPoint") %>% is.na %>% not} | {getCharInfo(WaterData,info="UpperPoint") %>% is.na %>% not} 
   NPSchars<-getCharInfo(WaterData, info="CharName")[CharIndex] %>% unique
@@ -1084,10 +1084,6 @@ print(NPSGeoData)
     updateCheckboxGroupInput(session, "MapIn", choices = unique(NPSGeoData$ParkCode), inline = FALSE)
   })
   
-  observeEvent(input$refreshParks, {
-    updateCheckboxGroupInput(session, "MapIn", selected = character(0))
-  })
-  
   observe({
     if(input$MapNPS){
     parks <- input$MapIn
@@ -1112,6 +1108,59 @@ print(NPSGeoData)
     leafletProxy("WaterMap") %>% clearGroup("NPS") %>% removeControl(layerId="npsLegend")}
   })
   
+
+  observe({
+    req(input$MapIn)
+    selected_parks <- NPSGeoData %>%
+      filter(ParkCode %in% input$MapIn)
+   print(input$MapIn)
+   print(nrow(selected_parks))
+    if (nrow(selected_parks) > 0 ) {
+      minLat <- min(selected_parks$latitude, na.rm = TRUE)
+      maxLat <- max(selected_parks$latitude, na.rm = TRUE)
+      minLon <- min(selected_parks$longitude, na.rm = TRUE)
+      maxLon <- max(selected_parks$longitude, na.rm = TRUE)
+    
+      park_lat_range<- maxLat - minLat
+      park_lon_range<- maxLon - minLon
+      park_max_range<- max(park_lat_range, park_lon_range)
+      
+    #   park_zoom_level<- dplyr::case_when(
+    #     # max_range > 10 ~5,
+    #     # max_range > 5 ~7,
+    #     park_max_range > 2.5 ~8,
+    #     park_max_range > 1.5 ~9,
+    #     park_max_range > 1 ~9,
+    #     park_max_range > 0.5 ~10,
+    #     TRUE ~10
+    #   )
+    #   
+    #   leafletProxy("WaterPark") %>%
+    #     setView(lng = mean(c(minLon, maxLon)), 
+    #             lat = mean(c(minLat, maxLat)), 
+    #             zoom = park_zoom_level)
+    # }
+      
+    latPadding <- (maxLat - minLat) * 0.1
+    lonPadding <- (maxLon - minLon) * 0.1
+
+    leafletProxy("WaterMap") %>%
+      fitBounds(lng1 = minLon - lonPadding,
+                lat1 = minLat - latPadding,
+                lng2 = maxLon + lonPadding,
+                lat2 = maxLat + latPadding)
+    }
+  })
+  
+  observeEvent(input$refreshParks, {
+    updateCheckboxGroupInput(session, "MapIn", selected = character(0))
+    # leafletProxy("WaterMap") %>%
+    #   fitBounds(
+    #     lng1= min(NPSGeoData$longitude, na.rm = TRUE),
+    #     lat1= min(NPSGeoData$longitude, na.rm = TRUE),
+    #     lng2= min(NPSGeoData$longitude, na.rm = TRUE),
+    #     lat2= min(NPSGeoData$longitude, na.rm = TRUE))
+  })
   
   observe({
     if(input$MapUSGS){

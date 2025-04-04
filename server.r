@@ -1026,7 +1026,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     lon_range<- max_lon - min_lon
     
     max_range<- max(lat_range, lon_range)
-    print(max_range)
+
     netzoom<- dplyr::case_when(
      # max_range > 10 ~5,
      # max_range > 5 ~7,
@@ -1097,10 +1097,16 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   observe({
     req(input$WaterMap_zoom)
     zoom_level <- input$WaterMap_zoom
-    show_labels <- zoom_level > 10.5
+    print(zoom_level)
+    parks <- input$MapIn
+    show_labels <- if (is.null(parks) || length(parks) == 0) {
+                    zoom_level >= 13
+    } else {
+      zoom_level >= 11
+    }
 
    # if(input$MapNPS){
-    parks <- input$MapIn
+    # parks <- input$MapIn
     filtered_data <- if (is.null(parks) || length(parks) == 0) {
       NPSGeoData
     } else {

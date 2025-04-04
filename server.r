@@ -116,6 +116,12 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     )
   ))
   
+  observeEvent(input$AboutSummary, showModal(
+    modalDialog(title="About the Table", footer=tagAppendAttributes( modalButton(tags$div("Close")), class="btn btn-primary"),
+                includeHTML("./www/AboutSummary.Rhtml")                  
+    )
+  ))
+  
 #### Housekeeping of data ####
   DataUse<-reactive({ 
      shiny::validate(
@@ -281,14 +287,27 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     data_values_summary <- data_values %>%
     dplyr::group_by(Aggregation, Site) %>%
       dplyr::summarise(
-      Minimum = round(min(SiteVisitMean, na.rm = TRUE), 2),   
-      Q1 = round(stats::quantile(SiteVisitMean, 0.25, na.rm = TRUE), 2),   
-      Mean = round(mean(SiteVisitMean, na.rm = TRUE), 2),   
-      Median = round(stats::median(SiteVisitMean, na.rm = TRUE), 2),   
-      Q3 = round(stats::quantile(SiteVisitMean, 0.75, na.rm = TRUE),2),  
-      Maximum = round(max(SiteVisitMean, na.rm = TRUE), 2),  
-      Standard_Deviation = round(stats::sd(SiteVisitMean, na.rm = TRUE), 2), 
-      n_site_visit = dplyr::n_distinct(Date), .groups = "drop") 
+        Minimum = min(SiteVisitMean, na.rm = TRUE),
+        Q1 = stats::quantile(SiteVisitMean, 0.25, na.rm = TRUE),
+        Mean = mean(SiteVisitMean, na.rm = TRUE),
+        Median = stats::median(SiteVisitMean, na.rm = TRUE),
+        Q3 = stats::quantile(SiteVisitMean, 0.75, na.rm = TRUE),
+        Maximum = max(SiteVisitMean, na.rm = TRUE),
+        Standard_Deviation = stats::sd(SiteVisitMean, na.rm = TRUE),
+        Site_Visits = dplyr::n_distinct(Date), .groups = "drop")
+    
+      data_values_summary <- data_values_summary %>%
+        dplyr::mutate(
+          Standard_Deviation = as.character(Standard_Deviation),
+          Standard_Deviation = case_when(
+            (!is.na(Mean) & is.na(as.numeric(Standard_Deviation))) ~ "Not available",
+          is.na(as.numeric(Standard_Deviation)) ~ "Data not collected",
+          TRUE ~ formatC(as.numeric(Standard_Deviation), format = "f", digits = 2)),
+          Minimum = ifelse(is.na(Minimum) | Minimum == Inf | Minimum == -Inf, "Data not collected",
+                           formatC(Minimum, format = "f", digits = 2)),   
+          Maximum = ifelse(is.na(Maximum) | Maximum == Inf | Maximum == -Inf, "Data not collected",
+                           formatC(Maximum, format = "f", digits = 2))) %>%
+      dplyr::mutate(across(c(Q1, Mean, Median, Q3), ~ifelse(is.na(.), "Data not collected", formatC(., format = "f", digits = 2))))
 
       n_count = DataUseMultiple() %>%
         dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #year filtering
@@ -297,8 +316,8 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       dplyr::mutate(Aggregation = dplyr::case_when(input$SummaryBoxBy == "month" ~ format(Date, "%b"),
                                  input$SummaryBoxBy == "year" ~ format(Date, "%Y"), TRUE ~ as.character(Site))) %>%
       dplyr::group_by(Aggregation, Site) %>%
-        dplyr::summarise(n = dplyr::n(), .groups = "drop")
-        
+        dplyr::summarise(Total_Measurements = dplyr::n(), .groups = "drop")
+      
       final_summary <- 
         dplyr::left_join(data_values_summary, n_count, by = c("Aggregation", "Site"))
 
@@ -328,13 +347,13 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     #   })
     
     table <- summary()
-    
-    table <- table %>%
-      dplyr::mutate(Standard_Deviation = ifelse(!is.na(Mean) & is.na(Standard_Deviation), "Not available", Standard_Deviation),
-             Minimum = ifelse(is.na(Minimum) | Minimum == Inf | Minimum == -Inf, "Data not collected", Minimum),
-             Maximum = ifelse(is.na(Maximum) | Maximum == Inf | Maximum == -Inf, "Data not collected", Maximum),
-             dplyr::across(everything(), ~ifelse(is.na(.), "Data not collected", .)))
-    
+
+    # table <- table %>%
+    #   dplyr::mutate(Standard_Deviation = ifelse(!is.na(Mean) & is.na(Standard_Deviation), "Not available", Standard_Deviation),
+    #          Minimum = ifelse(is.na(Minimum) | Minimum == Inf | Minimum == -Inf, "Data not collected", Minimum),
+    #          Maximum = ifelse(is.na(Maximum) | Maximum == Inf | Maximum == -Inf, "Data not collected", Maximum),
+    #          dplyr::across(everything(), ~ifelse(is.na(.), "Data not collected", .)))
+
     table <- table %>%
       dplyr::mutate(Aggregation = ifelse(Aggregation %in% month.abb, 
                                 month.name[match(Aggregation, month.abb)], Aggregation))
@@ -354,7 +373,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     if (input$SummaryBoxBy %in% c("month", "year")) {
       group_headers <- table %>%
       dplyr::distinct(Aggregation) %>%
-      dplyr::mutate(Site = Aggregation, Minimum = NA, Q1 = NA, Mean = NA, Median = NA, Q3 = NA, Maximum = NA, Standard_Deviation = NA, n_site_visit = NA, n = NA)
+      dplyr::mutate(Site = Aggregation, Minimum = NA, Q1 = NA, Mean = NA, Median = NA, Q3 = NA, Maximum = NA, Standard_Deviation = NA, Site_Visits = NA, Total_Measurements = NA)
 
     summary_table <- dplyr::bind_rows(group_headers, table) %>%
       dplyr::mutate(Aggregation = factor(Aggregation, levels = c(month.name, 
@@ -372,38 +391,45 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 
       tooltips <- list(
         "Site" = "Monitoring location where data was collected",
-        "Minimum" = "The smallest recorded value",
+        "Minimum" = "Lowest recorded value",
         "Q1" = "The first quartile (25th percentile)",
         "Mean" = "The average value",
         "Median" = "Central value in the sorted dataset",
         "Q3" = "The third quartile (75th percentile)",
-        "Maximum" = "The largest recorded value",
-        "Standard_Deviation" = "Measure of variability",
-        "n_site_visit" = "Count of site visits",
-        "n" = "Count of observations"
+        "Maximum" = "Highest recorded value",
+        "Standard<br>Deviation" = "Measure of variability",
+        "Site<br>Visits" = "Number of site visits",
+        "Total<br>Measurements" = "Number of measurements"
       )
       tooltips_json <- jsonlite::toJSON(tooltips, auto_unbox = TRUE)
-    DT::datatable(summary_table, extensions=c("Buttons", "KeyTable"),
+      dt<- DT::datatable(summary_table, colnames = c("Site", "Minimum", "Q1", "Mean", "Median", "Q3", "Maximum", "Standard<br>Deviation", "Site<br>Visits", "Total<br>Measurements"), escape = FALSE,
+                 extensions=c("Buttons", "KeyTable"),
                  #caption=tags$caption(h3(Title())),
                  class="stripe hover order-column cell-border",
                  rownames=F, options=list(paging = FALSE, autoWidth=TRUE, ordering= FALSE, 
-                                          dom= "Bltipr", buttons=c("copy","csv","excel","pdf","print"), keys = TRUE,
+                                          dom= "<'dt-buttons'B>ltipr", buttons=c("copy","csv","excel","pdf","print"), keys = TRUE,
                                           headerCallback = JS("function(thead, data, start, end, display){", 
+                                                              "$(thead).find('th').css('text-align', 'center');",
+                                                              "$(thead).find('th').filter(function() { 
+                                                              return $(this).html().trim() === 'Site'; }).css('text-align', 'left');",
                                                               "$('th', thead).each(function(index){",
                                                               " var tooltips = ",
                                                               tooltips_json,";",
                                                               " var colName = $
-                                                              (this).text().trim();",
+                                                              (this).html().trim();",
                                                               " if(tooltips[colName]) {",
                                                               " $(this).attr('title', tooltips[colName]);",
                                                               " }",
                                                               "});",
                                                               "}"))) %>%
     #,server=F)
-  
-    DT::formatStyle("Site", fontWeight = if(input$SummaryBoxBy %in% c("month", "year")) {
+
+      DT::formatStyle(columns = setdiff(names(summary_table), "Site"), textAlign = "center") %>%
+      formatStyle(columns = "Site", textAlign = "left", fontWeight = if(input$SummaryBoxBy %in% c("month", "year")) {
       DT::styleEqual(group_headers$Site, rep("bold", nrow(group_headers)))
-    } else if (input$SummaryBoxBy == "site") { "bold" } else { NULL }
+      } else if (input$SummaryBoxBy == "site") { "bold" 
+      } else { 
+        NULL }
       ,backgroundColor = if(input$SummaryBoxBy %in% c("month", "year")) {
        DT::styleEqual(group_headers$Site, rep("#f0f0f0", nrow(group_headers)))
       } else {
@@ -438,7 +464,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     notifs <- summary()
     
     numeric_table <- notifs %>%
-      dplyr::select(-c(n, n_site_visit, Aggregation, Site))
+      dplyr::select(-c(Total_Measurements, Site_Visits, Aggregation, Site))
     
     numeric_table <- as.data.frame(numeric_table)
     numeric_table[is.infinite(as.matrix(numeric_table)) | is.nan(as.matrix(numeric_table))] <- NA
@@ -563,7 +589,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
             "<p><b><span style='font-size: 18px;'>Summary Report:</b></p>"
             ,"<p>The mean and median values for ", FullParamName, " at the selected sites and years are as follows:</p>" 
             ,"<ul>", site_list, "</ul>", highest_lowest_sentence, 
-            "<p>*Summary statistics derived from site visit averages, calculated by grouping data by site, date, and selected aggregation type.</p>")
+            "<p>*Summary statistics of site visit averages.</p>")
             )
     })
   

@@ -34,17 +34,31 @@ shinyUI(
                     
         radioButtons(inputId="SummaryBoxBy", label="Compare by:", choices=c("year", "month", "site"), selected = "year", inline = T),
                     
-        parkChooserUI("SummaryPark"),
-        siteChooserUI("SummarySite"),
-        paramChooserUI("SummaryParam"),
-        yearChooserUI("SummaryYears") 
-        )),
+                            parkChooserUI("SummaryPark"),
+                            siteChooserUI("SummarySite"),
+                            paramChooserUI("SummaryParam"),
+                            yearChooserUI("SummaryYears"),
+      splitLayout(cellWidths="35%",
+                  h3("About:"),
+                  actionButton(inputId="AboutSummary", label="About this Table...", class="btn btn-primary",style="margin-top: 15px")
+      ))),
       
       column(9,
-          uiOutput("summary_text"),
-          DT::dataTableOutput("SummaryTable")
-    
-          ,tags$style(HTML("
+            div(class = "summary-box",
+              uiOutput("summary_text")),
+             DT::dataTableOutput("SummaryTable")
+
+       ,tags$head(
+        tags$style(HTML("
+          .summary-box {
+          background-color: #f5f3e5;
+          padding: 10px;
+          border-radius: 5px;
+          margin-bottom: 15px;
+          }
+          .dt-buttons {
+          float: right !important;
+          }
           .shiny-notification {
           background-color: #D0342C;
           color: white;
@@ -55,10 +69,9 @@ shinyUI(
           .shiny-notification-close {
            color: white;
            } 
-           ")),
-           )
+           "))),
         ),
-    
+      ),
       tabPanel(h4("Time Series Plot"),
         column(3, div(style='padding: 5px 10px',class="panel panel-default", 
           

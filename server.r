@@ -991,7 +991,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     req(input$MapChar)
     exceed(WaterData, charname=input$MapChar)
   })
-
+  
   map_values <- reactiveValues(
     netlon = NA, 
     netlat = NA, 
@@ -1055,6 +1055,13 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       leaflet::addTiles(group="Imagery", urlTemplate="https://atlas-stg.geoplatform.gov/styles/v1/atlas-user/ck72fwp2642dv07o7tbqinvz4/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiYXRsYXMtdXNlciIsImEiOiJjazFmdGx2bjQwMDAwMG5wZmYwbmJwbmE2In0.lWXK2UexpXuyVitesLdwUg", attribution="National Park Service, © Mapbox, and © OpenStreetMap") %>%
       leaflet::addTiles(group="Slate", urlTemplate = "https://atlas-stg.geoplatform.gov/styles/v1/atlas-user/ck5cpvc2e0avf01p9zaw4co8o/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiYXRsYXMtdXNlciIsImEiOiJjazFmdGx2bjQwMDAwMG5wZmYwbmJwbmE2In0.lWXK2UexpXuyVitesLdwUg", attribution ="National Park Service, © Mapbox, and © OpenStreetMap") %>%
       leaflet::addLayersControl(map=., baseGroups=c("Map","Imagery","Slate"), options=layersControlOptions(collapsed=T)) %>%
+      
+    #  leafletProxy("WaterMap") %>%
+     # clearGroup("NPS") %>%
+      # addCircleMarkers(data = NPSGeoData, group = "NPS", 
+      #                  layerId = NPSGeoData$SiteCode, 
+      #                  fillColor = MapColors(ExceedData()$Acceptable/ExceedData()$Total),
+      #                  fillOpacity = 1, stroke = FALSE) %>%
 
     # addTiles() # temporary workaround to provide a basemap
     # broken map tiles:
@@ -1063,7 +1070,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     # addTiles(group="Slate", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.9e521899,nps.17f575d9,nps.e091bdaf/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q", attribution=NPSAttrib, options=tileOptions(minZoom=netzoom) ) %>%
     # addLayersControl(map=., baseGroups=c("Map","Imagery","Slate"), options=layersControlOptions(collapsed=T)) %>%
 
-    leaflet::setView(lng = netlon, lat = netlat , zoom = netzoom)
+    leaflet::setView(lng = netlon, lat = netlat , zoom = netzoom) 
      })
 
   NPSAttrib<-HTML("<a href='https://www.nps.gov/npmap/disclaimer/'>Disclaimer</a> | 
@@ -1110,21 +1117,32 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     filtered_data <- if (is.null(parks) || length(parks) == 0) {
       NPSGeoData
     } else {
-      NPSGeoData[NPSGeoData$ParkName %in% parks, ]
-    }
+      NPSGeoData[NPSGeoData$ParkName %in% parks, ]}
+    
+    filtered_exceed <- ExceedData()
+    
+    merge_data <- dplyr::left_join(filtered_data, filtered_exceed, by = c("SiteCode"="Site"))
     
     label_color <- if ("Slate" %in% input$WaterMap_groups || "Imagery" %in% input$WaterMap_groups) {
       "white" 
     } else {
       "black"
     }
+    #Initial points when no park is selected
+    # leafletProxy("WaterMap") %>%
+    #   clearGroup("NPS") %>%
+    #   addCircleMarkers(data = NPSGeoData, group = "NPS", 
+    #                    layerId = NPSGeoData$SiteCode, 
+    #                    fillColor = MapColors(ExceedData()$Acceptable/ExceedData()$Total),
+    #                    fillOpacity = 1, stroke = FALSE)
     
+    #When parks are selected
     leafletProxy("WaterMap") %>%
       clearGroup("NPS") %>%
-      addCircleMarkers(data = filtered_data, group = "NPS", 
-                       layerId = filtered_data$SiteCode, 
-                       fillColor = MapColors(ExceedData()$Acceptable/ExceedData()$Total),
-                       fillOpacity = 0.8, stroke = FALSE) %>%
+      addCircleMarkers(data = merge_data, group = "NPS", 
+                       layerId = merge_data$SiteCode, 
+                       fillColor = MapColors(merge_data$Acceptable/merge_data$Total),
+                       fillOpacity = 1, stroke = FALSE) %>%
       addLegend(position="topright", pal=MapColors, values=c(0,1), opacity=1,
                 layerId="npsLegend",title=paste0("<svg height='15' width='20'>
                     <circle cx='10' cy='10' r='5', stroke='black' fill='black'/></svg> NPS: % of Acceptable <br>Measurements"),
@@ -1133,15 +1151,15 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
         if (show_labels) {
           leafletProxy("WaterMap") %>%    
             clearGroup("Sites") %>% 
-      addLabelOnlyMarkers(data = filtered_data, group = "Sites", 
+      addLabelOnlyMarkers(data = merge_data, group = "Sites", 
                           lng = ~longitude, lat = ~latitude,
                           label = ~SiteName,
-                          labelOptions = labelOptions(noHide = TRUE, textOnly = TRUE, direction = "center", offset= c(0, 22)
+                          labelOptions = labelOptions(noHide = TRUE, textOnly = TRUE, direction = "auto" #, offset= c(0, 22)
                                                       , style = list("font-weight"="bold", "font-size"="13px", "color"=label_color))) 
         } else {
         leafletProxy("WaterMap") %>%
             clearGroup("Sites")
-      }
+        }
   })
   
   observe({

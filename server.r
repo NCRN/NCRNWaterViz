@@ -1006,7 +1006,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     #  NPSGeoData$longitude, num, required. The longitude coordinates of water monitoring sites for the NCRN dataset.  
     # 
     # Returns:
-    #  A Leaflet map with configured basemap layers ("map", imagery", "slate") and zoom extent.
+    #  A Leaflet map with configured basemap layers ("map", "slate") and zoom extent.
     #
     # Example:
     # netlat<- mean(NPSGeoData$latitude, na.rm = TRUE)

@@ -162,7 +162,7 @@ shinyUI(
           h3("Data to Map"),
           br(),
           strong("National Park Service Monitoring"),
-          checkboxInput(inputId="MapNPS", label="Map NPS Water Monitoring", value=T),
+         # checkboxInput(inputId="MapNPS", label="Map NPS Water Monitoring", value=T),
           uiOutput("MapChars"),
 
           div(style = "display: block", checkboxGroupInput(inputId="MapIn",label="Select Parks:" , choices=NULL, inline = FALSE),

@@ -1136,6 +1136,25 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     #                    fillColor = MapColors(ExceedData()$Acceptable/ExceedData()$Total),
     #                    fillOpacity = 1, stroke = FALSE)
     
+    #label_dir <- ifelse(merge_data$latitude > median(merge_data$latitude), "top", "bottom")
+    directions <- c("top", "bottom", "left", "right", "tr", "tl", "br", "bl")
+    offset <- list(
+      top = c(0, -20),
+      bottom = c(0, 20),
+      left = c(-20, 0),
+      right = c(20, 0),
+      tr = c(20, -20),
+      tl = c(-20, -20),
+      br = c(20, 20),
+      bl = c(-20, 20)
+      #,center = c(0,0)
+    )
+    merge_data$label_dir <- directions[ (seq_len(nrow(merge_data)) %%
+                                           length(directions)) +1]
+    merge_data$xoffset <- sapply(merge_data$label_dir, function(dir) offset[[dir]][1])
+    merge_data$yoffset <- sapply(merge_data$label_dir, function(dir) offset[[dir]][2])
+    
+    
     #When parks are selected
     leafletProxy("WaterMap") %>%
       clearGroup("NPS") %>%
@@ -1148,20 +1167,33 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
                     <circle cx='10' cy='10' r='5', stroke='black' fill='black'/></svg> NPS: % of Acceptable <br>Measurements"),
                 labFormat=labelFormat(suffix="%", transform= function(x) 100*x)) 
     
-        if (show_labels) {
+    if (show_labels) {
           leafletProxy("WaterMap") %>%    
-            clearGroup("Sites") %>% 
-      addLabelOnlyMarkers(data = merge_data, group = "Sites", 
-                          lng = ~longitude, lat = ~latitude,
-                          label = ~SiteName,
-                          labelOptions = labelOptions(noHide = TRUE, textOnly = TRUE, direction = "auto" #, offset= c(0, 22)
-                                                      , style = list("font-weight"="bold", "font-size"="13px", "color"=label_color))) 
-        } else {
-        leafletProxy("WaterMap") %>%
             clearGroup("Sites")
-        }
+      for (i in seq_len(nrow(merge_data))) {
+        leafletProxy("WaterMap") %>%
+        addLabelOnlyMarkers(group = "Sites",
+                            lng = merge_data$longitude[i], lat = merge_data$latitude[i],
+                            label = merge_data$SiteName[i],
+                            labelOptions = labelOptions(noHide = TRUE, textOnly = TRUE, direction = merge_data$label_dir[i], offset= c(merge_data$xoffset[i], merge_data$yoffset[i]),
+                                                        , style = list("font-weight"="bold", "font-size"="13px", "color"=label_color)))
+          } 
+          } else {
+          leafletProxy("WaterMap") %>%
+              clearGroup("Sites")
+           }
+      # addLabelOnlyMarkers(data = merge_data, group = "Sites", 
+      #                     lng = ~longitude, lat = ~latitude,
+      #                     label = ~SiteName,
+      #                     labelOptions = labelOptions(noHide = TRUE, textOnly = TRUE, direction = ~label_dir, offset= ~c(xoffset, yoffset),
+      #                                                 , style = list("font-weight"="bold", "font-size"="13px", "color"=label_color))) 
+        # } else {
+        # leafletProxy("WaterMap") %>%
+        #     clearGroup("Sites")
+        # }
+    
   })
-  
+
   observe({
     req(input$MapIn)
     selected_parks <- NPSGeoData %>%

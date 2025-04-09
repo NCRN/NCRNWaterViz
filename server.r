@@ -1101,6 +1101,24 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     updateCheckboxGroupInput(session, "MapIn", choices = unique(NPSGeoData$ParkName), inline = FALSE)
   })
   
+  directions <- c("top", "bottom", "left", "right", "tr", "tl", "br", "bl")
+  offset <- list(
+    top = c(0, -18),
+    bottom = c(0, 18),
+    left = c(-18, 0),
+    right = c(18, 0),
+    tr = c(18, -18),
+    tl = c(-18, -18),
+    br = c(18, 18),
+    bl = c(-18, 18)
+    #,center = c(0,0)
+  )
+  NPSGeoData$label_dir <- directions[ (seq_len(nrow(NPSGeoData)) %%
+                                         length(directions)) +1]
+  NPSGeoData$xoffset <- sapply(NPSGeoData$label_dir, function(dir) offset[[dir]][1])
+  NPSGeoData$yoffset <- sapply(NPSGeoData$label_dir, function(dir) offset[[dir]][2])
+  
+  
   observe({
     req(input$WaterMap_zoom)
     zoom_level <- input$WaterMap_zoom
@@ -1128,32 +1146,6 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     } else {
       "black"
     }
-    #Initial points when no park is selected
-    # leafletProxy("WaterMap") %>%
-    #   clearGroup("NPS") %>%
-    #   addCircleMarkers(data = NPSGeoData, group = "NPS", 
-    #                    layerId = NPSGeoData$SiteCode, 
-    #                    fillColor = MapColors(ExceedData()$Acceptable/ExceedData()$Total),
-    #                    fillOpacity = 1, stroke = FALSE)
-    
-    #label_dir <- ifelse(merge_data$latitude > median(merge_data$latitude), "top", "bottom")
-    directions <- c("top", "bottom", "left", "right", "tr", "tl", "br", "bl")
-    offset <- list(
-      top = c(0, -20),
-      bottom = c(0, 20),
-      left = c(-20, 0),
-      right = c(20, 0),
-      tr = c(20, -20),
-      tl = c(-20, -20),
-      br = c(20, 20),
-      bl = c(-20, 20)
-      #,center = c(0,0)
-    )
-    merge_data$label_dir <- directions[ (seq_len(nrow(merge_data)) %%
-                                           length(directions)) +1]
-    merge_data$xoffset <- sapply(merge_data$label_dir, function(dir) offset[[dir]][1])
-    merge_data$yoffset <- sapply(merge_data$label_dir, function(dir) offset[[dir]][2])
-    
     
     #When parks are selected
     leafletProxy("WaterMap") %>%
@@ -1177,21 +1169,11 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
                             label = merge_data$SiteName[i],
                             labelOptions = labelOptions(noHide = TRUE, textOnly = TRUE, direction = merge_data$label_dir[i], offset= c(merge_data$xoffset[i], merge_data$yoffset[i]),
                                                         , style = list("font-weight"="bold", "font-size"="13px", "color"=label_color)))
-          } 
+        } 
           } else {
           leafletProxy("WaterMap") %>%
               clearGroup("Sites")
            }
-      # addLabelOnlyMarkers(data = merge_data, group = "Sites", 
-      #                     lng = ~longitude, lat = ~latitude,
-      #                     label = ~SiteName,
-      #                     labelOptions = labelOptions(noHide = TRUE, textOnly = TRUE, direction = ~label_dir, offset= ~c(xoffset, yoffset),
-      #                                                 , style = list("font-weight"="bold", "font-size"="13px", "color"=label_color))) 
-        # } else {
-        # leafletProxy("WaterMap") %>%
-        #     clearGroup("Sites")
-        # }
-    
   })
 
   observe({

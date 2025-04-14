@@ -279,6 +279,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     dplyr::mutate(Date = as.Date(Date)) %>%
     dplyr::mutate(Aggregation = dplyr::case_when(input$SummaryBoxBy == "month" ~ format(Date, "%b"),
                                                    input$SummaryBoxBy == "year" ~ format(Date, "%Y"), TRUE ~ as.character(Site))) %>%
+      dplyr::select(Site, Date, Value, Aggregation) %>%
     #   dplyr::arrange(desc(Aggregation)) 
     
    # data_values <- data_values %>%
@@ -332,8 +333,19 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       dplyr::group_by(Aggregation, Site) %>%
         dplyr::summarise(Total_Measurements = dplyr::n(), .groups = "drop")
       
-      final_summary <- 
-        dplyr::left_join(data_values_summary, n_count, by = c("Aggregation", "Site"))
+      missing_count = DataUseMultiple() %>%
+        dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #year filtering
+        
+        dplyr::mutate(Date = as.Date(Date)) %>%
+        dplyr::mutate(Aggregation = dplyr::case_when(input$SummaryBoxBy == "month" ~ format(Date, "%b"),
+                                                     input$SummaryBoxBy == "year" ~ format(Date, "%Y"), TRUE ~ as.character(Site))) %>%
+        dplyr::filter(is.na(Value)) %>%
+        dplyr::group_by(Site, Aggregation) %>%
+        dplyr::summarise(Missing_Values = dplyr::n(), .groups = "drop")
+      
+      final_summary <- data_values_summary %>%
+        dplyr::left_join(n_count, by = c("Aggregation", "Site")) %>%
+        dplyr::left_join(missing_count, by = c("Aggregation", "Site"))
 
       #dplyr::arrange(factor(Aggregation, levels = month.name), Site) 
 
@@ -388,7 +400,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       group_headers <- table %>%
       dplyr::distinct(Aggregation) %>%
       dplyr::mutate(Site = Aggregation, Minimum = NA, Q1 = NA, Mean = NA, Median = NA, Q3 = NA, Maximum = NA, 
-                    Standard_Deviation = NA, Site_Visits = NA, Total_Measurements = NA)
+                    Standard_Deviation = NA, Site_Visits = NA, Total_Measurements = NA, Missing_Values = NA)
       
       aggregation_levels <- if (input$SummaryBoxBy == "month") {
         month.name
@@ -433,7 +445,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
         "Total<br>Measurements" = "Number of measurements"
       )
       tooltips_json <- jsonlite::toJSON(tooltips, auto_unbox = TRUE)
-      dt<- DT::datatable(summary_table, colnames = c("Site", "Minimum", "Q1", "Mean", "Median", "Q3", "Maximum", "Standard<br>Deviation", "Site<br>Visits", "Total<br>Measurements"), escape = FALSE,
+      dt<- DT::datatable(summary_table, colnames = c("Site", "Minimum", "Q1", "Mean", "Median", "Q3", "Maximum", "Standard<br>Deviation", "Site<br>Visits", "Total<br>Measurements", "Missing<br>Values"), escape = FALSE,
                  extensions=c("Buttons", "KeyTable"),
                  #caption=tags$caption(h3(Title())),
                  class="stripe hover order-column cell-border", #filter="top",
@@ -495,7 +507,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     notifs <- summary()
     
     numeric_table <- notifs %>%
-      dplyr::select(-c(Total_Measurements, Site_Visits, Aggregation, Site))
+      dplyr::select(-c(Total_Measurements, Aggregation, Site))
     
     numeric_table <- as.data.frame(numeric_table)
     numeric_table[is.infinite(as.matrix(numeric_table)) | is.nan(as.matrix(numeric_table))] <- NA

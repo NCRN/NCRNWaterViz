@@ -260,7 +260,8 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     #     Maximum, num, maximum value
     #     SD, num, standard deviation
     #     n_site_visit, int, count of observations for unique site visits
-    #     n, int, count of total observations
+    #     n, int, count of total observations, 
+    #     
     #
     # Example:
     #   DataOpts$Years <- 2010,
@@ -312,17 +313,6 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
           Maximum = ifelse(is.na(Maximum) | Maximum == Inf | Maximum == -Inf, "Data not collected",
                            formatC(Maximum, format = "f", digits = 2))) %>%
       dplyr::mutate(across(c(Q1, Mean, Median, Q3), ~ifelse(is.na(.), "Data not collected", formatC(., format = "f", digits = 2))))
-      
-      #  data_values_summary <- data_values_summary %>%
-      # arrange(if (input$SummaryBoxBy == "year")
-      #   desc(Aggregation) else Aggregation)
-       #return(data_values_summary)
-      #   mutate(Aggregation_num = case_when(input$SummaryBoxBy == "month" ~ match(Aggregation, month.abb),
-      #                                      input$SummaryBoxBy == "year" ~ as.character(Aggregation), TRUE ~ NA_character_ )) %>%
-      #                                      
-      #   arrange(if_else(input$SummaryBoxBy == "year", desc(Aggregation_num), Aggregation_num)) %>%
-      #   select(-Aggregation_num)
-     #   arrange((Aggregation))
 
       n_count = DataUseMultiple() %>%
         dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #year filtering
@@ -334,7 +324,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
         dplyr::summarise(Total_Measurements = dplyr::n(), .groups = "drop")
       
       missing_count = DataUseMultiple() %>%
-        dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #year filtering
+       # dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #year filtering
         
         dplyr::mutate(Date = as.Date(Date)) %>%
         dplyr::mutate(Aggregation = dplyr::case_when(input$SummaryBoxBy == "month" ~ format(Date, "%b"),
@@ -345,7 +335,8 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       
       final_summary <- data_values_summary %>%
         dplyr::left_join(n_count, by = c("Aggregation", "Site")) %>%
-        dplyr::left_join(missing_count, by = c("Aggregation", "Site"))
+        dplyr::left_join(missing_count, by = c("Aggregation", "Site")) %>%
+        dplyr::mutate(Missing_Values = tidyr::replace_na(Missing_Values, 0)) 
 
       #dplyr::arrange(factor(Aggregation, levels = month.name), Site) 
 
@@ -507,7 +498,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     notifs <- summary()
     
     numeric_table <- notifs %>%
-      dplyr::select(-c(Total_Measurements, Aggregation, Site))
+      dplyr::select(-c(Total_Measurements, Site_Visits, Missing_Values, Aggregation, Site))
     
     numeric_table <- as.data.frame(numeric_table)
     numeric_table[is.infinite(as.matrix(numeric_table)) | is.nan(as.matrix(numeric_table))] <- NA

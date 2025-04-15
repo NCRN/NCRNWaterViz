@@ -259,9 +259,9 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     #     Q3, num, 3rd Quartile (75th percentile)
     #     Maximum, num, maximum value
     #     SD, num, standard deviation
-    #     n_site_visit, int, count of observations for unique site visits
-    #     n, int, count of total observations, 
-    #     
+    #     Site_Visits, int, count of observations for unique site visits
+    #     Total_Measurements, int, count of total observations 
+    #     Missing_Values, int, count of missing values
     #
     # Example:
     #   DataOpts$Years <- 2010,
@@ -433,7 +433,8 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
         "Maximum" = "Highest recorded value",
         "Standard<br>Deviation" = "Measure of variability",
         "Site<br>Visits" = "Number of site visits",
-        "Total<br>Measurements" = "Number of measurements"
+        "Total<br>Measurements" = "Number of measurements",
+        "Missing<br>Values" = "Number of missing values"
       )
       tooltips_json <- jsonlite::toJSON(tooltips, auto_unbox = TRUE)
       dt<- DT::datatable(summary_table, colnames = c("Site", "Minimum", "Q1", "Mean", "Median", "Q3", "Maximum", "Standard<br>Deviation", "Site<br>Visits", "Total<br>Measurements", "Missing<br>Values"), escape = FALSE,

@@ -343,6 +343,14 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   return(final_summary) 
 })
 
+  output$summary_box_ui <- renderUI({
+    req(DataUseMultiple())
+    tagList(
+    div(class = "summary-box",
+        uiOutput("summary_text")),
+    DT::dataTableOutput("SummaryTable")
+  )
+  })
 ### Summary table output ####
   output$SummaryTable <-DT::renderDataTable({
     # Outputs a table with summary values from summary() and handles missing, infinite, and NAN values. 

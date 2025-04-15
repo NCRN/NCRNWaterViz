@@ -7,5 +7,6 @@ renv/
 *.Rprofile
 *.Rproj
 sandbox*
+exceedances_sandbox.R
 Data/
 brainstorming.R

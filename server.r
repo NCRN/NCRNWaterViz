@@ -17,12 +17,12 @@ library(NADA)
 metadata_df <- read.csv("./Data/NCRN/wqp_ncrnwater_metadata.csv")
 dataname_df <- read.csv("./Data/NCRN/wqp.csv")
 
-active_chars <- metadata_df %>%
+metadata_active_chars <- metadata_df %>%
   filter(IsActiveCharacteristicName == "True") 
 
-write.csv(active_chars, "./Data/NCRN/metadata_onlyactiveChars.csv", row.names = FALSE)
+write.csv(metadata_active_chars, "./Data/NCRN/metadata_onlyactiveChars.csv", row.names = FALSE)
 
-active_chars <- active_chars %>%
+active_chars <- metadata_active_chars %>%
   pull(DataName)
 
 filtered_data <- dataname_df %>%
@@ -991,11 +991,19 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   })
   
  #### NPS Data ####
-  
-  
-  NPSGeoData<-data.frame(ParkCode=getSiteInfo(WaterData, info="ParkCode"), SiteCode=getSiteInfo(WaterData, info="SiteCode"), ParkName=getSiteInfo(WaterData, info = "ParkShortName"), SiteName=getSiteInfo(WaterData, info= "SiteName"), 
-                         latitude=getSiteInfo(WaterData, info="lat"), longitude=getSiteInfo(WaterData, info="long"), stringsAsFactors = F)
+  dataname_filtered <- read.csv("./Data/NCRN/filtered_activeChars.csv")
+   
+  NPSGeoData_df<- data.frame(ParkCode=getSiteInfo(WaterData, info="ParkCode"), SiteCode=getSiteInfo(WaterData, info="SiteCode"), ParkName=getSiteInfo(WaterData, info = "ParkShortName"), SiteName=getSiteInfo(WaterData, info= "SiteName"), 
+                          latitude=getSiteInfo(WaterData, info="lat"), longitude=getSiteInfo(WaterData, info="long"), stringsAsFactors = F)
 
+  active_sites <- metadata_active_chars %>%
+    filter(IsActiveSiteCode == "True") %>%
+    pull(SiteCode)
+  
+  NPSGeoData <- NPSGeoData_df %>%
+      filter(SiteCode %in% active_sites)
+  print(NPSGeoData)
+  
   #CharIndex is a true/false of characters that have thresholds
   CharIndex<-{getCharInfo(WaterData,info="LowerPoint") %>% is.na %>% not} | {getCharInfo(WaterData,info="UpperPoint") %>% is.na %>% not} 
   NPSchars<-getCharInfo(WaterData, info="CharName")[CharIndex] %>% unique

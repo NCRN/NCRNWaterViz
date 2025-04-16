@@ -27,8 +27,9 @@ filtered_data <- dataname_df %>%
 write.csv(filtered_data, "./Data/filtered_activeChars.csv", row.names = FALSE)
 
 
+
 #### Get data ####
-WaterData<-suppressWarnings(importNCRNWater(paste0("./Data/", Network), Data=dataname, MetaData = metadataname, wqx=wqx_bool))
+WaterData<-suppressWarnings(importNCRNWater(paste0("./Data/", Network), Data=dataname2, MetaData = metadataname, wqx=wqx_bool))
 
 ####getThresholdText Function
 getTresholdText<-function(object, parkcode,sitecode,charname){    

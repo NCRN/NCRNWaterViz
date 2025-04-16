@@ -4,7 +4,9 @@
 # Network_long <- "Northeast Temperate Network" # for navbar title
 # Viz_name <- "Lake and Stream Water Quality"
 dataname <- "wqp.csv" # global variable instead of hardcoding in `server.R` NCRNWater::importNCRNWater() call
+dataname2 <- "filtered_activeChars.csv"
 metadataname <- "wqp_ncrnwater_metadata.csv"
+
 wqx_bool <- T
 Network <- "NCRN" # for leaflet map center
 Network_long <- "National Capital Region Network" # for navbar title

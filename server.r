@@ -991,18 +991,16 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   })
   
  #### NPS Data ####
-  dataname_filtered <- read.csv("./Data/NCRN/filtered_activeChars.csv")
-   
-  NPSGeoData_df<- data.frame(ParkCode=getSiteInfo(WaterData, info="ParkCode"), SiteCode=getSiteInfo(WaterData, info="SiteCode"), ParkName=getSiteInfo(WaterData, info = "ParkShortName"), SiteName=getSiteInfo(WaterData, info= "SiteName"), 
+  NPSGeoData <- data.frame(ParkCode=getSiteInfo(WaterData, info="ParkCode"), SiteCode=getSiteInfo(WaterData, info="SiteCode"), ParkName=getSiteInfo(WaterData, info = "ParkShortName"), SiteName=getSiteInfo(WaterData, info= "SiteName"), 
                           latitude=getSiteInfo(WaterData, info="lat"), longitude=getSiteInfo(WaterData, info="long"), stringsAsFactors = F)
 
   active_sites <- metadata_active_chars %>%
     filter(IsActiveSiteCode == "True") %>%
     pull(SiteCode)
   
-  NPSGeoData <- NPSGeoData_df %>%
+  NPSGeoData_filtered <- NPSGeoData %>%
       filter(SiteCode %in% active_sites)
-  print(NPSGeoData)
+  #print(NPSGeoData)
   
   #CharIndex is a true/false of characters that have thresholds
   CharIndex<-{getCharInfo(WaterData,info="LowerPoint") %>% is.na %>% not} | {getCharInfo(WaterData,info="UpperPoint") %>% is.na %>% not} 
@@ -1124,6 +1122,14 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   #       } else {leafletProxy("WaterMap") %>% clearGroup("NPS") %>% removeControl(layerId="npsLegend")}
   # })
   
+  filtered_NPSGeoData <- reactive({
+    if (input$InactiveSites) {
+      NPSGeoData
+    } else {
+      NPSGeoData_filtered
+    }
+  })
+  
   observe({
     req(NPSGeoData)
     updateCheckboxGroupInput(session, "MapIn", choices = unique(NPSGeoData$ParkName), inline = FALSE)
@@ -1150,7 +1156,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   observe({
     req(input$WaterMap_zoom)
     zoom_level <- input$WaterMap_zoom
-    print(zoom_level)
+    #print(zoom_level)
     parks <- input$MapIn
     show_labels <- if (is.null(parks) || length(parks) == 0) {
                     zoom_level >= 13
@@ -1158,12 +1164,16 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       zoom_level >= 11
     }
 
-   # if(input$MapNPS){
-    # parks <- input$MapIn
-    filtered_data <- if (is.null(parks) || length(parks) == 0) {
+    site_data <- if (input$InactiveSites) {
       NPSGeoData
+    } else{
+      NPSGeoData_filtered
+    }
+    
+    filtered_data <- if (is.null(parks) || length(parks) == 0) {
+      site_data
     } else {
-      NPSGeoData[NPSGeoData$ParkName %in% parks, ]}
+      site_data[site_data$ParkName %in% parks, ]}
     
     filtered_exceed <- ExceedData()
     

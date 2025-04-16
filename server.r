@@ -916,15 +916,29 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   
   BoxPlotOut<-reactive({
     req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
-    waterbox(object=WaterData, parkcode=DataOpts$Park, sitecode=if(input$BoxBy !="site") DataOpts$Site else NA, 
-             charname = DataOpts$Param, by=input$BoxBy, title=Title(),
-             years=DataOpts$Years[1]:DataOpts$Years[2], assessment=input$BoxThreshLine, assesscolor=ThCol(), outliercolor = BadCol(),
-             sizes=c(GraphOpts$PointSize, GraphOpts$LineWidth, GraphOpts$LineWidth),
-             labels=if(input$BoxBy=="site") getSiteInfo(WaterData, parkcode= DataOpts$Park, info="SiteName") else NA) +
-              theme(text=element_text(size=GraphOpts$FontSize*10))
+    p <- waterbox(
+      object=WaterData
+      ,parkcode=DataOpts$Park
+      ,sitecode=if(input$BoxBy !="site") DataOpts$Site else NA
+      ,charname = DataOpts$Param
+      ,by=input$BoxBy
+      ,title=Title()
+      ,years=DataOpts$Years[1]:DataOpts$Years[2]
+      ,assessment=input$BoxThreshLine
+      ,assesscolor=ThCol()
+      ,outliercolor = BadCol()
+      # ,webplot=T
+      ,sizes=c(GraphOpts$PointSize, GraphOpts$LineWidth, GraphOpts$LineWidth)
+      ,labels=if(input$BoxBy=="site") getSiteInfo(WaterData, parkcode= DataOpts$Park, info="SiteName") else NA) +
+    theme(text=element_text(size=GraphOpts$FontSize*10))
+    
+    # plotly::ggplotly(p, tooltip = "text")
+    plotly::ggplotly(p)
+
   })
    
-  output$BoxPlot<-renderPlot({   BoxPlotOut() })
+  output$BoxPlot<-renderPlotly({   BoxPlotOut() })
+
   
   #### BoxThreshold Summary ####
   

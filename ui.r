@@ -164,7 +164,7 @@ shinyUI(
         )),
         
         column(9,
-          plotOutput("BoxPlot"),
+          plotlyOutput("BoxPlot"),
           htmlOutput("BoxThresholdSummary"),
           br(),
           htmlOutput("BoxRefSummary")

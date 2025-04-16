@@ -18,18 +18,21 @@ metadata_df <- read.csv("./Data/NCRN/wqp_ncrnwater_metadata.csv")
 dataname_df <- read.csv("./Data/NCRN/wqp.csv")
 
 active_chars <- metadata_df %>%
-  filter(IsActiveCharacteristicName == "True") %>%
+  filter(IsActiveCharacteristicName == "True") 
+
+write.csv(active_chars, "./Data/NCRN/metadata_onlyactiveChars.csv", row.names = FALSE)
+
+active_chars <- active_chars %>%
   pull(DataName)
 
 filtered_data <- dataname_df %>%
   filter(CharacteristicName %in% active_chars)
 
-write.csv(filtered_data, "./Data/filtered_activeChars.csv", row.names = FALSE)
-
+write.csv(filtered_data, "./Data/NCRN/filtered_activeChars.csv", row.names = FALSE)
 
 
 #### Get data ####
-WaterData<-suppressWarnings(importNCRNWater(paste0("./Data/", Network), Data=dataname2, MetaData = metadataname, wqx=wqx_bool))
+WaterData<-suppressWarnings(importNCRNWater(paste0("./Data/", Network), Data=dataname2, MetaData = metadataname2, wqx=wqx_bool))
 
 ####getThresholdText Function
 getTresholdText<-function(object, parkcode,sitecode,charname){    
@@ -988,6 +991,8 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   })
   
  #### NPS Data ####
+  
+  
   NPSGeoData<-data.frame(ParkCode=getSiteInfo(WaterData, info="ParkCode"), SiteCode=getSiteInfo(WaterData, info="SiteCode"), ParkName=getSiteInfo(WaterData, info = "ParkShortName"), SiteName=getSiteInfo(WaterData, info= "SiteName"), 
                          latitude=getSiteInfo(WaterData, info="lat"), longitude=getSiteInfo(WaterData, info="long"), stringsAsFactors = F)
 

@@ -904,14 +904,38 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   BoxSite<-callModule(siteChooser, id="BoxSite", data=WaterData, park=reactive(DataOpts$Park), chosen=reactive(DataOpts$Site))
   BoxParam<-callModule(paramChooser, id="BoxParam",data=WaterData, park=reactive(DataOpts$Park), site=reactive(DataOpts$Site), 
                         chosen=reactive(DataOpts$Param))
-  BoxYears<-callModule(yearChooser, id="BoxYears", data=DataUse, chosen=reactive(DataOpts$Years) )
-  
+  BoxYears<-callModule(yearChooser, id="BoxYears", data=DataUseMultiple, chosen=reactive(DataOpts$Years) )
   
   observeEvent(BoxPark(), DataOpts$Park<-BoxPark() )
   observeEvent(BoxSite(), DataOpts$Site<-BoxSite() )
   observeEvent(BoxParam(), DataOpts$Param<-BoxParam() )
   observeEvent(BoxYears(), DataOpts$Years<-BoxYears() )
-  
+
+#### Box Plot 2.0 ####
+
+ boxplot_df <- DataUseMultiple ()
+Grouper<-switch(input$BoxBy, # the "Compare by:" selection (year, month, site)
+                year=object$Date %>% year %>% factor,
+                month=object$Date %>% month(label=T) %>% factor,
+                site=object$Site,
+                park=object$Park,
+                char=object$Characteristic
+                )
+if(is.na(yname)) yname<-""
+if(all(is.na(xname))) xname<-""
+if(all(is.na(labels))) labels<-switch(by,
+                year=object$Date %>% year %>% unique,
+                month=object$Date %>% month(label=T) %>% unique %>% sort %>% as.character,
+                site=object$Site %>% unique,
+                park=object$Park %>% unique,
+                char=object$Characteristic %>% unique)
+
+
+
+
+
+
+
 #### Box Plot ####
   
   BoxPlotOut<-reactive({

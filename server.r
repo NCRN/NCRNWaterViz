@@ -13,6 +13,20 @@ library(magrittr)
 library(openair)
 library(NADA)
 
+### Filtering data to active Characteristic Names ####
+metadata_df <- read.csv("./Data/NCRN/wqp_ncrnwater_metadata.csv")
+dataname_df <- read.csv("./Data/NCRN/wqp.csv")
+
+active_chars <- metadata_df %>%
+  filter(IsActiveCharacteristicName == "True") %>%
+  pull(DataName)
+
+filtered_data <- dataname_df %>%
+  filter(CharacteristicName %in% active_chars)
+
+write.csv(filtered_data, "./Data/filtered_activeChars.csv", row.names = FALSE)
+
+
 #### Get data ####
 WaterData<-suppressWarnings(importNCRNWater(paste0("./Data/", Network), Data=dataname, MetaData = metadataname, wqx=wqx_bool))
 

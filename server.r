@@ -913,7 +913,6 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 
 #### Box Plot 2.0 ####
 
-
 BoxPlotMultipleOut<-reactive({
   req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
 
@@ -922,27 +921,34 @@ BoxPlotMultipleOut<-reactive({
     dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) #year filtering
 
   # initialize variables
-  yname <- NA
   ynames <- c()
   xname <- NA
   labels <- NA
-  category <- NA
   assessment <- input$BoxThreshLine
   assessments <- c()
 
   # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L75-L98
   for (site in DataOpts$Site){
-    if(is.na(yname) & is.na(category)) yname<-paste0(getCharInfo(object=WaterData, parkcode=DataOpts$Park, sitecode = site, 
-                                                              charname=DataOpts$Param, info="DisplayName")," (",
-                              getCharInfo(object=WaterData, parkcode=DataOpts$Park, sitecode = site, 
-                                          charname=DataOpts$Param, info="Units"),")") %>% unique
+    yname<-paste0(
+      getCharInfo(
+        object=WaterData
+        ,parkcode=DataOpts$Park
+        ,sitecode = site
+        ,charname=DataOpts$Param
+        , info="DisplayName"
+        )
+      ," ("
+      ,getCharInfo(
+        object=WaterData
+        ,parkcode=DataOpts$Park
+        ,sitecode = site
+        ,charname=DataOpts$Param
+        ,info="Units"
+        )
+      ,")"
+      )
 
-  if(is.na(yname) & !is.na(category)) yname<-paste0(getCharInfo(object=WaterData, parkcode=DataOpts$Park, sitecode=site,
-                                                                charname=DataOpts$Param, category=category, info="CategoryDisplay")," (",
-                                                    getCharInfo(object=WaterData, parkcode=DataOpts$Park, sitecode = site,
-                                                                charname=DataOpts$Param, category=category, info="Units"),")") %>% unique
-
-  ynames <- c(yname, ynames)
+    ynames <- c(yname, ynames)
 
   }
 
@@ -962,7 +968,6 @@ BoxPlotMultipleOut<-reactive({
     ,year="Year"
     ,month="Month"
     ,site="Site"
-    ,park="Park"
     )
 
   if(assessment){
@@ -972,14 +977,12 @@ BoxPlotMultipleOut<-reactive({
           unlist %>% unique
         assessments <- c(tmp, assessments)
     }
+    assessment <- assessments %>% unique
+    assessment <- assessment[!is.na(assessment)] # needed if there is no upper or lower assessment.
   }
-
-   assessment <- assessments %>% unique
-   assessment <- assessment[!is.na(assessment)] # needed if there is no upper or lower assessment.
 
   # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L106-L127
 
-  # TODO: fix the grouper
   Grouper<-switch(
     input$BoxBy # the "Compare by:" selection (year, month, site)
     ,year=boxplot_df$Date %>% lubridate::year() %>% factor
@@ -994,7 +997,7 @@ BoxPlotMultipleOut<-reactive({
   OutPlot<-ggplot(
     boxplot_df
     ,aes(
-      x=Grouper # TODO: update this to Grouper
+      x=Grouper
       ,y=Value
       ,fill=MonitoringLocationName
       # note: custom hovertext is not available for boxplots

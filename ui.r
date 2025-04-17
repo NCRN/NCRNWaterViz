@@ -161,7 +161,8 @@ shinyUI(
             h3("About:"),
             actionButton(inputId="AboutComparisons", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px")
           )
-        )),
+        )
+        ),
         
         column(9,
           # plotlyOutput("BoxPlot"),

@@ -972,9 +972,11 @@ BoxPlotMultipleOut<-reactive({
 
   # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L106-L127
 
+  # TODO: fix the grouper
   # Grouper<-switch(input$BoxBy, # the "Compare by:" selection (year, month, site)
-  #                 year=WaterData$Date %>% year %>% factor,
-  #                 month=WaterData$Date %>% month(label=T) %>% factor,
+  #                 # year=WaterData$Date %>% lubridate::year() %>% factor,
+  #                 year=WaterData$Year,
+  #                 month=WaterData$Date %>% lubridate::month(label=T) %>% factor,
   #                 site=WaterData$Site,
   #                 park=WaterData$Park,
   #                 char=WaterData$Characteristic
@@ -997,7 +999,7 @@ BoxPlotMultipleOut<-reactive({
   OutPlot<-ggplot(
     boxplot_df
     ,aes(
-      x=as.factor(Year)
+      x=as.factor(Year) # TODO: update this to Grouper
       ,y=Value
       ,fill=MonitoringLocationName
       # note: custom hovertext is not available for boxplots
@@ -1013,10 +1015,12 @@ BoxPlotMultipleOut<-reactive({
     scale_x_discrete(name=xname)+
     scale_fill_discrete(name = "Site<br>")+
     theme_bw()+
-    theme(panel.grid = element_blank())
+    theme(
+      panel.grid = element_blank()
+      ,text = element_text(size=global_textsize)
+      )
 
-  plotly::ggplotly(OutPlot) %>% layout(boxmode = "group")
-  
+  plotly::ggplotly(OutPlot) %>% layout(boxmode = "group", height = global_figure_height, width = global_figure_width)
 
   })
 

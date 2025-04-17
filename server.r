@@ -1000,7 +1000,6 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   
   NPSGeoData_filtered <- NPSGeoData %>%
       filter(SiteCode %in% active_sites)
-  #print(NPSGeoData)
   
   #CharIndex is a true/false of characters that have thresholds
   CharIndex<-{getCharInfo(WaterData,info="LowerPoint") %>% is.na %>% not} | {getCharInfo(WaterData,info="UpperPoint") %>% is.na %>% not} 
@@ -1028,21 +1027,33 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   output$WaterMap<-leaflet::renderLeaflet({ 
     # Renders a map widget centered on water monitoring sites, with dynamic zoom and basemap options.  
     # Args:
-    #  NPSGeoData$latitude, num, required. The latitude coordinates of water monitoring sites for the NCRN dataset. 
-    #  NPSGeoData$longitude, num, required. The longitude coordinates of water monitoring sites for the NCRN dataset.  
+    #   NPSGeoData$latitude, num, required. Numeric vector containing the latitude coordinates for water monitoring sites. 
+    #   NPSGeoData$longitude, num, required. Numeric vector containing the longitude coordinates for water monitoring sites. 
+    #   map_values$netlat, num, required. Reactive value used to store the map's central latitude.
+    #   map_values$netlon, num, required. Reactive value used to store the map's central longitude.
+    #   map_values$netzoom, num, required. Reactive value used to store the zoom level dynamically based on coordinate range. 
     # 
     # Returns:
     #  A Leaflet map with configured basemap layers ("map", "slate") and zoom extent.
     #
     # Example:
-    # netlat<- mean(NPSGeoData$latitude, na.rm = TRUE)
-    # netlon<- mean(NPSGeoData$longitude, na.rm = TRUE)
+    #   output$WaterMap<-leaflet::renderLeaflet({ 
+    #   netlat<- mean(NPSGeoData$latitude, na.rm = TRUE)
+    #   netlon<- mean(NPSGeoData$longitude, na.rm = TRUE)
+    #   netzoom <- 8
+    #
+    #   map_values$netlat <- netlat
+    #   map_values$netlon <- netlon
+    #   map_values$netzoom <- netzoom
+    #
+    #   leaflet::leaflet() %>%
+    #   leaflet::setView(lng = netlon, lat = netlat , zoom = netzoom) 
     #   })
     
     #buffer_factor<- 0.05
     netlat<- mean(NPSGeoData$latitude, na.rm = TRUE)
     netlon<- mean(NPSGeoData$longitude, na.rm = TRUE)
-    
+
     min_lat<- min(NPSGeoData$latitude, na.rm = TRUE)
     max_lat<- max(NPSGeoData$latitude, na.rm = TRUE)
     min_lon<- min(NPSGeoData$longitude, na.rm = TRUE)
@@ -1054,8 +1065,8 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     max_range<- max(lat_range, lon_range)
 
     netzoom<- dplyr::case_when(
-     # max_range > 10 ~5,
-     # max_range > 5 ~7,
+      max_range > 10 ~5,
+      max_range > 5 ~7,
       max_range > 2.5 ~8,
       max_range > 1.5 ~9,
       max_range > 1 ~9,
@@ -1066,7 +1077,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     map_values$netlat <- netlat
     map_values$netlon <- netlon
     map_values$netzoom <- netzoom
-  
+ 
   #netzoom<- ifelse(max(lat_range, long_range) >5, 7, 9)
 
   # netlat<-dplyr::case_when(Network == "NCRN" ~ 39.25,
@@ -1081,13 +1092,6 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     #  leaflet::addTiles(group="Imagery", urlTemplate="https://atlas-stg.geoplatform.gov/styles/v1/atlas-user/ck72fwp2642dv07o7tbqinvz4/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiYXRsYXMtdXNlciIsImEiOiJjazFmdGx2bjQwMDAwMG5wZmYwbmJwbmE2In0.lWXK2UexpXuyVitesLdwUg", attribution="National Park Service, © Mapbox, and © OpenStreetMap") %>%
       leaflet::addTiles(group="Slate", urlTemplate = "https://atlas-stg.geoplatform.gov/styles/v1/atlas-user/ck5cpvc2e0avf01p9zaw4co8o/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiYXRsYXMtdXNlciIsImEiOiJjazFmdGx2bjQwMDAwMG5wZmYwbmJwbmE2In0.lWXK2UexpXuyVitesLdwUg", attribution ="National Park Service, © Mapbox, and © OpenStreetMap") %>%
       leaflet::addLayersControl(map=., baseGroups=c("Map","Slate"), options=layersControlOptions(collapsed=T)) %>%
-      
-    #  leafletProxy("WaterMap") %>%
-     # clearGroup("NPS") %>%
-      # addCircleMarkers(data = NPSGeoData, group = "NPS", 
-      #                  layerId = NPSGeoData$SiteCode, 
-      #                  fillColor = MapColors(ExceedData()$Acceptable/ExceedData()$Total),
-      #                  fillOpacity = 1, stroke = FALSE) %>%
 
     # addTiles() # temporary workaround to provide a basemap
     # broken map tiles:
@@ -1122,14 +1126,6 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   #       } else {leafletProxy("WaterMap") %>% clearGroup("NPS") %>% removeControl(layerId="npsLegend")}
   # })
   
-  filtered_NPSGeoData <- reactive({
-    if (input$InactiveSites) {
-      NPSGeoData
-    } else {
-      NPSGeoData_filtered
-    }
-  })
-  
   observe({
     req(NPSGeoData)
     updateCheckboxGroupInput(session, "MapIn", choices = unique(NPSGeoData$ParkName), inline = FALSE)
@@ -1147,6 +1143,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     bl = c(-18, 18)
     #,center = c(0,0)
   )
+  
   NPSGeoData$label_dir <- directions[ (seq_len(nrow(NPSGeoData)) %%
                                          length(directions)) +1]
   NPSGeoData$xoffset <- sapply(NPSGeoData$label_dir, function(dir) offset[[dir]][1])
@@ -1154,10 +1151,45 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   
   
   observe({
+    # Handles updates to the map's zoom level, the visibility of labels, and the display of active or inactive sites based on user input.  
+    # Args:
+    #   input$WaterMap_zoom, int, required. The map zoom level. 
+    #   input$MapIn, chr, required. User-selected park names from UI input.
+    #   input$InactiveSites, logical, required. A checkbox input for "Display inactive sites" that indicates whether to display inactive sites.   
+    #   input$WaterMap_groups, chr, required. Indicates which map overlay groups are currently visible on map.  
+    #
+    # Returns:
+    #   Updates map zoom level, adds/removes markers, and updates labels based on the filtered data and user input. 
+    #
+    # Examples:
+    #   input$WaterMap_zoom <- 12
+    #   input$MapIn <- "Catoctin"
+    #   input$InactiveSites <- FALSE
+    #   input$WaterMap_groups <- c("Map", "NPS")
+    #   
+    #   show_labels <- if (is.null(input$MapIn) || length(input$MapIn) == 0) {
+    #     input$WaterMap_zoom >= 13
+    #     } else {
+    #     input$WaterMap_zoom >= 11
+    #   }
+    # 
+    #   site_data <- if (input$InactiveSites) {
+    #     NPSGeoData
+    #     } else{
+    #     NPSGeoData_filtered
+    #   }
+    # 
+    #   label_color <- if ("Slate" %in% input$WaterMap_groups) {
+    #     "white" 
+    #     } else {
+    #     "black"
+    #   }
+    
     req(input$WaterMap_zoom)
+    
     zoom_level <- input$WaterMap_zoom
-    #print(zoom_level)
     parks <- input$MapIn
+
     show_labels <- if (is.null(parks) || length(parks) == 0) {
                     zoom_level >= 13
     } else {
@@ -1169,7 +1201,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     } else{
       NPSGeoData_filtered
     }
-    
+
     filtered_data <- if (is.null(parks) || length(parks) == 0) {
       site_data
     } else {
@@ -1184,84 +1216,107 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     } else {
       "black"
     }
-    
+
     #When parks are selected
-    leafletProxy("WaterMap") %>%
-      clearGroup("NPS") %>%
-      addCircleMarkers(data = merge_data, group = "NPS", 
+    leaflet::leafletProxy("WaterMap") %>%
+      leaflet::clearGroup("NPS") %>%
+      leaflet::addCircleMarkers(data = merge_data, group = "NPS", 
                        layerId = merge_data$SiteCode, 
                        fillColor = MapColors(merge_data$Acceptable/merge_data$Total),
                        fillOpacity = 1, stroke = FALSE) %>%
-      addLegend(position="topright", pal=MapColors, values=c(0,1), opacity=1,
+      leaflet::addLegend(position="topright", pal=MapColors, values=c(0,1), opacity=1,
                 layerId="npsLegend",title=paste0("<svg height='15' width='20'>
                     <circle cx='10' cy='10' r='5', stroke='black' fill='black'/></svg> NPS: % of Acceptable <br>Measurements"),
                 labFormat=labelFormat(suffix="%", transform= function(x) 100*x)) 
-    
+
     if (show_labels) {
-          leafletProxy("WaterMap") %>%    
-            clearGroup("Sites")
+          leaflet::leafletProxy("WaterMap") %>%    
+            leaflet::clearGroup("Sites")
       for (i in seq_len(nrow(merge_data))) {
-        leafletProxy("WaterMap") %>%
-        addLabelOnlyMarkers(group = "Sites",
+        leaflet::leafletProxy("WaterMap") %>%
+        leaflet::addLabelOnlyMarkers(group = "Sites",
                             lng = merge_data$longitude[i], lat = merge_data$latitude[i],
                             label = merge_data$SiteName[i],
                             labelOptions = labelOptions(noHide = TRUE, textOnly = TRUE, direction = merge_data$label_dir[i], offset= c(merge_data$xoffset[i], merge_data$yoffset[i]),
                                                         , style = list("font-weight"="bold", "font-size"="13px", "color"=label_color)))
         } 
           } else {
-          leafletProxy("WaterMap") %>%
-              clearGroup("Sites")
-           }
+          leaflet::leafletProxy("WaterMap") %>%
+              leaflet::clearGroup("Sites")
+          }
   })
 
   observe({
+    # Adjusts map view to selected park(s)
+    # Args:
+    #   input$MapIn, chr, required. User-selected park names from UI input. 
+    #   selected_parks$latitude, num, required. Latitude values for the selected park(s).
+    #   selected_parks$longitude, num, required. Longitude values for the selected park(s). 
+    #
+    # Returns:
+    #   Updated Leaflet map ("WaterMap") that zooms to extent of all selected park locations. 
+    #
+    # Example:
+    #   req(input$MapIn)
+    #   selected_parks <- NPSGeoData %>%
+    #   filter(ParkName %in% input$MapIn)
+    #   if (nrow(selected_parks) > 0 ) {
+    #   leafletProxy("WaterMap") %>%
+    #   fitBounds(
+    #     lat1 = min(selected_parks$latitude, na.rm = TRUE),
+    #     lat2 = max(selected_parks$latitude, na.rm = TRUE),
+    #     lng1 = min(selected_parks$longitude, na.rm = TRUE),
+    #     lng2 = max(selected_parks$longitude, na.rm = TRUE)
+    #   )}
+    
     req(input$MapIn)
     selected_parks <- NPSGeoData %>%
-    filter(ParkName %in% input$MapIn)
+    dplyr::filter(ParkName %in% input$MapIn)
     if (nrow(selected_parks) > 0 ) {
       minLat <- min(selected_parks$latitude, na.rm = TRUE)
       maxLat <- max(selected_parks$latitude, na.rm = TRUE)
       minLon <- min(selected_parks$longitude, na.rm = TRUE)
       maxLon <- max(selected_parks$longitude, na.rm = TRUE)
-    
-      # park_lat_range<- maxLat - minLat
-      # park_lon_range<- maxLon - minLon
-      # park_max_range<- max(park_lat_range, park_lon_range)
-      # 
-      # park_zoom_level<- dplyr::case_when(
-      #   # max_range > 10 ~5,
-      #   # max_range > 5 ~7,
-      #   park_max_range > 2.5 ~8,
-      #   park_max_range > 1.5 ~9,
-      #   park_max_range > 1 ~9,
-      #   park_max_range > 0.5 ~10,
-      #   TRUE ~10
-      # )
-    #   
-    #   leafletProxy("WaterPark") %>%
-    #     setView(lng = mean(c(minLon, maxLon)), 
-    #             lat = mean(c(minLat, maxLat)), 
-    #             zoom = park_zoom_level)
-    # }
-      
+
     latPadding <- (maxLat - minLat) * 0.1
     lonPadding <- (maxLon - minLon) * 0.1
 
-    leafletProxy("WaterMap") %>%
-      fitBounds(lng1 = minLon - lonPadding,
+    leaflet::leafletProxy("WaterMap") %>%
+      leaflet::fitBounds(lng1 = minLon - lonPadding,
                 lat1 = minLat - latPadding,
                 lng2 = maxLon + lonPadding,
                 lat2 = maxLat + latPadding)
     }
   })
   
-  observeEvent(input$refreshParks, {
-    updateCheckboxGroupInput(session, "MapIn", selected = character(0))
-     leafletProxy("WaterMap") %>%
-       setView(lng = map_values$netlon, lat = map_values$netlat, zoom = map_values$netzoom) %>%
-       clearGroup("Sites") %>%
-       clearGroup("NPS") %>%
-       removeControl(layerId="npsLegend")
+  observeEvent(
+    # Resets park selection and restores the default Leaflet map view.   
+    # Args:
+    #   input$refreshParks, chr, required. Reactive input triggered by clicking the "Refresh park selections" button.  
+    #   map_values$netlon, chr, required. Default longitude for resetting the map view. 
+    #   map_values$netlat, num, required. Default latitude for resetting the map view. 
+    #   map_values$netzoom, num, required. Default zoom level. 
+    #
+    # Returns:
+    #   Clears the selected parks checkbox group.
+    #   Resets the map view to default latitude/longitude/zoom. 
+    #
+    # Example:
+    #   map_values <- list(netlon = -77.25951, netlat = 38.92281, netzoom = 9)
+    #   observeEvent(
+    #    input$refreshParks, {
+    #    updateCheckboxGroupInput(session, "MapIn", selected = character(0))
+    #    leafletProxy("WaterMap") %>%
+    #    setView(lng = map_values$netlon, lat = map_values$netlat, zoom = map_values$netzoom)
+    #   })
+    
+    input$refreshParks, {
+    shiny::updateCheckboxGroupInput(session, "MapIn", selected = character(0))
+     leaflet::leafletProxy("WaterMap") %>%
+       leaflet::setView(lng = map_values$netlon, lat = map_values$netlat, zoom = map_values$netzoom) %>%
+       leaflet::clearGroup("Sites") %>%
+       leaflet::clearGroup("NPS") %>%
+       leaflet::removeControl(layerId="npsLegend")
   })
   
   observe({

@@ -154,7 +154,11 @@ shinyUI(
             ,downloadButton("BoxPlot.JPG","Save Plot (.jpg)", class="btn btn-primary", style="margin-top: 15px")
             ,actionButton(inputId="GraphicsModal2", label='Graphics Options', class="btn btn-primary",style="margin-top: 15px")
             ,actionButton(inputId="AboutComparisons", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px")
-          )
+          ),
+          br(),
+          htmlOutput("BoxThresholdSummaryMultiple"),
+          br(),
+          htmlOutput("BoxRefSummaryMultiple")
           # ,splitLayout( cellWidths="50%",
           #   # h3("Options:"),
           #   actionButton(inputId="GraphicsModal2", label='Graphics Options', class="btn btn-primary",style="margin-top: 15px")
@@ -167,11 +171,7 @@ shinyUI(
         ),
         
         column(9,
-          # plotlyOutput("BoxPlot"),
           plotlyOutput("BoxPlotMultiple"),
-          # htmlOutput("BoxThresholdSummary"),
-          br(),
-          # htmlOutput("BoxRefSummary")
         )
       ),
 

@@ -918,7 +918,8 @@ BoxPlotMultipleOut<-reactive({
   req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
 
   # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L73
-  boxplot_df <- DataUseMultiple()
+  boxplot_df <- DataUseMultiple() %>%
+    dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) #year filtering
 
   # initialize variables
   yname <- NA

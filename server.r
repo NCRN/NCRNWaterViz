@@ -304,7 +304,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       data_values_summary <- data_values_summary %>%
         dplyr::mutate(
           Standard_Deviation = as.character(Standard_Deviation),
-          Standard_Deviation = case_when(
+          Standard_Deviation = dplyr::case_when(
             (!is.na(Mean) & is.na(as.numeric(Standard_Deviation))) ~ "Not available",
           is.na(as.numeric(Standard_Deviation)) ~ "Data not collected",
           TRUE ~ formatC(as.numeric(Standard_Deviation), format = "f", digits = 2)),
@@ -312,7 +312,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
                            formatC(Minimum, format = "f", digits = 2)),   
           Maximum = ifelse(is.na(Maximum) | Maximum == Inf | Maximum == -Inf, "Data not collected",
                            formatC(Maximum, format = "f", digits = 2))) %>%
-      dplyr::mutate(across(c(Q1, Mean, Median, Q3), ~ifelse(is.na(.), "Data not collected", formatC(., format = "f", digits = 2))))
+      dplyr::mutate(dplyr::across(c(Q1, Mean, Median, Q3), ~ifelse(is.na(.), "Data not collected", formatC(., format = "f", digits = 2))))
 
       n_count = DataUseMultiple() %>%
         dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #year filtering
@@ -468,7 +468,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     #,server=F)
 
       DT::formatStyle(columns = setdiff(names(summary_table), "Site"), textAlign = "center") %>%
-      formatStyle(columns = "Site", textAlign = "left", fontWeight = if(input$SummaryBoxBy %in% c("month", "year")) {
+      DT::formatStyle(columns = "Site", textAlign = "left", fontWeight = if(input$SummaryBoxBy %in% c("month", "year")) {
       DT::styleEqual(group_headers$Site, rep("bold", nrow(group_headers)))
       } else if (input$SummaryBoxBy == "site") { "bold" 
       } else { 

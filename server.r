@@ -914,6 +914,18 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 #### Box Plot 2.0 ####
 
 hline <- function(y = 0, color = "red", dash = 'dash') {
+    # Make a list of parameters to be passed to plotly to generate a horizontal dashed line for water quality threshold. 
+    # Args:
+    #  y: int, optional. Default 0. The vertical position at which the horizontal line should be drawn.
+    #  color: chr or c(int), optional. Default 'red'. The color of the horizontal line. Can pass str E.g., 'red' or str hex, or c(R,G,B).
+    #  dash: chr, optional. Default 'dash'. The linetype for the horizontal line.
+    #  
+    # Returns:
+    #  list
+    # 
+    # Example:
+    #   myhline <- hline(y=10)
+    #
   list(
     type = "line",
     x0 = 0,
@@ -926,6 +938,35 @@ hline <- function(y = 0, color = "red", dash = 'dash') {
 }
 
 BoxPlotMultipleOut<-reactive({
+    # A reactive function that a plotly of boxplots based on user selected site(s) and aggregation method (year, month, or site). 
+    # Args:
+    #  DataOpts$Years, c(int), required. The character string provided by yearChooser() in global.R. 
+    #  input$SummaryBoxBy, chr, required. Determines aggregation type and formats accordingly if month or year is selected. 
+    #  input$BoxThreshLine, bool, optional. Default False. If True, looks up the water quality threshold.
+    #  DataOpts$Park, chr, required. A park acronym. E.g., 'ROCR'.
+    #  DataOpts$Site, chr or c(chr), required. A site code. E.g., 'NCRN_ROCR_KLVA'
+    #  DataOpts$Param, chr, required. A characteristic abbreviation. E.g., 'DOper'.
+    #  
+    # Returns:
+    #  Plotly figure
+    # 
+    # Example:
+    #   DataOpts$Years <- c(2010,2024),
+    #   input$SummaryBoxBy <- "year"
+    #   input$BoxThreshLine <- T
+    #   DataOpts$Park <- 'ROCR'
+    #   DataOpts$Site <- c('NCRN_ROCR_KLVA', 'NCRN_ROCR_FEBR')
+    #   DataOpts$Param <- 'DOper'
+    #   
+    #   myfigure <- BoxPlotMutlipleOut(
+    #     DataOpts$Years
+    #     ,input$SummaryBoxBy
+    #     ,input$BoxThreshLine
+    #     ,DataOpts$Park
+    #     ,DataOpts$Site
+    #     ,DataOpts$Param
+    #   )
+    #
   req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
 
   # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L73
@@ -1017,48 +1058,47 @@ BoxPlotMultipleOut<-reactive({
     size = global_textsize
     )
   baseplot <-
-  plotly::plot_ly(
-    boxplot_df
-    ,y= ~Value
-    ,x= ~Grouper
-    ,color= ~MonitoringLocationName
-    ,type='box'
-    ,height = global_figure_height
-    ,width = global_figure_width
-  ) %>% layout(
-    boxmode = 'group'
-    ,font=t
-    ,margin=m
-    ,title = list(text=title ,font=t)
-    ,legend = list(
-      title=list(text='<br>Site<br>')
+    plotly::plot_ly(
+      boxplot_df
+      ,y= ~Value
+      ,x= ~Grouper
+      ,color= ~MonitoringLocationName
+      ,type='box'
+      ,height = global_figure_height
+      ,width = global_figure_width
+    ) %>% layout(
+      boxmode = 'group'
       ,font=t
-      )
-    ,yaxis = list(title=list(text=paste0(yname, '<br>'), font=t), font=t)
-    ,xaxis = list(title=list(text=paste0(xname, '<br>'), font=t), font=t)
-  )
+      ,margin=m
+      ,title = list(text=title ,font=t)
+      ,legend = list(
+        title=list(text='<br>Site<br>')
+        ,font=t
+        )
+      ,yaxis = list(title=list(text=paste0(yname, '<br>'), font=t), font=t)
+      ,xaxis = list(title=list(text=paste0(xname, '<br>'), font=t), font=t)
+    )
 
   if (is.na(assessment)==F & is.numeric(assessment)) {
-    a <- list(
-      x = 1,
-      y = 0.95*assessment,
-      text = paste0(stringr::str_split_1(yname, '[(]')[1], 'threshold: ', assessment, ' ', stringr::str_extract(yname, '(?<=\\()[^\\^\\)]+')),
-      xref = "x",
-      yref = "y",
-      showarrow = F,
-      ax = 20,
-      ay = -40
-    )
+    # a <- list( # commented-out because the annotation doesn't look great
+    #   x = 1,
+    #   y = 0.95*assessment,
+    #   text = paste0(stringr::str_split_1(yname, '[(]')[1], 'threshold: ', assessment, ' ', stringr::str_extract(yname, '(?<=\\()[^\\^\\)]+')),
+    #   xref = "x",
+    #   yref = "y",
+    #   showarrow = F,
+    #   ax = 20,
+    #   ay = -40
+    # )
 
     baseplot %>% layout(
       shapes = list(hline(assessment))
-      ,annotations = a
+      # ,annotations = a # commented-out because the annotation doesn't look great
     )
-    # baseplot %>% add_trace(y=assessment, name='testtrace')
   } else {
     baseplot
   }
-  # OutPlot<-ggplot(
+  # OutPlot<-ggplot( # commented out because replaced with plot_ly; saved just in case
   #   boxplot_df
   #   ,aes(
   #     x=Grouper
@@ -1127,6 +1167,54 @@ output$BoxPlotMultiple<-renderPlotly({   BoxPlotMultipleOut() })
   # })
   
   # output$BoxThresholdSummary<-renderUI( HTML(BoxThresholdSummary()) )
+
+  BoxThresholdSummaryMultiple<-reactive({    
+    # Make an html string of water quality thresholds to be displayed when the user asks for the thresholds. 
+    # Args:
+    #  input$BoxThreshLine, bool, optional. Default False. If True, looks up the water quality threshold.
+    #  DataOpts$Park, chr, required. A park acronym. E.g., 'ROCR'.
+    #  DataOpts$Site, chr or c(chr), required. A site code. E.g., 'NCRN_ROCR_KLVA'
+    #  DataOpts$Param, chr, required. A characteristic abbreviation. E.g., 'DOper'.
+    #  
+    # Returns:
+    #  chr
+    # 
+    # Example:
+    #   input$BoxThreshLine <- T
+    #   DataOpts$Park <- 'ROCR'
+    #   DataOpts$Site <- c('NCRN_ROCR_KLVA', 'NCRN_ROCR_FEBR')
+    #   DataOpts$Param <- 'DOper'
+    #   
+    #   mythresholds <- 
+    #     BoxThresholdSummaryMultiple(
+    #       ,input$BoxThreshLine
+    #       ,DataOpts$Park
+    #       ,DataOpts$Site
+    #       ,DataOpts$Param
+    #     )
+    #
+    req(input$BoxThreshLine, DataOpts$Park, DataOpts$Site, DataOpts$Param)
+
+    sitethreshes <- c()
+
+    if(input$BoxThreshLine){
+        for (site in DataOpts$Site){
+          tmp<-c(getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="LowerDescription"),
+            getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="UpperDescription")) %>%
+            unlist %>% unique
+          sitethreshes <- c(tmp, sitethreshes)
+      }
+      sitethresh <- sitethreshes %>% unique
+      sitethresh <- sitethresh[!is.na(sitethresh)] # needed if there is no upper or lower sitethresh.
+    }
+
+    paste(
+      h4("Threshold:"),"\n"
+      ,sitethresh
+        )
+  })
+  
+  output$BoxThresholdSummaryMultiple<-renderUI( HTML(BoxThresholdSummaryMultiple()) )
   
   
   # BoxRefSummary<-reactive({
@@ -1135,7 +1223,55 @@ output$BoxPlotMultiple<-renderPlotly({   BoxPlotMultipleOut() })
   #         getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="AssessmentDetails")) 
   # })      
   
-  # output$BoxRefSummary<-renderUI(HTML(BoxRefSummary()))
+  # output$BoxRefSummary<-renderUI(HTML(BoxRefSummary()))     
+  
+  BoxRefSummaryMultiple<-reactive({    
+    # Make an html string of water quality threshold references to be displayed when the user asks for the thresholds. 
+    # Args:
+    #  input$BoxThreshLine, bool, optional. Default False. If True, looks up the water quality threshold.
+    #  DataOpts$Park, chr, required. A park acronym. E.g., 'ROCR'.
+    #  DataOpts$Site, chr or c(chr), required. A site code. E.g., 'NCRN_ROCR_KLVA'
+    #  DataOpts$Param, chr, required. A characteristic abbreviation. E.g., 'DOper'.
+    #  
+    # Returns:
+    #  chr
+    # 
+    # Example:
+    #   input$BoxThreshLine <- T
+    #   DataOpts$Park <- 'ROCR'
+    #   DataOpts$Site <- c('NCRN_ROCR_KLVA', 'NCRN_ROCR_FEBR')
+    #   DataOpts$Param <- 'DOper'
+    #   
+    #   mythreshold_references <- 
+    #     BoxRefSummaryMultiple(
+    #       ,input$BoxThreshLine
+    #       ,DataOpts$Park
+    #       ,DataOpts$Site
+    #       ,DataOpts$Param
+    #   )
+    #
+    req(input$BoxThreshLine, DataOpts$Park, DataOpts$Site, DataOpts$Param)
+
+    sitethreshes <- c()
+
+    if(input$BoxThreshLine){
+        for (site in DataOpts$Site){
+          tmp<-c(getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="AssessmentDetails"),
+            getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="AssessmentDetails")) %>%
+            unlist %>% unique
+          sitethreshes <- c(tmp, sitethreshes)
+      }
+      sitethresh <- sitethreshes %>% unique
+      sitethresh <- sitethresh[!is.na(sitethresh)] # needed if there is no upper or lower sitethresh.
+    }
+
+    paste(
+      h4("Threshold Reference:"),"\n"
+      ,sitethresh
+        )
+  })
+
+  output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
 
   
   #### Plot downloads ####

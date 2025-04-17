@@ -913,6 +913,18 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 
 #### Box Plot 2.0 ####
 
+hline <- function(y = 0, color = "red", dash = 'dash') {
+  list(
+    type = "line",
+    x0 = 0,
+    x1 = 1,
+    xref = "paper",
+    y0 = y,
+    y1 = y,
+    line = list(color = color, dash = dash)
+  )
+}
+
 BoxPlotMultipleOut<-reactive({
   req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
 
@@ -994,31 +1006,70 @@ BoxPlotMultipleOut<-reactive({
   n_na <- nrow(boxplot_df %>% dplyr::filter(is.na(Value)))
   title <- paste0(NCRNWater::getParkInfo(object=WaterData, parkcode=DataOpts$Park, info="ParkLongName"), ': ', yname, ' [measurements: ', n_not_na, ', NAs: ', n_na,']')
 
-  OutPlot<-ggplot(
+  m <- list(
+    l = 200,
+    r = 50,
+    b = 100,
+    t = 100,
+    pad = 20
+  )
+  t <- list(
+    size = global_textsize
+    )
+  baseplot <-
+  plotly::plot_ly(
     boxplot_df
-    ,aes(
-      x=Grouper
-      ,y=Value
-      ,fill=MonitoringLocationName
-      # note: custom hovertext is not available for boxplots
-      # https://github.com/ua-snap/northern-climate-reports/issues/85
-      # https://github.com/plotly/plotly.R/issues/1636
-      # ,text=MonitoringLocationName
+    ,y= ~Value
+    ,x= ~Grouper
+    ,color= ~MonitoringLocationName
+    ,type='box'
+  ) %>% layout(
+    boxmode = 'group'
+    ,height = global_figure_height
+    ,width = global_figure_width
+    ,font=t
+    ,margin=m
+    ,title = list(text=title ,font=t)
+    ,legend = list(
+      title=list(text='<br>Site<br>')
+      ,font=t
       )
-    ) +
-    geom_boxplot(alpha=1) +
-    # geom_boxplot(outlier.size=sizes[1], outlier.color=outliercolor, lwd=sizes[2]) +
-    {if (is.numeric(assessment)) geom_hline(yintercept=assessment,color='red',linetype="dashed",size=2)}+
-    labs(title=title,y=yname)+
-    scale_x_discrete(name=xname)+
-    scale_fill_discrete(name = "Site<br>")+
-    theme_bw()+
-    theme(
-      panel.grid = element_blank()
-      ,text = element_text(size=global_textsize)
-      )
+    ,yaxis = list(title=list(text=yname, font=t), font=t)
+    ,xaxis = list(title=list(text=xname, font=t), font=t)
+  )
 
-  plotly::ggplotly(OutPlot) %>% layout(boxmode = "group", height = global_figure_height, width = global_figure_width)
+  if (is.numeric(assessment)) {
+    baseplot %>% layout(
+      shapes = list(hline(assessment))
+    )
+  } else {
+    baseplot
+  }
+  # OutPlot<-ggplot(
+  #   boxplot_df
+  #   ,aes(
+  #     x=Grouper
+  #     ,y=Value
+  #     ,fill=MonitoringLocationName
+  #     # note: custom hovertext is not available for boxplots
+  #     # https://github.com/ua-snap/northern-climate-reports/issues/85
+  #     # https://github.com/plotly/plotly.R/issues/1636
+  #     # ,text=MonitoringLocationName
+  #     )
+  #   ) +
+  #   geom_boxplot(alpha=1) +
+  #   # geom_boxplot(outlier.size=sizes[1], outlier.color=outliercolor, lwd=sizes[2]) +
+  #   {if (is.numeric(assessment)) geom_hline(yintercept=assessment,color='red',linetype="dashed",size=2)}+
+  #   labs(title=title,y=yname)+
+  #   scale_x_discrete(name=xname)+
+  #   scale_fill_discrete(name = "Site<br>")+
+  #   theme_bw()+
+  #   theme(
+  #     panel.grid = element_blank()
+  #     ,text = element_text(size=global_textsize)
+  #     )
+
+  # plotly::ggplotly(OutPlot) %>% layout(boxmode = "group", height = global_figure_height, width = global_figure_width)
 
   })
 

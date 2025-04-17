@@ -927,6 +927,7 @@ BoxPlotMultipleOut<-reactive({
   labels <- NA
   category <- NA
   assessment <- input$BoxThreshLine
+  assessments <- c()
 
   # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L75-L98
   for (site in DataOpts$Site){
@@ -963,11 +964,21 @@ BoxPlotMultipleOut<-reactive({
                   )
 
   # TODO: fix the assessment part of the figure
-  if(assessment) assessment<-c(getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="LowerPoint"),
-          getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="UpperPoint")) %>%
-    unlist %>% unique
-   
-   assessment<-assessment[!is.na(assessment)] # needed if there is no upper or lower assessment.
+
+  # if(assessment) assessment<-c(getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="LowerPoint"),
+  #         getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="UpperPoint")) %>%
+  #   unlist %>% unique
+  if(assessment){
+      for (site in DataOpts$Site){
+        tmp<-c(getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="LowerPoint"),
+          getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="UpperPoint")) %>%
+          unlist %>% unique
+        assessments <- c(tmp, assessments)
+    }
+  }
+
+   assessment <- assessments %>% unique
+   assessment <- assessment[!is.na(assessment)] # needed if there is no upper or lower assessment.
 
   # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L106-L127
 
@@ -993,8 +1004,6 @@ BoxPlotMultipleOut<-reactive({
   n_na <- nrow(boxplot_df %>% dplyr::filter(is.na(Value)))
   title <- paste0(NCRNWater::getParkInfo(object=WaterData, parkcode=DataOpts$Park, info="ParkLongName"), ': ', yname, ' [measurements: ', n_not_na, ', NAs: ', n_na,']')
 
-
-  newhovertext <- paste0(boxplot_df$MonitoringLocationName,"<br>")
   OutPlot<-ggplot(
     boxplot_df
     ,aes(
@@ -1055,24 +1064,24 @@ output$BoxPlotMultiple<-renderPlotly({   BoxPlotMultipleOut() })
   
   #### BoxThreshold Summary ####
   
-  BoxThresholdSummary<-reactive({    
-    req(input$BoxThreshLine)
-    paste(h4("Threshold:"),"\n",
-          c(getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="LowerDescription"),
-            getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, 
-                        info="UpperDescription"))[!is.na(Thresholds())])
-  })
+  # BoxThresholdSummary<-reactive({    
+  #   req(input$BoxThreshLine)
+  #   paste(h4("Threshold:"),"\n",
+  #         c(getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="LowerDescription"),
+  #           getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, 
+  #                       info="UpperDescription"))[!is.na(Thresholds())])
+  # })
   
-  output$BoxThresholdSummary<-renderUI( HTML(BoxThresholdSummary()) )
+  # output$BoxThresholdSummary<-renderUI( HTML(BoxThresholdSummary()) )
   
   
-  BoxRefSummary<-reactive({
-    req(input$BoxThreshLine) 
-    paste(h4("Threshold Reference:"),"\n",
-          getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="AssessmentDetails")) 
-  })      
+  # BoxRefSummary<-reactive({
+  #   req(input$BoxThreshLine) 
+  #   paste(h4("Threshold Reference:"),"\n",
+  #         getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="AssessmentDetails")) 
+  # })      
   
-  output$BoxRefSummary<-renderUI(HTML(BoxRefSummary()))
+  # output$BoxRefSummary<-renderUI(HTML(BoxRefSummary()))
 
   
   #### Plot downloads ####

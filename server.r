@@ -27,7 +27,10 @@ getTresholdText<-function(object, parkcode,sitecode,charname){
 ##### Shiny Server ####
 
 shinyServer(function(input,output,session){
-
+  
+#Page loading message
+session$onFlushed(function() {
+  session$sendCustomMessage("hideLoading", list()) }, once = TRUE)
 
 #output$Test<-renderText(exists("TrendsOut()$Analysis"))   #For debugging purposes
 

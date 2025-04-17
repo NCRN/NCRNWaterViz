@@ -23,7 +23,38 @@ shinyUI(
         ))
       )
     ),
-    
+
+  tags$head(
+    tags$style(HTML("
+                    #loading_screen {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: white;
+                    opacity: 0.8;
+                    z-index: 9999;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 24px;
+                    color: black;
+                    }
+                    ")),
+    tags$script(HTML("
+                     Shiny.addCustomMessageHandler('hideLoading', function(message) {
+                     var loadingScreen =
+                     document.getElementById('loading_screen');
+                     if (loadingScreen) {
+                     loadingScreen.style.display = 'none';
+                     }
+                     });
+                     "))
+  ),
+  
+  div(id = "loading_screen", "Loading, please wait..."
+  ),
   
  #mainPanel(
   tabsetPanel(  

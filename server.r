@@ -1018,6 +1018,20 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   })
   
   map_values <- reactiveValues(
+    # Initializes a reactiveValues object to store dynamic map settings including longitude, latitude, and zoom level. 
+    # Args:
+    #   netlon, num, required. Longitude for map centering, initially set to NA. 
+    #   netlat, num, required. Latitude for map centering, initially set to NA. 
+    #   netzoom, num, required. Zoom level for map centering, initially set to NA. 
+    #
+    # Returns:
+    #   A reactiveValues object, 'map_values', with fields netlon, netlat, and netzom. 
+    #
+    # Example:
+    #   map_values$netlat <- mean(NPSGeoData$latitude, na.rm = TRUE)
+    #   map_values$netlon <- mean(NPSGeoData$longitude, na.rm = TRUE)
+    #   map_values$netzoom <- 9
+    
     netlon = NA, 
     netlat = NA, 
     netzoom = NA
@@ -1077,7 +1091,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     map_values$netlat <- netlat
     map_values$netlon <- netlon
     map_values$netzoom <- netzoom
- 
+
   #netzoom<- ifelse(max(lat_range, long_range) >5, 7, 9)
 
   # netlat<-dplyr::case_when(Network == "NCRN" ~ 39.25,
@@ -1127,6 +1141,17 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   # })
   
   observe({
+    # Updates the "MapIn" checkbox group input dynamically based on unique park names found in NPSGeoData dataset.  
+    # Args:
+    #   NPSGeoData, dataframe, required. Contains park, site, latitude and longitude information.  
+    #
+    # Returns:
+    #   None. An observer that triggers UI changes when the app loads.  
+    #
+    # Example:
+    #   NPSGeoData <- data.frame(ParkCode=getSiteInfo(WaterData, info="ParkCode"), ParkName=getSiteInfo(WaterData, info = "ParkShortName"), stringsAsFactors = F)
+    #   unique_park_names <- unique(NPSGeoData$ParkName)
+    
     req(NPSGeoData)
     updateCheckboxGroupInput(session, "MapIn", choices = unique(NPSGeoData$ParkName), inline = FALSE)
   })

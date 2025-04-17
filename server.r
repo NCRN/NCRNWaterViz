@@ -918,7 +918,7 @@ BoxPlotMultipleOut<-reactive({
   req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
 
   # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L73
-  boxplot_df <- DataUseMultiple ()
+  boxplot_df <- DataUseMultiple()
 
   # initialize variables
   yname <- NA
@@ -956,18 +956,14 @@ BoxPlotMultipleOut<-reactive({
     yname <- ynames[1]
   }
 
-  if(is.na(xname)) xname<-switch(input$BoxBy,
-                        year="Year",
-                        month="Month",
-                        site="Site",
-                        park="Park"
-                  )
+  xname<-switch(
+    input$BoxBy
+    ,year="Year"
+    ,month="Month"
+    ,site="Site"
+    ,park="Park"
+    )
 
-  # TODO: fix the assessment part of the figure
-
-  # if(assessment) assessment<-c(getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="LowerPoint"),
-  #         getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="UpperPoint")) %>%
-  #   unlist %>% unique
   if(assessment){
       for (site in DataOpts$Site){
         tmp<-c(getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="LowerPoint"),
@@ -983,22 +979,12 @@ BoxPlotMultipleOut<-reactive({
   # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L106-L127
 
   # TODO: fix the grouper
-  # Grouper<-switch(input$BoxBy, # the "Compare by:" selection (year, month, site)
-  #                 # year=WaterData$Date %>% lubridate::year() %>% factor,
-  #                 year=WaterData$Year,
-  #                 month=WaterData$Date %>% lubridate::month(label=T) %>% factor,
-  #                 site=WaterData$Site,
-  #                 park=WaterData$Park,
-  #                 char=WaterData$Characteristic
-  #                 )
-  # if(is.na(yname)) yname<-""
-  # if(all(is.na(xname))) xname<-""
-  # if(all(is.na(labels))) labels<-switch(by,
-  #                 year=WaterData$Date %>% year %>% unique,
-  #                 month=WaterData$Date %>% month(label=T) %>% unique %>% sort %>% as.character,
-  #                 site=WaterData$Site %>% unique,
-  #                 park=WaterData$Park %>% unique,
-  #                 char=WaterData$Characteristic %>% unique)
+  Grouper<-switch(
+    input$BoxBy # the "Compare by:" selection (year, month, site)
+    ,year=boxplot_df$Date %>% lubridate::year() %>% factor
+    ,month=boxplot_df$Date %>% lubridate::month(label=T) %>% factor
+    ,site=boxplot_df$MonitoringLocationName
+    )
 
   n_not_na <- nrow(boxplot_df %>% dplyr::filter(is.na(Value)==F))
   n_na <- nrow(boxplot_df %>% dplyr::filter(is.na(Value)))
@@ -1007,7 +993,7 @@ BoxPlotMultipleOut<-reactive({
   OutPlot<-ggplot(
     boxplot_df
     ,aes(
-      x=as.factor(Year) # TODO: update this to Grouper
+      x=Grouper # TODO: update this to Grouper
       ,y=Value
       ,fill=MonitoringLocationName
       # note: custom hovertext is not available for boxplots

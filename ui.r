@@ -149,18 +149,20 @@ shinyUI(
           
           HTML('<hr>'),
           
-          splitLayout(h3(id="DownloadHeader","Downloads:"), cellWidths=c("35%","35%","30%"),
-            downloadButton("BoxPlot.PNG","Save Plot (.png)", class="btn btn-primary", style="margin-top: 15px"),
-            downloadButton("BoxPlot.JPG","Save Plot (.jpg)", class="btn btn-primary", style="margin-top: 15px")
-          ),
-          splitLayout( cellWidths="35%",
-            h3("Options:"),
-            actionButton(inputId="GraphicsModal2", label='Graphics Options', class="btn btn-primary",style="margin-top: 15px")
-          ),
-          splitLayout(cellWidths="35%",
-            h3("About:"),
-            actionButton(inputId="AboutComparisons", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px")
+          splitLayout(cellWidths=c("25%","25%", "25%", "25%"),
+            downloadButton("BoxPlot.PNG","Save Plot (.png)", class="btn btn-primary", style="margin-top: 15px")
+            ,downloadButton("BoxPlot.JPG","Save Plot (.jpg)", class="btn btn-primary", style="margin-top: 15px")
+            ,actionButton(inputId="GraphicsModal2", label='Graphics Options', class="btn btn-primary",style="margin-top: 15px")
+            ,actionButton(inputId="AboutComparisons", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px")
           )
+          # ,splitLayout( cellWidths="50%",
+          #   # h3("Options:"),
+          #   actionButton(inputId="GraphicsModal2", label='Graphics Options', class="btn btn-primary",style="margin-top: 15px")
+          # )
+          # ,splitLayout(cellWidths="50%",
+          #   # h3("About:"),
+          #   actionButton(inputId="AboutComparisons", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px")
+          # )
         )
         ),
         

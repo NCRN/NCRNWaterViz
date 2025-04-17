@@ -926,6 +926,7 @@ BoxPlotMultipleOut<-reactive({
   xname <- NA
   labels <- NA
   category <- NA
+  assessment <- input$BoxThreshLine
 
   # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L75-L98
   for (site in DataOpts$Site){
@@ -962,13 +963,11 @@ BoxPlotMultipleOut<-reactive({
                   )
 
   # TODO: fix the assessment part of the figure
-  # if(assessment) assessment<-c(getCharInfo(object=object,parkcode=parkcode, sitecode=sitecode, charname=DataOpts$Param,
-  #                       category=category, info="LowerPoint"),
-  #         getCharInfo(object=object,parkcode=parkcode, sitecode=sitecode, charname=DataOpts$Param, 
-  #                     category=category,info="UpperPoint")) %>%
-  #   unlist %>% unique
+  if(assessment) assessment<-c(getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="LowerPoint"),
+          getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="UpperPoint")) %>%
+    unlist %>% unique
    
-  #  assessment<-assessment[!is.na(assessment)] # needed if there is no upper or lower assessment.
+   assessment<-assessment[!is.na(assessment)] # needed if there is no upper or lower assessment.
 
   # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L106-L127
 
@@ -1010,7 +1009,7 @@ BoxPlotMultipleOut<-reactive({
     ) +
     geom_boxplot(alpha=1) +
     # geom_boxplot(outlier.size=sizes[1], outlier.color=outliercolor, lwd=sizes[2]) +
-    # {if (is.numeric(assessment)) geom_hline(yintercept=assessment,color=assesscolor,linetype="dashed",size=sizes[3])}+
+    {if (is.numeric(assessment)) geom_hline(yintercept=assessment,color='red',linetype="dashed",size=2)}+
     labs(title=title,y=yname)+
     scale_x_discrete(name=xname)+
     scale_fill_discrete(name = "Site<br>")+

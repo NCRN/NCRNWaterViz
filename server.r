@@ -913,55 +913,141 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 
 #### Box Plot 2.0 ####
 
- boxplot_df <- DataUseMultiple ()
-Grouper<-switch(input$BoxBy, # the "Compare by:" selection (year, month, site)
-                year=object$Date %>% year %>% factor,
-                month=object$Date %>% month(label=T) %>% factor,
-                site=object$Site,
-                park=object$Park,
-                char=object$Characteristic
-                )
-if(is.na(yname)) yname<-""
-if(all(is.na(xname))) xname<-""
-if(all(is.na(labels))) labels<-switch(by,
-                year=object$Date %>% year %>% unique,
-                month=object$Date %>% month(label=T) %>% unique %>% sort %>% as.character,
-                site=object$Site %>% unique,
-                park=object$Park %>% unique,
-                char=object$Characteristic %>% unique)
+
+BoxPlotMultipleOut<-reactive({
+  req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
+
+  # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L73
+  boxplot_df <- DataUseMultiple ()
+
+  # initialize variables
+  yname <- NA
+  ynames <- c()
+  xname <- NA
+  labels <- NA
+  category <- NA
+
+  # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L75-L98
+  for (site in DataOpts$Site){
+    if(is.na(yname) & is.na(category)) yname<-paste0(getCharInfo(object=WaterData, parkcode=DataOpts$Park, sitecode = site, 
+                                                              charname=DataOpts$Param, info="DisplayName")," (",
+                              getCharInfo(object=WaterData, parkcode=DataOpts$Park, sitecode = site, 
+                                          charname=DataOpts$Param, info="Units"),")") %>% unique
+
+  if(is.na(yname) & !is.na(category)) yname<-paste0(getCharInfo(object=WaterData, parkcode=DataOpts$Park, sitecode=site,
+                                                                charname=DataOpts$Param, category=category, info="CategoryDisplay")," (",
+                                                    getCharInfo(object=WaterData, parkcode=DataOpts$Park, sitecode = site,
+                                                                charname=DataOpts$Param, category=category, info="Units"),")") %>% unique
+
+  ynames <- c(yname, ynames)
+
+  }
+
+  # resolve conflicts that would happen if the metadata file was messed up
+  # e.g., if one characteristic had multiple units
+  n_ynames <- length(ynames %>% unique)
+  if (n_ynames == 1){
+    yname <- ynames %>% unique
+  } else if (n_ynames == 0){
+    yname <- ''
+  } else {
+    yname <- ynames[1]
+  }
+
+  if(is.na(xname)) xname<-switch(input$BoxBy,
+                        year="Year",
+                        month="Month",
+                        site="Site",
+                        park="Park"
+                  )
+
+  # TODO: fix the assessment part of the figure
+  # if(assessment) assessment<-c(getCharInfo(object=object,parkcode=parkcode, sitecode=sitecode, charname=DataOpts$Param,
+  #                       category=category, info="LowerPoint"),
+  #         getCharInfo(object=object,parkcode=parkcode, sitecode=sitecode, charname=DataOpts$Param, 
+  #                     category=category,info="UpperPoint")) %>%
+  #   unlist %>% unique
+   
+  #  assessment<-assessment[!is.na(assessment)] # needed if there is no upper or lower assessment.
+
+  # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L106-L127
+
+  # Grouper<-switch(input$BoxBy, # the "Compare by:" selection (year, month, site)
+  #                 year=WaterData$Date %>% year %>% factor,
+  #                 month=WaterData$Date %>% month(label=T) %>% factor,
+  #                 site=WaterData$Site,
+  #                 park=WaterData$Park,
+  #                 char=WaterData$Characteristic
+  #                 )
+  # if(is.na(yname)) yname<-""
+  # if(all(is.na(xname))) xname<-""
+  # if(all(is.na(labels))) labels<-switch(by,
+  #                 year=WaterData$Date %>% year %>% unique,
+  #                 month=WaterData$Date %>% month(label=T) %>% unique %>% sort %>% as.character,
+  #                 site=WaterData$Site %>% unique,
+  #                 park=WaterData$Park %>% unique,
+  #                 char=WaterData$Characteristic %>% unique)
+
+  n_not_na <- nrow(boxplot_df %>% dplyr::filter(is.na(Value)==F))
+  n_na <- nrow(boxplot_df %>% dplyr::filter(is.na(Value)))
+  title <- paste0(NCRNWater::getParkInfo(object=WaterData, parkcode=DataOpts$Park, info="ParkLongName"), ': ', yname, ' [measurements: ', n_not_na, ', NAs: ', n_na,']')
 
 
+  newhovertext <- paste0(boxplot_df$MonitoringLocationName,"<br>")
+  OutPlot<-ggplot(
+    boxplot_df
+    ,aes(
+      x=as.factor(Year)
+      ,y=Value
+      ,fill=MonitoringLocationName
+      # note: custom hovertext is not available for boxplots
+      # https://github.com/ua-snap/northern-climate-reports/issues/85
+      # https://github.com/plotly/plotly.R/issues/1636
+      # ,text=MonitoringLocationName
+      )
+    ) +
+    geom_boxplot(alpha=1) +
+    # geom_boxplot(outlier.size=sizes[1], outlier.color=outliercolor, lwd=sizes[2]) +
+    # {if (is.numeric(assessment)) geom_hline(yintercept=assessment,color=assesscolor,linetype="dashed",size=sizes[3])}+
+    labs(title=title,y=yname)+
+    scale_x_discrete(name=xname)+
+    scale_fill_discrete(name = "Site<br>")+
+    theme_bw()+
+    theme(panel.grid = element_blank())
 
+  plotly::ggplotly(OutPlot) %>% layout(boxmode = "group")
+  
 
+  })
 
-
+output$BoxPlotMultiple<-renderPlotly({   BoxPlotMultipleOut() })
 
 #### Box Plot ####
   
-  BoxPlotOut<-reactive({
-    req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
-    p <- waterbox(
-      object=WaterData
-      ,parkcode=DataOpts$Park
-      ,sitecode=if(input$BoxBy !="site") DataOpts$Site else NA
-      ,charname = DataOpts$Param
-      ,by=input$BoxBy
-      ,title=Title()
-      ,years=DataOpts$Years[1]:DataOpts$Years[2]
-      ,assessment=input$BoxThreshLine
-      ,assesscolor=ThCol()
-      ,outliercolor = BadCol()
-      # ,webplot=T
-      ,sizes=c(GraphOpts$PointSize, GraphOpts$LineWidth, GraphOpts$LineWidth)
-      ,labels=if(input$BoxBy=="site") getSiteInfo(WaterData, parkcode= DataOpts$Park, info="SiteName") else NA) +
-    theme(text=element_text(size=GraphOpts$FontSize*10))
+  # BoxPlotOut<-reactive({
+  #   req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
+  #   p <- waterbox(
+  #     object=WaterData
+  #     ,parkcode=DataOpts$Park
+  #     ,sitecode=if(input$BoxBy !="site") DataOpts$Site else NA
+  #     ,charname = DataOpts$Param
+  #     ,by=input$BoxBy
+  #     ,title=Title()
+  #     ,years=DataOpts$Years[1]:DataOpts$Years[2]
+  #     ,assessment=input$BoxThreshLine
+  #     ,assesscolor=ThCol()
+  #     ,outliercolor = BadCol()
+  #     # ,webplot=T
+  #     ,sizes=c(GraphOpts$PointSize, GraphOpts$LineWidth, GraphOpts$LineWidth)
+  #     ,labels=if(input$BoxBy=="site") getSiteInfo(WaterData, parkcode= DataOpts$Park, info="SiteName") else NA) +
+  #   theme(text=element_text(size=GraphOpts$FontSize*10))
     
-    # plotly::ggplotly(p, tooltip = "text")
-    plotly::ggplotly(p)
+  #   # plotly::ggplotly(p, tooltip = "text")
+  #   plotly::ggplotly(p)
 
-  })
+  # })
    
-  output$BoxPlot<-renderPlotly({   BoxPlotOut() })
+  # output$BoxPlot<-renderPlotly({   BoxPlotOut() })
 
   
   #### BoxThreshold Summary ####

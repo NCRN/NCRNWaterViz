@@ -1023,10 +1023,10 @@ BoxPlotMultipleOut<-reactive({
     ,x= ~Grouper
     ,color= ~MonitoringLocationName
     ,type='box'
-  ) %>% layout(
-    boxmode = 'group'
     ,height = global_figure_height
     ,width = global_figure_width
+  ) %>% layout(
+    boxmode = 'group'
     ,font=t
     ,margin=m
     ,title = list(text=title ,font=t)
@@ -1034,14 +1034,27 @@ BoxPlotMultipleOut<-reactive({
       title=list(text='<br>Site<br>')
       ,font=t
       )
-    ,yaxis = list(title=list(text=yname, font=t), font=t)
-    ,xaxis = list(title=list(text=xname, font=t), font=t)
+    ,yaxis = list(title=list(text=paste0(yname, '<br>'), font=t), font=t)
+    ,xaxis = list(title=list(text=paste0(xname, '<br>'), font=t), font=t)
   )
 
-  if (is.numeric(assessment)) {
+  if (is.na(assessment)==F & is.numeric(assessment)) {
+    a <- list(
+      x = 1,
+      y = 0.95*assessment,
+      text = paste0(stringr::str_split_1(yname, '[(]')[1], 'threshold: ', assessment, ' ', stringr::str_extract(yname, '(?<=\\()[^\\^\\)]+')),
+      xref = "x",
+      yref = "y",
+      showarrow = F,
+      ax = 20,
+      ay = -40
+    )
+
     baseplot %>% layout(
       shapes = list(hline(assessment))
+      ,annotations = a
     )
+    # baseplot %>% add_trace(y=assessment, name='testtrace')
   } else {
     baseplot
   }

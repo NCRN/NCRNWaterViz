@@ -172,7 +172,7 @@ shinyUI(
         ),
         
         column(9,
-          plotlyOutput("BoxPlotMultiple"),
+          plotlyOutput("BoxPlotMultiple", width="auto", height="auto"),
         )
       ),
 

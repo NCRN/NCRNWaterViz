@@ -1065,8 +1065,8 @@ BoxPlotMultipleOut<-reactive({
       ,x= ~Grouper
       ,color= ~MonitoringLocationName
       ,type='box'
-      ,height = global_figure_height
-      ,width = global_figure_width
+      # ,height = global_figure_height
+      # ,width = global_figure_width
     ) %>% layout(
       boxmode = 'group'
       ,font=t

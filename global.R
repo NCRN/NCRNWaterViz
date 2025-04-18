@@ -117,6 +117,19 @@ paramChooser<-function(input, output, session, data, park, site, chosen){
   
   return(reactive(input$ParamIn))
 }
+  
+
+
+#-------------------------
+# Global figure specs
+#-------------------------
+global_textsize <- 20
+global_figure_height <- 1200 # pixels
+global_figure_width <- 2000 # pixels
+
+
+
+
 
 #### Map Module ####
 # 

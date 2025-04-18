@@ -15,22 +15,40 @@ library(NADA)
 library(plotly)
 
 ### Filtering data to active Characteristic Names ####
-metadata_df <- read.csv("./Data/NCRN/wqp_ncrnwater_metadata.csv")
-dataname_df <- read.csv("./Data/NCRN/wqp.csv")
 
-metadata_active_chars <- metadata_df %>%
-  filter(IsActiveCharacteristicName == "True") 
+# NCRN maintains 'active' and 'inactive' characteristics.
+# Through time, NCRN has monitoried different water quality characteristics.
+# This means that characteristics that are measured in 2025 may not have been measured in other years
+# and characteristics that were measured in 2006 may no longer be measured.
+# In Apr 2025, NCRN decided that including "all" characteristics was confusing
+# because so many picklist items were inactive.
+# To solve this problem, we filter the webapp's dataset to focus on what NCRN does right now.
+# For this reason, the lines below filter out inactive characteristics.
+# The full dataset (i.e., inactive and active) will be available in IRMA for
+# anyone interested in deprecated characteristics.
 
-write.csv(metadata_active_chars, "./Data/NCRN/metadata_onlyactiveChars.csv", row.names = FALSE)
+filtered_fname <- file.path('Data',Network, dataname2)
+if (file.exists(filtered_fname)==F) {
 
-active_chars <- metadata_active_chars %>%
-  pull(DataName)
+  mname <- file.path('Data',Network,metadataname)
+  metadata_df <- read.csv(mname)
+  dname <- file.path('Data',Network,metadataname)
+  dataname_df <- read.csv(dname)
 
-filtered_data <- dataname_df %>%
-  filter(CharacteristicName %in% active_chars)
+  metadata_active_chars <- metadata_df %>%
+    filter(IsActiveCharacteristicName == "True") 
+  
+  mname2<- file.path('Data',Network, metadataname2)
+  write.csv(metadata_active_chars, mname2, row.names = FALSE)
 
-write.csv(filtered_data, "./Data/NCRN/filtered_activeChars.csv", row.names = FALSE)
+  active_chars <- metadata_active_chars %>%
+    pull(DataName)
 
+  filtered_data <- dataname_df %>%
+    filter(CharacteristicName %in% active_chars)
+  dname2 <- file.path('Data',Network,dataname2)
+  write.csv(filtered_data, dname2, row.names = FALSE)
+}
 
 #### Get data ####
 WaterData<-suppressWarnings(importNCRNWater(paste0("./Data/", Network), Data=dataname2, MetaData = metadataname2, wqx=wqx_bool))

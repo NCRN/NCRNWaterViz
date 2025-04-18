@@ -151,11 +151,11 @@ shinyUI(
         )
       ),
       
-      tabPanel(h4("Comparisons"),
+      tabPanel(h4("Boxplots"),
         column(3, div(style='padding: 5px 10px',class="panel panel-default", 
                              
-          h3("Comparison:"),
-          radioButtons(inputId="BoxBy", label="Compare by:", choices=c("year", "month", "site"), selected = "year", inline = T),
+          h3("Compare by"),
+          radioButtons(inputId="BoxBy", label="", choices=c("year", "month", "site"), selected = "year", inline = T),
           
           h3("Select Site Data"),
            

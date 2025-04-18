@@ -24,8 +24,9 @@ shinyUI(
       )
     ),
 
-  tags$head(
-    tags$style(HTML("
+    tags$head(
+      #custom styling for loading message
+      tags$style(HTML("
                     #loading_screen {
                     position: fixed;
                     top: 0;
@@ -52,7 +53,8 @@ shinyUI(
                     100% { transform: rotate(360deg); }
                     }
                     ")),
-    tags$script(HTML("
+      #JavaScript to hide the loading screen
+      tags$script(HTML("
                      Shiny.addCustomMessageHandler('hideLoading', function(message) {
                      var loadingScreen =
                      document.getElementById('loading_screen');
@@ -61,15 +63,15 @@ shinyUI(
                      }
                      });
                      "))
-  ),
-  
-  div(id = "loading_screen", #"Loading, please wait...",
-      div(
-        style = "text-align: center;",
-        div(class = "spinner", style = "margin: 0 auto;"),
-      div("Loading, please wait...", style = "margin-top: 15px; font-size: 20px; color: #333; ")
-      )
-  ),
+    ),
+    #Loading screen HTML div (initially visible)
+    div(id = "loading_screen", #"Loading, please wait...",
+        div(
+          style = "text-align: center;",
+          div(class = "spinner", style = "margin: 0 auto;"),
+          div("Loading, please wait...", style = "margin-top: 15px; font-size: 20px; color: #333; ")
+        )
+    ),
   
  #mainPanel(
   tabsetPanel(  

@@ -979,6 +979,7 @@ BoxPlotMultipleOut<-reactive({
   labels <- NA
   assessment <- input$BoxThreshLine
   assessments <- c()
+  threshold <- NA
 
   # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L75-L98
   for (site in DataOpts$Site){
@@ -1030,10 +1031,10 @@ BoxPlotMultipleOut<-reactive({
           unlist %>% unique
         assessments <- c(tmp, assessments)
     }
-    assessment <- assessments %>% unique
-    assessment <- assessment[!is.na(assessment)] # needed if there is no upper or lower assessment.
+    threshold <- assessments %>% unique
+    threshold <- threshold[!is.na(threshold)] # needed if there is no upper or lower threshold.
   }
-
+  
   # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L106-L127
 
   Grouper<-switch(
@@ -1079,11 +1080,11 @@ BoxPlotMultipleOut<-reactive({
       ,xaxis = list(title=list(text=paste0(xname, '<br>'), font=t), font=t)
     )
 
-  if (is.na(assessment)==F & is.numeric(assessment)) {
+  if (assessment==T & identical(threshold, numeric(0))==F) {
     # a <- list( # commented-out because the annotation doesn't look great
     #   x = 1,
-    #   y = 0.95*assessment,
-    #   text = paste0(stringr::str_split_1(yname, '[(]')[1], 'threshold: ', assessment, ' ', stringr::str_extract(yname, '(?<=\\()[^\\^\\)]+')),
+    #   y = 0.95*threshold,
+    #   text = paste0(stringr::str_split_1(yname, '[(]')[1], 'threshold: ', threshold, ' ', stringr::str_extract(yname, '(?<=\\()[^\\^\\)]+')),
     #   xref = "x",
     #   yref = "y",
     #   showarrow = F,
@@ -1092,9 +1093,10 @@ BoxPlotMultipleOut<-reactive({
     # )
 
     baseplot %>% layout(
-      shapes = list(hline(assessment))
+      shapes = list(hline(threshold))
       # ,annotations = a # commented-out because the annotation doesn't look great
     )
+
   } else {
     baseplot
   }
@@ -1208,15 +1210,15 @@ output$BoxPlotMultiple<-renderPlotly({   BoxPlotMultipleOut() })
       sitethresh <- sitethresh[!is.na(sitethresh)] # needed if there is no upper or lower sitethresh.
     }
 
-    paste(
-      h4("Threshold:"),"\n"
-      ,sitethresh
-        )
+    if (length(sitethresh)>0){
+      paste(h4("Threshold:"),"\n",sitethresh)
+    } else {
+      paste(h4("This parameter has no water quality threshold."),"\n")
+    }
   })
   
   output$BoxThresholdSummaryMultiple<-renderUI( HTML(BoxThresholdSummaryMultiple()) )
-  
-  
+    
   # BoxRefSummary<-reactive({
   #   req(input$BoxThreshLine) 
   #   paste(h4("Threshold Reference:"),"\n",
@@ -1255,25 +1257,25 @@ output$BoxPlotMultiple<-renderPlotly({   BoxPlotMultipleOut() })
     sitethreshes <- c()
 
     if(input$BoxThreshLine){
-        for (site in DataOpts$Site){
-          tmp<-c(getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="AssessmentDetails"),
-            getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="AssessmentDetails")) %>%
-            unlist %>% unique
-          sitethreshes <- c(tmp, sitethreshes)
+      for (site in DataOpts$Site){
+        tmp<-c(getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="AssessmentDetails"),
+          getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="AssessmentDetails")) %>%
+          unlist %>% unique
+        sitethreshes <- c(tmp, sitethreshes)
       }
       sitethresh <- sitethreshes %>% unique
       sitethresh <- sitethresh[!is.na(sitethresh)] # needed if there is no upper or lower sitethresh.
+      
+      print(sitethresh)
+      print('got here\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n')
+      if (length(sitethresh)>0){
+        paste(h4("Threshold Reference:"),"\n",sitethresh)
+      }
     }
-
-    paste(
-      h4("Threshold Reference:"),"\n"
-      ,sitethresh
-        )
   })
-
-  output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
-
   
+output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
+
   #### Plot downloads ####
   output$BoxPlot.PNG<-downloadHandler(
     filename=function(){paste(Title(), ".png", sep="")}, 

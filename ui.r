@@ -149,10 +149,11 @@ shinyUI(
           
           HTML('<hr>'),
           
-          splitLayout(cellWidths=c("25%","25%", "25%", "25%"),
+          # splitLayout(cellWidths=c("25%","25%", "25%", "25%"),
+          splitLayout(cellWidths=c("33%","33%", "33%"),
             downloadButton("BoxPlot.PNG","Save Plot (.png)", class="btn btn-primary", style="margin-top: 15px")
             ,downloadButton("BoxPlot.JPG","Save Plot (.jpg)", class="btn btn-primary", style="margin-top: 15px")
-            ,actionButton(inputId="GraphicsModal2", label='Graphics Options', class="btn btn-primary",style="margin-top: 15px")
+            # ,actionButton(inputId="GraphicsModal2", label='Graphics Options', class="btn btn-primary",style="margin-top: 15px")
             ,actionButton(inputId="AboutComparisons", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px")
           ),
           br(),

@@ -46,7 +46,7 @@ if (file.exists(dname2)==F) {
     dplyr::pull(DataName) %>% unique
   dname <- file.path('Data',Network,dataname)
   filtered_data <- read.csv(dname) %>%
-    filter(CharacteristicName %in% active_chars)
+    dplyr::filter(CharacteristicName %in% active_chars)
   write.csv(filtered_data, dname2, row.names = FALSE)
 }
 

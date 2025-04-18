@@ -32,14 +32,26 @@ shinyUI(
                     left: 0;
                     width: 100%;
                     height: 100%;
-                    background-color: white;
-                    opacity: 0.8;
+                   # background-color: white;
+                  #  opacity: 0.8;
                     z-index: 9999;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     font-size: 24px;
                     color: black;
+                    }
+                    .spinner {
+                    border: 8px solid #f3f3f3;
+                    border-top: 8px solid #3498db;
+                    border-radius: 50%;
+                    width: 60px;
+                    height: 60px;
+                    animation: spin 1s linear infinite;
+                    }
+                    @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
                     }
                     ")),
     tags$script(HTML("
@@ -53,7 +65,12 @@ shinyUI(
                      "))
   ),
   
-  div(id = "loading_screen", "Loading, please wait..."
+  div(id = "loading_screen", #"Loading, please wait...",
+      div(
+        style = "text-align: center;",
+        div(class = "spinner", style = "margin: 0 auto;"),
+      div("Loading, please wait...", style = "margin-top: 15px; font-size: 20px; color: #333; ")
+      )
   ),
   
  #mainPanel(

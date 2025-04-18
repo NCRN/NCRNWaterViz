@@ -4,7 +4,9 @@
 # Network_long <- "Northeast Temperate Network" # for navbar title
 # Viz_name <- "Lake and Stream Water Quality"
 dataname <- "wqp.csv" # global variable instead of hardcoding in `server.R` NCRNWater::importNCRNWater() call
+dataname2 <- "filtered_activeChars.csv"
 metadataname <- "wqp_ncrnwater_metadata.csv"
+metadataname2 <- "metadata_onlyactiveChars.csv"
 wqx_bool <- T
 Network <- "NCRN" # for leaflet map center
 Network_long <- "National Capital Region Network" # for navbar title
@@ -115,5 +117,31 @@ paramChooser<-function(input, output, session, data, park, site, chosen){
   
   return(reactive(input$ParamIn))
 }
-  
-  
+
+#### Map Module ####
+# 
+# mapChooserUI<-function(id){
+#   ns<-NS(id)
+#   selectizeInput(inputId=ns("MapIn"),label="Select Parks:" , choices=NULL, multiple = TRUE, selected = NULL)
+# }
+# 
+# mapChooser<-function(input,output,session, data, park, chosen){
+#   observe({updateSelectizeInput(session, "MapIn", selected=chosen(),
+#                                 choices=c("Choose a Park"="", c(`names<-`(getParkInfo(data, info="ParkCode"), getParkInfo(data, info="ParkShortName"))))
+#   )})
+#   return(reactive(input$MapIn))
+# }
+
+
+# mapChooserUI<-function(id){
+#   ns<-NS(id)
+#   checkboxGroupInput(inputId=ns("MapIn"),label="Select Parks:" , choices=NULL, inline = TRUE)
+# }
+# 
+# mapChooser<-function(input,output,session, data, park, chosen){
+#   observe({updateCheckboxGroupInput(session, "MapIn",
+#                                 choices=c("Choose a Park"="", c(`names<-`(getParkInfo(data, info="ParkCode"), getParkInfo(data, info="ParkShortName"))))
+#   )})
+#   return(reactive(input$MapIn))
+# }
+# 

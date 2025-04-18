@@ -27,26 +27,26 @@ library(plotly)
 # The full dataset (i.e., inactive and active) will be available in IRMA for
 # anyone interested in deprecated characteristics.
 
-filtered_fname <- file.path('Data',Network, dataname2)
-if (file.exists(filtered_fname)==F) {
-
+# filter the metadata
+mname2 <- file.path('Data',Network, metadataname2)
+if (file.exists(mname2)==F){
   mname <- file.path('Data',Network,metadataname)
   metadata_df <- read.csv(mname)
-  dname <- file.path('Data',Network,metadataname)
-  dataname_df <- read.csv(dname)
-
   metadata_active_chars <- metadata_df %>%
-    filter(IsActiveCharacteristicName == "True") 
-  
-  mname2<- file.path('Data',Network, metadataname2)
+    dplyr::filter(IsActiveCharacteristicName == "True") 
   write.csv(metadata_active_chars, mname2, row.names = FALSE)
+} else {
+  metadata_active_chars <- read.csv(mname2)
+}
 
+# filter the data
+dname2 <- file.path('Data',Network, dataname2)
+if (file.exists(dname2)==F) {
   active_chars <- metadata_active_chars %>%
-    pull(DataName)
-
-  filtered_data <- dataname_df %>%
+    dplyr::pull(DataName) %>% unique
+  dname <- file.path('Data',Network,dataname)
+  filtered_data <- read.csv(dname) %>%
     filter(CharacteristicName %in% active_chars)
-  dname2 <- file.path('Data',Network,dataname2)
   write.csv(filtered_data, dname2, row.names = FALSE)
 }
 

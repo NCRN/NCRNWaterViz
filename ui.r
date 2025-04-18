@@ -5,22 +5,41 @@ library(plotly)
 ColorNames<-GraphColors$DisplayColor
 
 shinyUI(
-  fluidPage( theme="https://www.nps.gov/lib/bootstrap/3.3.2/css/nps-bootstrap.min.css", style="padding: 0px",
-             title=paste0(Network, " Water Quality"),
-    
-    column(12, id="NPSBanner", style="margin: 0px",
-      tags$head(includeScript ("https://www.nps.gov/common/commonspot/templates/js/federated-analytics.js")),
-      tags$head(tags$script(
-        'type = "text/javascript"',' var ss = document.createElement("link"); ss.type="text/css"; ss.rel="stylesheet"; 
-        ss.href = window.self === window.top ? "NCRN.css" : "NCRNframe.css"; document.getElementsByTagName("head")[0].appendChild(ss);'
-      )),
-      tags$head(HTML( '<link rel="icon", href="AH_small_flat_4C_12x16.png", type="image/png" />')),
-          
-      div(
-        h1(style="background-color: black; color: white; height: 125px; padding: 10px; margin: 0px",
-            HTML('<img src="ah_large_black.gif", style="float:right; padding-right:25px"/>',
-            Network_long, '<br>', Viz_name
-        ))
+  fluidPage(
+    theme="https://www.nps.gov/lib/bootstrap/3.3.2/css/nps-bootstrap.min.css"
+    ,style="padding: 0px"
+    ,title=paste0(Network, " Water Quality")
+    ,column(
+      12
+      ,id="NPSBanner"
+      ,style="margin: 0px"
+      ,tags$head(includeScript ("https://www.nps.gov/common/commonspot/templates/js/federated-analytics.js"))
+      ,tags$head(
+        tags$script(
+        'type = "text/javascript"'
+        ,'
+        var ss = document.createElement("link"); ss.type="text/css"; ss.rel="stylesheet"; 
+        ss.href = window.self === window.top ? "NCRN.css" : "NCRNframe.css"; document.getElementsByTagName("head")[0].appendChild(ss);
+        var dimension = [0, 0];
+        $(document).on("shiny:connected", function(e) {
+        dimension[0] = window.innerWidth;
+        dimension[1] = window.innerHeight;
+        Shiny.onInputChange("dimension", dimension);
+        });
+        $(window).resize(function(e) {
+        dimension[0] = window.innerWidth;
+        dimension[1] = window.innerHeight;
+        Shiny.onInputChange("dimension", dimension);
+        });
+        '
+        )
+      )
+      ,tags$head(HTML( '<link rel="icon", href="AH_small_flat_4C_12x16.png", type="image/png" />'))
+      ,div(
+        h1(
+          style="background-color: black; color: white; height: 125px; padding: 10px; margin: 0px"
+          ,HTML('<img src="ah_large_black.gif", style="float:right; padding-right:25px"/>', Network_long, '<br>', Viz_name)
+          )
       )
     ),
     

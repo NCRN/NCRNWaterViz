@@ -1049,7 +1049,7 @@ BoxPlotMultipleOut<-reactive({
   title <- paste0(NCRNWater::getParkInfo(object=WaterData, parkcode=DataOpts$Park, info="ParkLongName"), ': ', yname, ' [measurements: ', n_not_na, ', NAs: ', n_na,']')
 
   m <- list(
-    l = 200,
+    l = 100,
     r = 50,
     b = 100,
     t = 100,
@@ -1067,6 +1067,8 @@ BoxPlotMultipleOut<-reactive({
       ,type='box'
       # ,height = global_figure_height
       # ,width = global_figure_width
+      ,width = (0.73*as.numeric(input$dimension[1]))
+      ,height = (0.75*as.numeric(input$dimension[2]))
     ) %>% layout(
       boxmode = 'group'
       ,font=t

@@ -260,8 +260,9 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     #     Q3, num, 3rd Quartile (75th percentile)
     #     Maximum, num, maximum value
     #     SD, num, standard deviation
-    #     n_site_visit, int, count of observations for unique site visits
-    #     n, int, count of total observations
+    #     Site_Visits, int, count of observations for unique site visits
+    #     Total_Measurements, int, count of total observations 
+    #     Missing_Values, int, count of missing values
     #
     # Example:
     #   DataOpts$Years <- 2010,
@@ -280,6 +281,11 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     dplyr::mutate(Date = as.Date(Date)) %>%
     dplyr::mutate(Aggregation = dplyr::case_when(input$SummaryBoxBy == "month" ~ format(Date, "%b"),
                                                    input$SummaryBoxBy == "year" ~ format(Date, "%Y"), TRUE ~ as.character(Site))) %>%
+      dplyr::select(Site, Date, Value, Aggregation) %>%
+    #   dplyr::arrange(desc(Aggregation)) 
+    
+   # data_values <- data_values %>%
+      
     dplyr::group_by(Aggregation, Site, Date) %>%
     dplyr::summarise(
         SiteVisitMean = mean(Value, na.rm = TRUE))
@@ -299,7 +305,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       data_values_summary <- data_values_summary %>%
         dplyr::mutate(
           Standard_Deviation = as.character(Standard_Deviation),
-          Standard_Deviation = case_when(
+          Standard_Deviation = dplyr::case_when(
             (!is.na(Mean) & is.na(as.numeric(Standard_Deviation))) ~ "Not available",
           is.na(as.numeric(Standard_Deviation)) ~ "Data not collected",
           TRUE ~ formatC(as.numeric(Standard_Deviation), format = "f", digits = 2)),
@@ -307,7 +313,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
                            formatC(Minimum, format = "f", digits = 2)),   
           Maximum = ifelse(is.na(Maximum) | Maximum == Inf | Maximum == -Inf, "Data not collected",
                            formatC(Maximum, format = "f", digits = 2))) %>%
-      dplyr::mutate(across(c(Q1, Mean, Median, Q3), ~ifelse(is.na(.), "Data not collected", formatC(., format = "f", digits = 2))))
+      dplyr::mutate(dplyr::across(c(Q1, Mean, Median, Q3), ~ifelse(is.na(.), "Data not collected", formatC(., format = "f", digits = 2))))
 
       n_count = DataUseMultiple() %>%
         dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #year filtering
@@ -318,14 +324,34 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       dplyr::group_by(Aggregation, Site) %>%
         dplyr::summarise(Total_Measurements = dplyr::n(), .groups = "drop")
       
-      final_summary <- 
-        dplyr::left_join(data_values_summary, n_count, by = c("Aggregation", "Site"))
+      missing_count = DataUseMultiple() %>%
+       # dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #year filtering
+        
+        dplyr::mutate(Date = as.Date(Date)) %>%
+        dplyr::mutate(Aggregation = dplyr::case_when(input$SummaryBoxBy == "month" ~ format(Date, "%b"),
+                                                     input$SummaryBoxBy == "year" ~ format(Date, "%Y"), TRUE ~ as.character(Site))) %>%
+        dplyr::filter(is.na(Value)) %>%
+        dplyr::group_by(Site, Aggregation) %>%
+        dplyr::summarise(Missing_Values = dplyr::n(), .groups = "drop")
+      
+      final_summary <- data_values_summary %>%
+        dplyr::left_join(n_count, by = c("Aggregation", "Site")) %>%
+        dplyr::left_join(missing_count, by = c("Aggregation", "Site")) %>%
+        dplyr::mutate(Missing_Values = tidyr::replace_na(Missing_Values, 0)) 
 
-   #   dplyr::arrange(factor(Aggregation, levels = month.name), Site) 
+      #dplyr::arrange(factor(Aggregation, levels = month.name), Site) 
 
   return(final_summary) 
 })
 
+  output$summary_box_ui <- renderUI({
+    req(DataUseMultiple())
+    tagList(
+    div(class = "summary-box",
+        uiOutput("summary_text")),
+    DT::dataTableOutput("SummaryTable")
+  )
+  })
 ### Summary table output ####
   output$SummaryTable <-DT::renderDataTable({
     # Outputs a table with summary values from summary() and handles missing, infinite, and NAN values. 
@@ -373,11 +399,21 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     if (input$SummaryBoxBy %in% c("month", "year")) {
       group_headers <- table %>%
       dplyr::distinct(Aggregation) %>%
-      dplyr::mutate(Site = Aggregation, Minimum = NA, Q1 = NA, Mean = NA, Median = NA, Q3 = NA, Maximum = NA, Standard_Deviation = NA, Site_Visits = NA, Total_Measurements = NA)
+      dplyr::mutate(Site = Aggregation, Minimum = NA, Q1 = NA, Mean = NA, Median = NA, Q3 = NA, Maximum = NA, 
+                    Standard_Deviation = NA, Site_Visits = NA, Total_Measurements = NA, Missing_Values = NA)
+      
+      aggregation_levels <- if (input$SummaryBoxBy == "month") {
+        month.name
+      } else {
+        sort(unique(as.character(table$Aggregation)), decreasing = TRUE)
+      }
 
     summary_table <- dplyr::bind_rows(group_headers, table) %>%
-      dplyr::mutate(Aggregation = factor(Aggregation, levels = c(month.name, 
-                                                          sort(unique(as.character(table$Aggregation[!table$Aggregation %in% month.name])))))) %>%
+      dplyr::mutate(Aggregation = factor(Aggregation, levels = aggregation_levels),
+                    is_group = Site == Aggregation) %>%
+    #                                       c(month.name, 
+    #                                                      sort(unique(as.character
+    #                                                                  (table$Aggregation[!table$Aggregation %in% month.name])))))) %>%
       
       dplyr::arrange(Aggregation, dplyr::desc(is.na(Minimum)), Site) %>%
       dplyr::mutate(is_group = Site == Aggregation)
@@ -386,6 +422,13 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       dplyr::arrange(Site) %>%
       dplyr::mutate(is_group = FALSE)
     }
+    
+    # summary_table <- summary_table %>%
+    #   ig (input$SummaryBoxBy == "year")
+    # list(0, 'desc')
+    # else
+    #   list(0, 'asc')
+    
     summary_table <- summary_table %>%
       dplyr::select(-Aggregation, -is_group)
 
@@ -399,14 +442,15 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
         "Maximum" = "Highest recorded value",
         "Standard<br>Deviation" = "Measure of variability",
         "Site<br>Visits" = "Number of site visits",
-        "Total<br>Measurements" = "Number of measurements"
+        "Total<br>Measurements" = "Number of measurements",
+        "Missing<br>Values" = "Number of missing values"
       )
       tooltips_json <- jsonlite::toJSON(tooltips, auto_unbox = TRUE)
-      dt<- DT::datatable(summary_table, colnames = c("Site", "Minimum", "Q1", "Mean", "Median", "Q3", "Maximum", "Standard<br>Deviation", "Site<br>Visits", "Total<br>Measurements"), escape = FALSE,
+      dt<- DT::datatable(summary_table, colnames = c("Site", "Minimum", "Q1", "Mean", "Median", "Q3", "Maximum", "Standard<br>Deviation", "Site<br>Visits", "Total<br>Measurements", "Missing<br>Values"), escape = FALSE,
                  extensions=c("Buttons", "KeyTable"),
                  #caption=tags$caption(h3(Title())),
-                 class="stripe hover order-column cell-border",
-                 rownames=F, options=list(paging = FALSE, autoWidth=TRUE, ordering= FALSE, 
+                 class="stripe hover order-column cell-border", #filter="top",
+                 rownames=F, options=list(paging = FALSE, autoWidth=TRUE, ordering= FALSE,
                                           dom= "<'dt-buttons'B>ltipr", buttons=c("copy","csv","excel","pdf","print"), keys = TRUE,
                                           headerCallback = JS("function(thead, data, start, end, display){", 
                                                               "$(thead).find('th').css('text-align', 'center');",
@@ -425,7 +469,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     #,server=F)
 
       DT::formatStyle(columns = setdiff(names(summary_table), "Site"), textAlign = "center") %>%
-      formatStyle(columns = "Site", textAlign = "left", fontWeight = if(input$SummaryBoxBy %in% c("month", "year")) {
+      DT::formatStyle(columns = "Site", textAlign = "left", fontWeight = if(input$SummaryBoxBy %in% c("month", "year")) {
       DT::styleEqual(group_headers$Site, rep("bold", nrow(group_headers)))
       } else if (input$SummaryBoxBy == "site") { "bold" 
       } else { 
@@ -464,7 +508,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     notifs <- summary()
     
     numeric_table <- notifs %>%
-      dplyr::select(-c(Total_Measurements, Site_Visits, Aggregation, Site))
+      dplyr::select(-c(Total_Measurements, Site_Visits, Missing_Values, Aggregation, Site))
     
     numeric_table <- as.data.frame(numeric_table)
     numeric_table[is.infinite(as.matrix(numeric_table)) | is.nan(as.matrix(numeric_table))] <- NA

@@ -44,9 +44,9 @@ shinyUI(
       ))),
       
       column(9,
-            div(class = "summary-box",
-              uiOutput("summary_text")),
-             DT::dataTableOutput("SummaryTable")
+           # div(class = "summary-box",
+              uiOutput("summary_box_ui")
+           #  DT::dataTableOutput("SummaryTable")
 
        ,tags$head(
         tags$style(HTML("
@@ -69,7 +69,7 @@ shinyUI(
           .shiny-notification-close {
            color: white;
            } 
-           "))),
+           ")))
         ),
       ),
       tabPanel(h4("Time Series Plot"),

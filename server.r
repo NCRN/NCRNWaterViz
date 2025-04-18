@@ -29,6 +29,19 @@ getTresholdText<-function(object, parkcode,sitecode,charname){
 shinyServer(function(input,output,session){
   
 #Page loading message
+  # Registers a callback to hide loading screen once session has flushed. 
+  # Args:
+  #   session$onFlushed, session, required. Shiny session that registers a callback function to be executed once UI has been flushed (UI loads in browser).
+  #   session$sendCustomMessage, session, required. Shiny session that sends a custom message to the browser to trigger a specific action -- in this case, to hide loading screen. 
+  #
+  # Returns:
+  #   None. This function performs an action that hides the loading screen in the browser. 
+  #
+  # Example:
+  #   session$onFlushed(function() {
+  #     session$sendCustomMessage("hideLoading", list()) 
+  #   })
+
 session$onFlushed(function() {
   session$sendCustomMessage("hideLoading", list()) }, once = TRUE)
 

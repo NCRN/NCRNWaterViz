@@ -142,7 +142,7 @@ shinyUI(
         )
       ),
       
-      tabPanel(h4("Boxplots"),
+      tabPanel(h4("Boxplot"),
         column(3, div(style='padding: 5px 10px',class="panel panel-default", 
                              
           h3("Compare by"),

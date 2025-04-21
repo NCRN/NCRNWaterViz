@@ -833,7 +833,7 @@ WaterSeriesOutMultiple <- reactive({
   ynames <- c()
   xname <- NA
   labels <- NA
-  assessment <- input$BoxThreshLine
+  assessment <- input$SeriesThreshLine
   assessments <- c()
   threshold <- NA
 
@@ -2113,11 +2113,11 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
                           latitude=getSiteInfo(WaterData, info="lat"), longitude=getSiteInfo(WaterData, info="long"), stringsAsFactors = F)
 
   active_sites <- metadata_active_chars %>%
-    filter(IsActiveSiteCode == "True") %>%
-    pull(SiteCode)
+    dplyr::filter(IsActiveSiteCode == "True") %>%
+    dplyr::pull(SiteCode)
   
   NPSGeoData_filtered <- NPSGeoData %>%
-      filter(SiteCode %in% active_sites)
+      dplyr::filter(SiteCode %in% active_sites)
   
   #CharIndex is a true/false of characters that have thresholds
   CharIndex<-{getCharInfo(WaterData,info="LowerPoint") %>% is.na %>% not} | {getCharInfo(WaterData,info="UpperPoint") %>% is.na %>% not} 

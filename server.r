@@ -929,6 +929,9 @@ WaterSeriesOutMultiple <- reactive({
       ,xaxis = list(title=list(text=paste0(xname, '<br>'), font=t), font=t)
     )
 
+  print(paste0("length of threshold: ", length(threshold)))
+  print(threshold)
+
   if (assessment==T & identical(threshold, numeric(0))==F) {
     # a <- list( # commented-out because the annotation doesn't look great
     #   x = 1,
@@ -940,12 +943,21 @@ WaterSeriesOutMultiple <- reactive({
     #   ax = 20,
     #   ay = -40
     # )
-
-    baseplot %>% layout(
-      shapes = list(hline(threshold))
+    if (length(threshold)==2){
+      baseplot %>% layout(
+      shapes = list(
+        hline(threshold[1])
+        ,hline(threshold[2])
+        )
       # ,annotations = a # commented-out because the annotation doesn't look great
     )
 
+    } else if (length(threshold)==1){
+      baseplot %>% layout(
+        shapes = list(hline(threshold))
+      # ,annotations = a # commented-out because the annotation doesn't look great
+      )
+    }
   } else {
     baseplot
   }
@@ -1335,12 +1347,21 @@ BoxPlotMultipleOut<-reactive({
     #   ax = 20,
     #   ay = -40
     # )
-
-    baseplot %>% layout(
-      shapes = list(hline(threshold))
+    if (length(threshold)==2){
+      baseplot %>% layout(
+      shapes = list(
+        hline(threshold[1])
+        ,hline(threshold[2])
+        )
       # ,annotations = a # commented-out because the annotation doesn't look great
     )
 
+    } else if (length(threshold)==1){
+      baseplot %>% layout(
+        shapes = list(hline(threshold))
+      # ,annotations = a # commented-out because the annotation doesn't look great
+      )
+    }
   } else {
     baseplot
   }

@@ -792,6 +792,46 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   output$SeriesRefSummary<-renderUI(HTML(RefSummary()))
 
   
+#### Time Series Plot 2.0 ####
+WaterSeriesOutMultiple <- reactive({
+
+
+  # this is the part of the 1.0 Time Series Plot that we're trying to recreate
+  
+  # ylabel = paste0(getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site,
+  #                                         charname = DataOpts$Param, info = "CategoryDisplay"), " (",
+  #                             getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site,
+  #                                         charname = DataOpts$Param, info = "Units"), ")") 
+              
+  # pointlab = paste0(getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site,
+  #                                 charname = DataOpts$Param, info = "DisplayName"))
+    
+  # waterseries(df, parkcode=DataOpts$Park, sitecode=DataOpts$Site, 
+  #             char=DataOpts$Param, censored = FALSE, deseason = TRUE,
+  #             #years=DataOpts$Years[1]:DataOpts$Years[2],
+  #             layers=c("points"), 
+  #             assessment=input$SeriesThreshLine, title=Title(),
+  #             colors=(GoodCol()),
+  #             assesscolor=ThCol(), 
+  #             sizes=c(GraphOpts$PointSize, GraphOpts$LineWidth, GraphOpts$LineWidth),
+  #             legend=if(GraphOpts$Legend) "bottom" else "none") +
+  #             labs(y = ylabel, color = pointlab)+
+  #             theme(text=element_text(size=GraphOpts$FontSize*10)) +
+  #             geom_smooth(data=df, method = 'lm', se = FALSE, 
+  #               aes(x = Date, y = pred_y, linetype = sign), formula = y~x, color='black')+
+  #             scale_linetype_manual(values = c('dashed', 'solid'), guide = 'none')+ 
+              
+    
+  #   {if(input$ThreshPoint && !is.na(Thresholds()[1])) 
+  #     geom_point(data=df[df$Value<Thresholds()[1],],
+  #               aes(Date,Value), pch=16,size=GraphOpts$PointSize, color=BadCol())} +
+    
+  #   {if(input$ThreshPoint && !is.na(Thresholds()[2])) 
+  #     geom_point(data=df[df$Value>Thresholds()[2],],
+  #               aes(Date,Value), pch=16, size=GraphOpts$PointSize, color=BadCol())}
+
+})
+
 #### Time Series Plot ####
     WaterSeriesOut<-reactive({
       req(DataUse()$Date, TrendType(), DataUse()$Value)

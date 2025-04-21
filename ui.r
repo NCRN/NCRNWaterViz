@@ -1,6 +1,7 @@
 library(shiny)
 library(leaflet)
 library(plotly)
+library(shinyBS)
 
 ColorNames<-GraphColors$DisplayColor
 

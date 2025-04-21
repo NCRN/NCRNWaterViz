@@ -1487,7 +1487,7 @@ output$BoxPlotMultiple<-renderPlotly({   BoxPlotMultipleOut() })
   SeriesThresholdSummaryMultiple<-reactive({    
     # Make an html string of water quality thresholds to be displayed when the user asks for the thresholds. 
     # Args:
-    #  input$BoxThreshLine, bool, optional. Default False. If True, looks up the water quality threshold.
+    #  input$SeriesThreshLine, bool, optional. Default False. If True, looks up the water quality threshold.
     #  DataOpts$Park, chr, required. A park acronym. E.g., 'ROCR'.
     #  DataOpts$Site, chr or c(chr), required. A site code. E.g., 'NCRN_ROCR_KLVA'
     #  DataOpts$Param, chr, required. A characteristic abbreviation. E.g., 'DOper'.
@@ -1496,14 +1496,14 @@ output$BoxPlotMultiple<-renderPlotly({   BoxPlotMultipleOut() })
     #  chr
     # 
     # Example:
-    #   input$BoxThreshLine <- T
+    #   input$SeriesThreshLine <- T
     #   DataOpts$Park <- 'ROCR'
     #   DataOpts$Site <- c('NCRN_ROCR_KLVA', 'NCRN_ROCR_FEBR')
     #   DataOpts$Param <- 'DOper'
     #   
     #   mythresholds <- 
-    #     BoxThresholdSummaryMultiple(
-    #       ,input$BoxThreshLine
+    #     SeriesThresholdSummaryMultiple(
+    #       ,input$SeriesThreshLine
     #       ,DataOpts$Park
     #       ,DataOpts$Site
     #       ,DataOpts$Param
@@ -1591,7 +1591,7 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
 SeriesRefSummaryMultiple<-reactive({    
   # Make an html string of water quality threshold references to be displayed when the user asks for the thresholds. 
   # Args:
-  #  input$BoxThreshLine, bool, optional. Default False. If True, looks up the water quality threshold.
+  #  input$SeriesThreshLine, bool, optional. Default False. If True, looks up the water quality threshold.
   #  DataOpts$Park, chr, required. A park acronym. E.g., 'ROCR'.
   #  DataOpts$Site, chr or c(chr), required. A site code. E.g., 'NCRN_ROCR_KLVA'
   #  DataOpts$Param, chr, required. A characteristic abbreviation. E.g., 'DOper'.
@@ -1600,14 +1600,14 @@ SeriesRefSummaryMultiple<-reactive({
   #  chr
   # 
   # Example:
-  #   input$BoxThreshLine <- T
+  #   input$SeriesThreshLine <- T
   #   DataOpts$Park <- 'ROCR'
   #   DataOpts$Site <- c('NCRN_ROCR_KLVA', 'NCRN_ROCR_FEBR')
   #   DataOpts$Param <- 'DOper'
   #   
   #   mythreshold_references <- 
-  #     BoxRefSummaryMultiple(
-  #       ,input$BoxThreshLine
+  #     SeriesRefSummaryMultiple(
+  #       ,input$SeriesThreshLine
   #       ,DataOpts$Park
   #       ,DataOpts$Site
   #       ,DataOpts$Param

@@ -107,9 +107,10 @@ shinyUI(
              
           h3(id="ThreshHeader","Thresholds"),
           
-          checkboxInput("SeriesThreshLine","Show Water Quality Threshold Line",FALSE),
+          checkboxInput("SeriesThreshLine","Show Water Quality Threshold Line", TRUE),
           checkboxInput("ThreshPoint","Indicate Points with Poor Water Quality",FALSE),
           HTML('<hr>'),
+          
           
           # to hide the "Trends" checkbox, we'll make it only conditionally-visible
           # this approach leaves all of the downstream code intact to avoid breaking dependencies
@@ -137,14 +138,7 @@ shinyUI(
         ),         
         
         column(9, 
-          # plotOutput("TimeSeries"),
-          plotlyOutput("SeriesPlotMultiple"),
-          # htmlOutput("SeriesThresholdSummary"),
-          br(),
-          # htmlOutput("SeriesTrendsOut"),
-          # textOutput("SeasonOut"),
-          br(),
-          # htmlOutput("SeriesRefSummary")
+          plotlyOutput("SeriesPlotMultiple")
         )
       ),
       
@@ -161,7 +155,7 @@ shinyUI(
           paramChooserUI("BoxParam"),
           yearChooserUI("BoxYears"),
           
-          checkboxInput("BoxThreshLine","Show Water Quality Threshold Line",FALSE),
+          checkboxInput("BoxThreshLine","Show Water Quality Threshold Line", TRUE),
           
           HTML('<hr>'),
           

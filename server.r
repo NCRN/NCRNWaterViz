@@ -691,105 +691,105 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
 })
   
 #### Summaries of Seasonality and Trends ####
-  output$SeasonOut<-renderText({
+  # output$SeasonOut<-renderText({
 
-    req(input$Trends, isTruthy(TrendsOut()), 
-        TrendType())
-    if(TrendType() == 'wcosinor') {
-    switch(class(TrendsOut()$Analysis),
-      "lm" =      c("There is no seasonal pattern in the data."),
-      "Cosinor" = c("There is a seasonal pattern in the data. The peak is", strsplit(summary(TrendsOut()$Analysis)$phase," ")[[1]][3],
-                  strsplit(summary(TrendsOut()$Analysis)$phase," ")[[1]][7], "and the low point is ",
-        strsplit(summary(TrendsOut()$Analysis)$lphase," ")[[1]][3],paste0(strsplit(summary(TrendsOut()$Analysis)$lphase," ")[[1]][7] ,"." 
-      )), NULL)
+  #   req(input$Trends, isTruthy(TrendsOut()), 
+  #       TrendType())
+  #   if(TrendType() == 'wcosinor') {
+  #   switch(class(TrendsOut()$Analysis),
+  #     "lm" =      c("There is no seasonal pattern in the data."),
+  #     "Cosinor" = c("There is a seasonal pattern in the data. The peak is", strsplit(summary(TrendsOut()$Analysis)$phase," ")[[1]][3],
+  #                 strsplit(summary(TrendsOut()$Analysis)$phase," ")[[1]][7], "and the low point is ",
+  #       strsplit(summary(TrendsOut()$Analysis)$lphase," ")[[1]][3],paste0(strsplit(summary(TrendsOut()$Analysis)$lphase," ")[[1]][7] ,"." 
+  #     )), NULL)
       
-    }
-  })
+  #   }
+  # })
 
-  SeriesTrendsOut<-reactive({
-    req(input$Trends, isTruthy(TrendsOut()), isTruthy(TrendType()))
+  # SeriesTrendsOut<-reactive({
+  #   req(input$Trends, isTruthy(TrendsOut()), isTruthy(TrendType()))
 
-    outmessage <- 
-      paste(h4("Trend Analysis:"),"\n",
-        if(TrendType() == "wcosinor" && !is.na(TrendsOut()$Analysis)){
-        paste(switch(class(TrendsOut()$Analysis),
-        "lm" =  {
-          if(summary(TrendsOut()$Analysis)$coefficients[2,4]>.05) {("There is no significant trend in the data.")} 
-          else {
-            paste("There is a significant", 
-            ifelse (summary(TrendsOut()$Analysis)$coefficients[2,1] > 0, "increasing", "decreasing"),
-            "trend of",c(signif(summary(TrendsOut()$Analysis)$coefficients[2,1]*365.24, digits=3)),
-            Units(), "per year.")
-          }
-        }, 
-        "Cosinor"=  {
-          if(summary(TrendsOut()$Analysis$glm)$coefficients[2,4]>.05){("There is no significant trend in the data")}
-          else {
-            paste("There is a significant",
-            ifelse (summary(TrendsOut()$Analysis$glm)$coefficients[2,1]>0,"increasing","decreasing"), 
-            "trend of",c(signif(summary(TrendsOut()$Analysis$glm)$coefficients[2,1]*365.24,digits=3)),
-            Units(), "per year."
-            )
-          }
-          }, NULL))
-        } else if(TrendType() %in% c("nonparCens", "nonpar")){
+  #   outmessage <- 
+  #     paste(h4("Trend Analysis:"),"\n",
+  #       if(TrendType() == "wcosinor" && !is.na(TrendsOut()$Analysis)){
+  #       paste(switch(class(TrendsOut()$Analysis),
+  #       "lm" =  {
+  #         if(summary(TrendsOut()$Analysis)$coefficients[2,4]>.05) {("There is no significant trend in the data.")} 
+  #         else {
+  #           paste("There is a significant", 
+  #           ifelse (summary(TrendsOut()$Analysis)$coefficients[2,1] > 0, "increasing", "decreasing"),
+  #           "trend of",c(signif(summary(TrendsOut()$Analysis)$coefficients[2,1]*365.24, digits=3)),
+  #           Units(), "per year.")
+  #         }
+  #       }, 
+  #       "Cosinor"=  {
+  #         if(summary(TrendsOut()$Analysis$glm)$coefficients[2,4]>.05){("There is no significant trend in the data")}
+  #         else {
+  #           paste("There is a significant",
+  #           ifelse (summary(TrendsOut()$Analysis$glm)$coefficients[2,1]>0,"increasing","decreasing"), 
+  #           "trend of",c(signif(summary(TrendsOut()$Analysis$glm)$coefficients[2,1]*365.24,digits=3)),
+  #           Units(), "per year."
+  #           )
+  #         }
+  #         }, NULL))
+  #       } else if(TrendType() %in% c("nonparCens", "nonpar")){
           
-          paste(
-          if(TrendType() == "nonparCens" && !all(TrendsOut()$modeled == FALSE)){ 
-            "Data were separated by month for censored Mann-Kendall test. 
-            Solid lines are significant trends. Dashed lines are non-significant trends."
-          } else if(TrendType() == "nonpar" && !all(TrendsOut()$modeled == FALSE)){
-            "Data were separated by month for Mann-Kendall test. 
-            Solid lines are significant trends. Dashed lines are non-significant trends."},
+  #         paste(
+  #         if(TrendType() == "nonparCens" && !all(TrendsOut()$modeled == FALSE)){ 
+  #           "Data were separated by month for censored Mann-Kendall test. 
+  #           Solid lines are significant trends. Dashed lines are non-significant trends."
+  #         } else if(TrendType() == "nonpar" && !all(TrendsOut()$modeled == FALSE)){
+  #           "Data were separated by month for Mann-Kendall test. 
+  #           Solid lines are significant trends. Dashed lines are non-significant trends."},
           
-          if(any(TrendsOut()$message == "no trend")){
-           paste(br(), "The following months were modeled and found no significant trends: ",
-                 paste0(TrendsOut()$month[TrendsOut()$message=="no trend"], collapse=", "), ". ", sep = "")},
+  #         if(any(TrendsOut()$message == "no trend")){
+  #          paste(br(), "The following months were modeled and found no significant trends: ",
+  #                paste0(TrendsOut()$month[TrendsOut()$message=="no trend"], collapse=", "), ". ", sep = "")},
 
-          if(all(TrendsOut()$modeled == FALSE)){
-            paste(br(), "There were too few non-censored measurements to analyze for trends.")},
+  #         if(all(TrendsOut()$modeled == FALSE)){
+  #           paste(br(), "There were too few non-censored measurements to analyze for trends.")},
           
-          if(any(TrendsOut()$modeled == FALSE) && any(!is.na(TrendsOut()$pval))){
-            paste(br(), "The following months had too few non-censored measurements to analyze for trends and were not plotted: ",
-                  paste0(TrendsOut()$month[TrendsOut()$modeled == FALSE], collapse=", "), ".", sep = "")},
+  #         if(any(TrendsOut()$modeled == FALSE) && any(!is.na(TrendsOut()$pval))){
+  #           paste(br(), "The following months had too few non-censored measurements to analyze for trends and were not plotted: ",
+  #                 paste0(TrendsOut()$month[TrendsOut()$modeled == FALSE], collapse=", "), ".", sep = "")},
           
           
-          if(any(grepl("There", TrendsOut()$message))){
-           paste(TrendsOut()$message[TrendsOut()$modeled==TRUE & grepl("There", TrendsOut()$message)], sep="")
-          }
-          ) #end of nonparCen/nonpar paste
+  #         if(any(grepl("There", TrendsOut()$message))){
+  #          paste(TrendsOut()$message[TrendsOut()$modeled==TRUE & grepl("There", TrendsOut()$message)], sep="")
+  #         }
+  #         ) #end of nonparCen/nonpar paste
 
-        } else if(TrendType() == 'notrends' & TrendsOut() == 'notrends'){
-          paste("There were too few non-censored measurements to plot and analyze for trends.")}
-          ) 
-  return(outmessage)
-  })
+  #       } else if(TrendType() == 'notrends' & TrendsOut() == 'notrends'){
+  #         paste("There were too few non-censored measurements to plot and analyze for trends.")}
+  #         ) 
+  # return(outmessage)
+  # })
   
-  output$SeriesTrendsOut<-renderUI(HTML(SeriesTrendsOut()))
+  # output$SeriesTrendsOut<-renderUI(HTML(SeriesTrendsOut()))
   
 #### Threshold Summary ####
-  ThresholdSummary<-reactive({    
-    req(input$SeriesThreshLine | input$ThreshPoint)
-    paste(h4("Threshold:"),"\n", 
-          if(all(is.na(Thresholds()))){ "There is no water quality threshold for this parameter." } else {
-      c(getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="LowerDescription"),
-      getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, 
-                  info="UpperDescription"))[!is.na(Thresholds())] }
-    ) 
-  })
+  # ThresholdSummary<-reactive({    
+  #   req(input$SeriesThreshLine | input$ThreshPoint)
+  #   paste(h4("Threshold:"),"\n", 
+  #         if(all(is.na(Thresholds()))){ "There is no water quality threshold for this parameter." } else {
+  #     c(getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="LowerDescription"),
+  #     getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, 
+  #                 info="UpperDescription"))[!is.na(Thresholds())] }
+  #   ) 
+  # })
   
-  output$SeriesThresholdSummary<-renderUI( HTML(ThresholdSummary()) )
+  # output$SeriesThresholdSummary<-renderUI( HTML(ThresholdSummary()) )
   
   
-  RefSummary<-reactive({
-    req(input$SeriesThreshLine | input$ThreshPoint) 
-    paste(h4("Threshold Reference:"),"\n",
-      if (all(is.na(Thresholds()))) {"None"} else {
-      getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="AssessmentDetails")}
-    ) 
-  })      
+  # RefSummary<-reactive({
+  #   req(input$SeriesThreshLine | input$ThreshPoint) 
+  #   paste(h4("Threshold Reference:"),"\n",
+  #     if (all(is.na(Thresholds()))) {"None"} else {
+  #     getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="AssessmentDetails")}
+  #   ) 
+  # })      
   
-  output$SeriesRefSummary<-renderUI(HTML(RefSummary()))
+  # output$SeriesRefSummary<-renderUI(HTML(RefSummary()))
 
   
 #### Time Series Plot 2.0 ####
@@ -828,14 +828,12 @@ WaterSeriesOutMultiple <- reactive({
   # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L73
   boxplot_df <- DataUseMultiple() %>%
     dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) #year filtering
-  
-  print(head(boxplot_df))
 
   # initialize variables
   ynames <- c()
   xname <- NA
   labels <- NA
-  assessment <- input$SeriesThreshLine
+  assessment <- input$BoxThreshLine
   assessments <- c()
   threshold <- NA
 
@@ -894,7 +892,7 @@ WaterSeriesOutMultiple <- reactive({
   n_na <- nrow(boxplot_df %>% dplyr::filter(is.na(Value)))
   title <- paste0(NCRNWater::getParkInfo(object=WaterData, parkcode=DataOpts$Park, info="ParkLongName"), ': ', yname, ' [measurements: ', n_not_na, ', NAs: ', n_na,']')
 
-  m <- list(
+  m <- list( # figure margins
     l = 100,
     r = 50,
     b = 100,
@@ -913,9 +911,9 @@ WaterSeriesOutMultiple <- reactive({
       ,symbol= ~MonitoringLocationName
       ,size=15
       ,type='scatter'
-      # ,height = global_figure_height
+      # ,height = global_figure_height # to hard-code fig size
       # ,width = global_figure_width
-      ,width = (0.73*as.numeric(input$dimension[1]))
+      ,width = (0.73*as.numeric(input$dimension[1])) # to dynamically resize fig
       ,height = (0.75*as.numeric(input$dimension[2]))
     ) %>% layout(
       mode = 'marker'
@@ -926,6 +924,7 @@ WaterSeriesOutMultiple <- reactive({
         title=list(text='<br>Site<br>')
         ,font=t
         )
+      ,showlegend=T
       ,yaxis = list(title=list(text=paste0(yname, '<br>'), font=t), font=t)
       ,xaxis = list(title=list(text=paste0(xname, '<br>'), font=t), font=t)
     )
@@ -1320,6 +1319,7 @@ BoxPlotMultipleOut<-reactive({
         title=list(text='<br>Site<br>')
         ,font=t
         )
+      ,showlegend=T
       ,yaxis = list(title=list(text=paste0(yname, '<br>'), font=t), font=t)
       ,xaxis = list(title=list(text=paste0(xname, '<br>'), font=t), font=t)
     )
@@ -1462,6 +1462,55 @@ output$BoxPlotMultiple<-renderPlotly({   BoxPlotMultipleOut() })
   })
   
   output$BoxThresholdSummaryMultiple<-renderUI( HTML(BoxThresholdSummaryMultiple()) )
+
+  SeriesThresholdSummaryMultiple<-reactive({    
+    # Make an html string of water quality thresholds to be displayed when the user asks for the thresholds. 
+    # Args:
+    #  input$BoxThreshLine, bool, optional. Default False. If True, looks up the water quality threshold.
+    #  DataOpts$Park, chr, required. A park acronym. E.g., 'ROCR'.
+    #  DataOpts$Site, chr or c(chr), required. A site code. E.g., 'NCRN_ROCR_KLVA'
+    #  DataOpts$Param, chr, required. A characteristic abbreviation. E.g., 'DOper'.
+    #  
+    # Returns:
+    #  chr
+    # 
+    # Example:
+    #   input$BoxThreshLine <- T
+    #   DataOpts$Park <- 'ROCR'
+    #   DataOpts$Site <- c('NCRN_ROCR_KLVA', 'NCRN_ROCR_FEBR')
+    #   DataOpts$Param <- 'DOper'
+    #   
+    #   mythresholds <- 
+    #     BoxThresholdSummaryMultiple(
+    #       ,input$BoxThreshLine
+    #       ,DataOpts$Park
+    #       ,DataOpts$Site
+    #       ,DataOpts$Param
+    #     )
+    #
+    req(input$SeriesThreshLine, DataOpts$Park, DataOpts$Site, DataOpts$Param)
+
+    sitethreshes <- c()
+
+    if(input$SeriesThreshLine){
+        for (site in DataOpts$Site){
+          tmp<-c(getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="LowerDescription"),
+            getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="UpperDescription")) %>%
+            unlist %>% unique
+          sitethreshes <- c(tmp, sitethreshes)
+      }
+      sitethresh <- sitethreshes %>% unique
+      sitethresh <- sitethresh[!is.na(sitethresh)] # needed if there is no upper or lower sitethresh.
+    }
+
+    if (length(sitethresh)>0){
+      paste(h4("Threshold:"),"\n",sitethresh)
+    } else {
+      paste(h4("This parameter has no water quality threshold."),"\n")
+    }
+  })
+  
+  output$SeriesThresholdSummaryMultiple<-renderUI( HTML(SeriesThresholdSummaryMultiple()) )
     
   # BoxRefSummary<-reactive({
   #   req(input$BoxThreshLine) 
@@ -1510,8 +1559,6 @@ output$BoxPlotMultiple<-renderPlotly({   BoxPlotMultipleOut() })
       sitethresh <- sitethreshes %>% unique
       sitethresh <- sitethresh[!is.na(sitethresh)] # needed if there is no upper or lower sitethresh.
       
-      print(sitethresh)
-      print('got here\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n')
       if (length(sitethresh)>0){
         paste(h4("Threshold Reference:"),"\n",sitethresh)
       }
@@ -1519,6 +1566,53 @@ output$BoxPlotMultiple<-renderPlotly({   BoxPlotMultipleOut() })
   })
   
 output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
+
+SeriesRefSummaryMultiple<-reactive({    
+  # Make an html string of water quality threshold references to be displayed when the user asks for the thresholds. 
+  # Args:
+  #  input$BoxThreshLine, bool, optional. Default False. If True, looks up the water quality threshold.
+  #  DataOpts$Park, chr, required. A park acronym. E.g., 'ROCR'.
+  #  DataOpts$Site, chr or c(chr), required. A site code. E.g., 'NCRN_ROCR_KLVA'
+  #  DataOpts$Param, chr, required. A characteristic abbreviation. E.g., 'DOper'.
+  #  
+  # Returns:
+  #  chr
+  # 
+  # Example:
+  #   input$BoxThreshLine <- T
+  #   DataOpts$Park <- 'ROCR'
+  #   DataOpts$Site <- c('NCRN_ROCR_KLVA', 'NCRN_ROCR_FEBR')
+  #   DataOpts$Param <- 'DOper'
+  #   
+  #   mythreshold_references <- 
+  #     BoxRefSummaryMultiple(
+  #       ,input$BoxThreshLine
+  #       ,DataOpts$Park
+  #       ,DataOpts$Site
+  #       ,DataOpts$Param
+  #   )
+  #
+  req(input$SeriesThreshLine, DataOpts$Park, DataOpts$Site, DataOpts$Param)
+
+  sitethreshes <- c()
+
+  if(input$SeriesThreshLine){
+    for (site in DataOpts$Site){
+      tmp<-c(getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="AssessmentDetails"),
+        getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="AssessmentDetails")) %>%
+        unlist %>% unique
+      sitethreshes <- c(tmp, sitethreshes)
+    }
+    sitethresh <- sitethreshes %>% unique
+    sitethresh <- sitethresh[!is.na(sitethresh)] # needed if there is no upper or lower sitethresh.
+    
+    if (length(sitethresh)>0){
+      paste(h4("Threshold Reference:"),"\n",sitethresh)
+    }
+  }
+})
+
+output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
 
   #### Plot downloads ####
   output$BoxPlot.PNG<-downloadHandler(

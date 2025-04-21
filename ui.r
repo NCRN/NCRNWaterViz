@@ -129,17 +129,22 @@ shinyUI(
             # ,actionButton(inputId="GraphicsModal2", label='Graphics Options', class="btn btn-primary",style="margin-top: 15px")
             ,actionButton(inputId="AboutComparisons", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px")
           ),
+          br(),
+          htmlOutput("SeriesThresholdSummaryMultiple"),
+          br(),
+          htmlOutput("SeriesRefSummaryMultiple")
           ) #end controls div
         ),         
         
         column(9, 
-          plotOutput("TimeSeries"),
-          htmlOutput("SeriesThresholdSummary"),
+          # plotOutput("TimeSeries"),
+          plotlyOutput("SeriesPlotMultiple"),
+          # htmlOutput("SeriesThresholdSummary"),
           br(),
-          htmlOutput("SeriesTrendsOut"),
-          textOutput("SeasonOut"),
+          # htmlOutput("SeriesTrendsOut"),
+          # textOutput("SeasonOut"),
           br(),
-          htmlOutput("SeriesRefSummary")
+          # htmlOutput("SeriesRefSummary")
         )
       ),
       

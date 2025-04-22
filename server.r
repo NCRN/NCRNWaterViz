@@ -362,7 +362,19 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   return(final_summary) 
 })
 
-  output$summary_box_ui <- renderUI({
+  output$summary_ui <- renderUI({
+    # Renders the summary panel UI to display summary text and a data table.  
+    # Args:
+    #   None 
+    #
+    # Returns:
+    #   A UI element containing a styled summary text section and a data table output. 
+    #
+    # Example:
+    #   output$summary_ui <- renderUI({
+    #     h3("Summary")
+    #   })
+    
     req(DataUseMultiple())
     tagList(
     div(class = "summary-box",

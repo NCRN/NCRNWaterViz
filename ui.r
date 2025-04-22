@@ -48,26 +48,31 @@ shinyUI(
  #mainPanel(
   tabsetPanel(  
     tabPanel(h4("Summary"),
+      #Left column inputs and controls
       column(3, div(style='padding: 5px 10px',class="panel panel-default", 
                              
         h3("Select Site Data"),
-                    
+        #Radio buttons to select how to compare data            
         radioButtons(inputId="SummaryBoxBy", label="Compare by:", choices=c("year", "month", "site"), selected = "year", inline = T),
                     
+        #UI modules for selecting park, site, parameter, and year
                             parkChooserUI("SummaryPark"),
                             siteChooserUI("SummarySite"),
                             paramChooserUI("SummaryParam"),
                             yearChooserUI("SummaryYears"),
+      #Layout with About section button
       splitLayout(cellWidths="35%",
                   h3("About:"),
                   actionButton(inputId="AboutSummary", label="About this Table...", class="btn btn-primary",style="margin-top: 15px")
       ))),
       
       column(9,
+             #Output UI for displaying summary ui
            # div(class = "summary-box",
-              uiOutput("summary_box_ui")
+              uiOutput("summary_ui")
            #  DT::dataTableOutput("SummaryTable")
 
+        #Custom styles for the summary panel and notifications
        ,tags$head(
         tags$style(HTML("
           .summary-box {

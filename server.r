@@ -69,7 +69,7 @@ shinyServer(function(input,output,session){
 
 #### Reactive Values for Graphics Options with Defaults ####
   
-GraphOpts<-reactiveValues(Legend=TRUE, FontSize=1.5, GoodColor="Blue", BadColor="Orange",OutColor="Vermillion",PointSize=3,
+GraphOpts<-reactiveValues(Legend=TRUE, FontSize=1.5, GoodColor="Blue", BadColor="Orange",OutColor="Vermillion",PointSize=5,
                             ThColor="Orange", TrColor="Green", LineWidth=1)
  
 #### Reactive Values for Choosing Data ####
@@ -97,26 +97,28 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   observeEvent(eventExpr = c( input$GraphicsModal,input$GraphicsModal2), ignoreInit = TRUE,
     showModal(modalDialog(title="Graphics Options", footer=tagAppendAttributes( modalButton(tags$div("Close")), class="btn btn-primary"),
       column(12,hr()),
-      column(12,h4("General:"),
-        column(3,checkboxInput("Legend","Show Legend",GraphOpts$Legend)),
+      column(12,h4("Text:"),
+        # column(3,checkboxInput("Legend","Show Legend",GraphOpts$Legend)),
         column(3,sliderInput("FontSize", "Font Size", min=1, max=2.5,value=GraphOpts$FontSize, step=.25, width='130px'))
       
       ),
       column(12,hr()),
       column(12, h4("Points:"),
-        column(3,selectInput("GoodColor","Measurement Color:",choices=GraphColors$DisplayColor, 
-                           selected=GraphOpts$GoodColor, width='130px')
-        ),
-        column(3,selectInput("BadColor","Poor Quality Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$BadColor,
-                             width='130px') ),
-        column(3,selectInput("OutColor","Outlier Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$OutColor, width='130px')),   
-        column(3,sliderInput("PointSize", "Change Size", min=1, max=6,value=GraphOpts$PointSize, step=.5, width='130px'))
+        column(3,sliderInput("PointSize", "Point Size", min=10, max=30,value=10, step=1, width='130px'))
+        # column(3,selectInput("GoodColor","Measurement Color:",choices=GraphColors$DisplayColor, 
+        #                    selected=GraphOpts$GoodColor, width='130px')
+        # ),
+        ,column(3,selectInput("BadColor","Poor Quality Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$BadColor,
+                             width='130px') )
+        # column(3,selectInput("OutColor","Outlier Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$OutColor, width='130px')),   
+        
       ),
       column(12,hr()),
       column(12, h4("Lines:"),
-        column(3,selectInput("ThColor","Threshold Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$ThColor, width='130px')), 
-        column(3,selectInput("TrColor","Trend Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$TrColor, width='130px')),
-        column(3,sliderInput("LineWidth", "Change Width", min=.5, max=4,value=GraphOpts$LineWidth, step=.5, width='130px'))
+        column(3,sliderInput("LineWidth", "Line Width", min=.5, max=4,value=GraphOpts$LineWidth, step=.5, width='130px'))
+        ,column(3,selectInput("ThColor","Threshold Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$ThColor, width='130px'))
+        # column(3,selectInput("TrColor","Trend Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$TrColor, width='130px')),
+        
       )
     ))
   )
@@ -130,7 +132,8 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   observeEvent(input$ThColor, GraphOpts$ThColor<-input$ThColor)
   observeEvent(input$TrColor, GraphOpts$TrColor<-input$TrColor)
   observeEvent(input$LineWidth, GraphOpts$LineWidth<-input$LineWidth)
-  
+  # set defaults
+  # if (GraphOpts$PointSize == NA) {GraphOpts$PointSize <- 10}
   
   #### About this ... modals ####
   
@@ -817,7 +820,7 @@ WaterSeriesOutMultiple <- reactive({
     #   myfigure <- BoxPlotMutlipleOut(
     #     DataOpts$Years
     #     ,input$SummaryBoxBy
-    #     ,input$BoxThreshLine
+    #     ,input$SeriesThreshLine
     #     ,DataOpts$Park
     #     ,DataOpts$Site
     #     ,DataOpts$Param
@@ -826,7 +829,7 @@ WaterSeriesOutMultiple <- reactive({
   req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
 
   # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L73
-  boxplot_df <- DataUseMultiple() %>%
+  series_df <- DataUseMultiple() %>%
     dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) #year filtering
 
   # initialize variables
@@ -888,8 +891,8 @@ WaterSeriesOutMultiple <- reactive({
   
   # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L106-L127
 
-  n_not_na <- nrow(boxplot_df %>% dplyr::filter(is.na(Value)==F))
-  n_na <- nrow(boxplot_df %>% dplyr::filter(is.na(Value)))
+  n_not_na <- nrow(series_df %>% dplyr::filter(is.na(Value)==F))
+  n_na <- nrow(series_df %>% dplyr::filter(is.na(Value)))
   title <- paste0(NCRNWater::getParkInfo(object=WaterData, parkcode=DataOpts$Park, info="ParkLongName"), ': ', yname, ' [measurements: ', n_not_na, ', NAs: ', n_na,']')
 
   m <- list( # figure margins
@@ -904,17 +907,19 @@ WaterSeriesOutMultiple <- reactive({
     )
   baseplot <-
     plotly::plot_ly(
-      boxplot_df
+      series_df
       ,y= ~Value
       ,x= ~Date
       ,color= ~MonitoringLocationName
       ,symbol= ~MonitoringLocationName
-      ,size=15
       ,type='scatter'
       # ,height = global_figure_height # to hard-code fig size
       # ,width = global_figure_width
       ,width = (0.73*as.numeric(input$dimension[1])) # to dynamically resize fig
       ,height = (0.75*as.numeric(input$dimension[2]))
+      ,marker = list(
+        size=input$PointSize
+      )
     ) %>% layout(
       mode = 'marker'
       ,font=t
@@ -928,9 +933,6 @@ WaterSeriesOutMultiple <- reactive({
       ,yaxis = list(title=list(text=paste0(yname, '<br>'), font=t), font=t)
       ,xaxis = list(title=list(text=paste0(xname, '<br>'), font=t), font=t)
     )
-
-  print(paste0("length of threshold: ", length(threshold)))
-  print(threshold)
 
   if (assessment==T & identical(threshold, numeric(0))==F) {
     # a <- list( # commented-out because the annotation doesn't look great

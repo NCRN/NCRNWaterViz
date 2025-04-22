@@ -4,6 +4,7 @@ library(plotly)
 
 ColorNames<-GraphColors$DisplayColor
 
+#Facts and images for loading screen
 loading_facts <- c(
   "Did you know that NCRN has been monitoring streams since 2005! A",
   "Did you know that NCRN has been monitoring streams since 2005! B",
@@ -13,6 +14,12 @@ loading_facts <- c(
   "Did you know that NCRN has been monitoring streams since 2005! F"
 )
 
+loading_images <- c(
+  "dwq_NCRN_ANTI_SHCK_2024-06-04_20240604-131442.jpg"
+  ,"dwq_NCRN_MONO_BUCK_2024-06-04_20240604-084406.jpg"
+  ,"dwq_NCRN_PRWI_BONE_2024-06-11_20240611-130821.jpg"
+)
+  
 shinyUI(
   fluidPage(
     theme="https://www.nps.gov/lib/bootstrap/3.3.2/css/nps-bootstrap.min.css"
@@ -63,7 +70,14 @@ shinyUI(
                     font-size: 24px;
                     color: #333;
                     text-align: center;
-                    padding: 20px;
+                    position: relative;
+                    margin-top: 50px
+                    }
+                    .loading-image {
+                    max-width: 800px;
+                    max-height: 500px;
+                    margin: 0 auto;
+                    display: block;
                     }
                     .loader {
                     color: $4CAF50;
@@ -73,6 +87,7 @@ shinyUI(
                     width: 1em;
                     height: 1em;
                     border-radius: 50%;
+                    margin-top: 40px;
                     margin: 72 auto;
                     position: center;
                     -webkit-transform: translateZ(0);
@@ -132,24 +147,6 @@ shinyUI(
                       }
                     }
                     "))
-      
-      #' progress-container {
-      #' border-radius: 10px;
-      #' width: 200px;
-      #' margin-top: 30px;
-      #' background-color: #eee;
-      #' }
-      #' .progress-bar {
-      #' height: 10px;
-      #' background-color: $4CAF50;
-      #' border-radius: 10px;
-      #' animation: loading 2s infinite alternate;
-      #' }
-      #' @keyframes loading {
-      #' from { width: 0px; }
-      #' to { width: 200px; }
-      #' }
-      #' "))
     ),
     
     #Loading screen HTML div (initially visible)
@@ -158,17 +155,21 @@ shinyUI(
         left: 0; width: 100%; height: 100%; background-color: white; opacity: 0.8; z-index: 9999; display: flex; align-items: center; justify-content: center;
         flex-direction: column;",
         
-        tags$div(id =  "typingText", class = "typing-text", style = "margin: 75px"),
+        tags$div(id =  "typingText", class = "typing-text", style = "margin: 40px"),
+        tags$img(id = "loadingImage", class = "loading-image", src = "", alt = "Water monitoring Image"),
         tags$div(class = "loader"),
-        #  tags$div(class = "progress-bar"),
-        
         
         tags$script(HTML(sprintf("
                      const facts = %s;
-                     const fact = facts[Math.floor(Math.random() * facts.length)];
-                     console.log(fact);
-                     document.getElementById('typingText').textContent = fact;",
-                                 jsonlite::toJSON(loading_facts, auto_unbox = TRUE))))
+                     const images = %s;
+                     const fact_index = Math.floor(Math.random() * facts.length);
+                     const image_index = Math.floor(Math.random() * images.length);
+                   
+              document.addEventListener('DOMContentLoaded', () => {
+                     document.getElementById('typingText').textContent = facts[fact_index];
+                     document.getElementById('loadingImage').src = images[image_index];})",
+                 jsonlite::toJSON(loading_facts, auto_unbox = TRUE),
+                 jsonlite::toJSON(loading_images, auto_unbox = TRUE))))
     ),
     
  #mainPanel(

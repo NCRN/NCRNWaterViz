@@ -1558,12 +1558,50 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
   
 ### Exceedances Data Table Output ###
   
+  exceedances_tooltips <- list(
+    "OrganizationFormalName" = "Name of organization conducting monitoring activities"
+    ,"ActivityMediaSubdivisionName" = "Code corresponding to a unique water quality monitoring event at a certain site and date"
+    ,"Date" = "Date of monitoring event"
+    ,"Characteristic" = "Water quality parameter"
+    ,"Value" = "Numeric measurement of a water quality parameter"
+    ,"ResultMeasure.MeasureUnitCode" = "Units of the measured value"
+    ,"UpperThreshold" = "Description of the upper threshold for this site and parameter"
+    ,"LowerThreshold" = "Description of the lower threshold for this site and parameter"
+  )
+  exceedances_tooltips_json <- jsonlite::toJSON(exceedances_tooltips, auto_unbox = TRUE)
+  
   output$ExceedancesTable <-DT::renderDataTable(
-    expr=datatable(ExceedancesDataUse(), extensions=c("Buttons","KeyTable"),caption=htmltools::tags$caption(htmltools::h3(Title())),
-                   class="stripe hover order-column cell-border",filter="top",
-                   rownames=F, options=list(autoWidth=TRUE, dom="Bltirp", buttons=c("copy","csv","excel","pdf","print"), keys=TRUE)
-    ),server=F
-  )  
+    expr=datatable(ExceedancesDataUse()
+                   ,extensions=c("Buttons","KeyTable")
+                   ,caption=htmltools::tags$caption(htmltools::h3(Title()))
+                   ,class="stripe hover order-column cell-border"
+                   ,filter="top"
+                   ,rownames=F
+                   ,options=list(
+                     autoWidth=TRUE
+                     ,dom="Bltirp"
+                     ,buttons=c("copy","csv","excel","pdf","print")
+                     ,keys=TRUE
+                     ,headerCallback = JS("function(thead, data, start, end, display){", 
+                                          "$(thead).find('th').css('text-align', 'center');",
+                                          "$(thead).find('th').filter(function() { 
+                                          return $(this).html().trim() === 'Site'; }).css('text-align', 'left');",
+                                          "$('th', thead).each(function(index){",
+                                          " var tooltips = ",
+                                          exceedances_tooltips_json,";",
+                                          " var colName = $
+                                          (this).html().trim();",
+                                          " if(tooltips[colName]) {",
+                                          " $(this).attr('title', tooltips[colName]);",
+                                          " }",
+                                          "});",
+                                          "}"
+                     )
+                   )
+    )
+    ,server=F
+  ) 
+  
   
 ### SummarizeExceedances() Function ###
   
@@ -1646,12 +1684,12 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
   oldest_year<- min(histdata$Year)
   nex<- histdata[histdata$Year == recent_year, "nex"]
   ntot<- histdata[histdata$Year == recent_year, "ntot"]
-  recent_freq<- sprintf("%.2f%%", (nex/ntot)*100)
+  # recent_freq<- sprintf("%.2f%%", (nex/ntot)*100)
   sum_nex<- sum(histdata$nex)
   sum_ntot<- sum(histdata$ntot)
-  sum_freq<- sprintf("%.2f%%", (sum_nex/sum_ntot)*100)
-  freq_comp<- ifelse((nex/ntot) > (sum_nex/sum_ntot), "greater than",
-                       ifelse((nex/ntot) == (sum_nex/sum_ntot), "equal to", "less than"))
+  # sum_freq<- sprintf("%.2f%%", (sum_nex/sum_ntot)*100)
+  # freq_comp<- ifelse((nex/ntot) > (sum_nex/sum_ntot), "greater than",
+  #                      ifelse((nex/ntot) == (sum_nex/sum_ntot), "equal to", "less than"))
   grammar1<- if(nex==1) {
     paste("There was", nex, "exceedance of the ")
   } else {
@@ -1667,7 +1705,7 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
   summary<- c(
     paste0(grammar1, Characteristic, " water quality threshold among ", ntot, " observations at ", Sitename, " in ", recent_year, ".")
     ,paste0(grammar2, Characteristic, " water quality threshold among ", sum_ntot, " observations at ", Sitename, " since monitoring began in ", oldest_year, ".")
-    ,paste0("<u>", recent_freq, "</u>", " of observations exceeded the water quality threshold in ", recent_year, ", ", freq_comp, " the overall exceedance percentage of ", "<u>", sum_freq, "</u>", ".")
+    # ,paste0("<u>", recent_freq, "</u>", " of observations exceeded the water quality threshold in ", recent_year, ", ", freq_comp, " the overall exceedance percentage of ", "<u>", sum_freq, "</u>", ".")
   )
   summary_bullets<- paste0("<li>", summary, "</li>", collapse = "")
    

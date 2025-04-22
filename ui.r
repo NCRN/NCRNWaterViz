@@ -4,7 +4,7 @@ library(plotly)
 
 ColorNames<-GraphColors$DisplayColor
 
-fun_facts <- c(
+loading_facts <- c(
   "Did you know that NCRN has been monitoring streams since 2005! A",
   "Did you know that NCRN has been monitoring streams since 2005! B",
   "Did you know that NCRN has been monitoring streams since 2005! C",
@@ -49,40 +49,107 @@ shinyUI(
                     white-space: nowrap;
                     border-right: 2px solid black;
                     width: fit-content;
-                    margin: auto;
                     font-size: 24px;
                     color: #333;
                     }
-                    progress-container {
-                    border-radius: 10px;
-                    width: 200px;
-                    margin-top: 30px;
-                    background-color: #eee;
+                    .loader {
+                    color: $4CAF50;
+                    font-size: 60px;
+                    text-indent: -9999em;
+                    overflow: hidden;
+                    width: 1em;
+                    height: 1em;
+                    border-radius: 50%;
+                    margin: 72 auto;
+                    position: center;
+                    -webkit-transform: translateZ(0);
+                    -ms-transform: translateZ(0);
+                    transform: translateZ(0);
+                    -webkit-animation: load6 1.7s infinite ease, round 1.7s infinite ease;
+                    animation: load6 1.7s infinite ease, round 1.7s infinite ease;
                     }
-                    .progress-bar {
-                    height: 10px;
-                    background-color: $4CAF50;
-                    border-radius: 10px;
-                    animation: loading 2s infinite alternate;
+                    @-webkit-keyframes load6 {
+                      0% {
+                        box-shadow: 0 -0.83em 0 -0.4em, 0 -0.83em 0 -0.42em, 0 -0.83em 0 -0.44em, 0 -0.83em 0 -0.46em, 0 -0.83em 0 -0.477em;  }
+                      5%, 95% {
+                        box-shadow: 0 -0.83em 0 -0.4em, 0 -0.83em 0 -0.42em, 0 -0.83em 0 -0.44em, 0 -0.83em 0 -0.46em, 0 -0.83em 0 -0.477em;  }
+                      10%, 59% {
+                        box-shadow: 0 -0.83em 0 -0.4em, -0.087em -0.825em 0 -0.42em, -0.173em -0.812em 0 -0.44em, -0.256em -0.789em 0 -0.46em, -0.297em -0.775em 0 -0.477em;  }
+                      20% {
+                        box-shadow: 0 -0.83em 0 -0.4em, -0.338em -0.758em 0 -0.42em, -0.555em -0.617em 0 -0.44em, -0.671em -0.488em 0 -0.46em, -0.749em -0.34em 0 -0.477em; }
+                      38% {
+                        box-shadow: 0 -0.83em 0 -0.4em, -0.377em -0.74em 0 -0.42em, -0.645em -0.522em 0 -0.44em, -0.775em -0.297em 0 -0.46em, -0.82em -0.09em 0 -0.477em; }
+                      100% {
+                        box-shadow: 0 -0.83em 0 -0.4em, 0 -0.83em 0 -0.42em, 0 -0.83em 0 -0.44em, 0 -0.83em 0 -0.46em, 0 -0.83em 0 -0.477em;  }
                     }
-                    @keyframes loading {
-                    from { width: 0px; }
-                    to { width: 200px; }
+                    @keyframes load6 {
+                      0% {
+                        box-shadow: 0 -0.83em 0 -0.4em, 0 -0.83em 0 -0.42em, 0 -0.83em 0 -0.44em, 0 -0.83em 0 -0.46em, 0 -0.83em 0 -0.477em;  }
+                      5%,
+                      95% {
+                        box-shadow: 0 -0.83em 0 -0.4em, 0 -0.83em 0 -0.42em, 0 -0.83em 0 -0.44em, 0 -0.83em 0 -0.46em, 0 -0.83em 0 -0.477em;  }
+                      10%,
+                      59% {
+                        box-shadow: 0 -0.83em 0 -0.4em, -0.087em -0.825em 0 -0.42em, -0.173em -0.812em 0 -0.44em, -0.256em -0.789em 0 -0.46em, -0.297em -0.775em 0 -0.477em;  }
+                      20% {
+                        box-shadow: 0 -0.83em 0 -0.4em, -0.338em -0.758em 0 -0.42em, -0.555em -0.617em 0 -0.44em, -0.671em -0.488em 0 -0.46em, -0.749em -0.34em 0 -0.477em; }
+                      38% {
+                        box-shadow: 0 -0.83em 0 -0.4em, -0.377em -0.74em 0 -0.42em, -0.645em -0.522em 0 -0.44em, -0.775em -0.297em 0 -0.46em, -0.82em -0.09em 0 -0.477em; }
+                      100% {
+                        box-shadow: 0 -0.83em 0 -0.4em, 0 -0.83em 0 -0.42em, 0 -0.83em 0 -0.44em, 0 -0.83em 0 -0.46em, 0 -0.83em 0 -0.477em;  }
+                    }
+                    @-webkit-keyframes round {
+                      0% {
+                        -webkit-transform: rotate(0deg);
+                        transform: rotate(0deg);
+                      }
+                      100% {
+                        -webkit-transform: rotate(360deg);
+                        transform: rotate(360deg);
+                      }
+                    }
+                    @keyframes round {
+                      0% {
+                        -webkit-transform: rotate(0deg);
+                        transform: rotate(0deg);
+                      }
+                      100% {
+                        -webkit-transform: rotate(360deg);
+                        transform: rotate(360deg);
+                      }
                     }
                     "))
+
+                    #' progress-container {
+                    #' border-radius: 10px;
+                    #' width: 200px;
+                    #' margin-top: 30px;
+                    #' background-color: #eee;
+                    #' }
+                    #' .progress-bar {
+                    #' height: 10px;
+                    #' background-color: $4CAF50;
+                    #' border-radius: 10px;
+                    #' animation: loading 2s infinite alternate;
+                    #' }
+                    #' @keyframes loading {
+                    #' from { width: 0px; }
+                    #' to { width: 200px; }
+                    #' }
+                    #' "))
        ),
 
        #Loading screen HTML div (initially visible)
        div(id = "loading_screen", #"Loading, please wait...",
            style = "position: fixed; top: 0;
-        left: 0; width: 100%; height: 100%; background-color: white; z-index: 9999; display: flex; align-items: center; justify-content: center;
+        left: 0; width: 100%; height: 100%; background-color: white; opacity: 0.8; z-index: 9999; display: flex; align-items: center; justify-content: center;
         flex-direction: column;",
           
-        tags$div(id =  "typingText", class = "typing-text"),
-        tags$div(class = "progress-container"),
-        tags$div(class = "progress-bar"),
+        tags$div(id =  "typingText", class = "typing-text", style = "margin: 75px"),
+        tags$div(class = "loader"),
+      #  tags$div(class = "progress-bar"),
        
-      #JavaScript to hide the loading screen
+      
       tags$script(HTML(sprintf("
                      const facts = %s;
                      const fact = facts[Math.floor(Math.random() * facts.length)];
@@ -92,11 +159,11 @@ shinyUI(
                      if (i < fact.length) {
                      document.getElementById('typingText').textContent += fact.charAt(i);
                      i++;
-                     setTimeout(typeFact, 100);
+                     setTimeout(typeFact, 150);
                       }
                      }
                      document.addEventListener('DOMContentLoaded', typeFact);",
-                               jsonlite::toJSON(fun_facts, auto_unbox = TRUE))))
+                               jsonlite::toJSON(loading_facts, auto_unbox = TRUE))))
   ),
 
  #mainPanel(

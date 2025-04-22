@@ -57,7 +57,7 @@ shinyUI(
                             siteChooserUI("SummarySite"),
                             paramChooserUI("SummaryParam"),
                             yearChooserUI("SummaryYears"),
-      splitLayout(cellWidths="35%",
+      splitLayout(cellWidths="100%",
                   # h3("About:"),
                   actionButton(inputId="AboutSummary", label="About this Table...", class="btn btn-primary",style="margin-top: 15px")
       ))),

@@ -68,8 +68,8 @@ shinyServer(function(input,output,session){
 #output$Test<-renderText(exists("TrendsOut()$Analysis"))   #For debugging purposes
 
 #### Reactive Values for Graphics Options with Defaults ####
-  
-GraphOpts<-reactiveValues(Legend=TRUE, FontSize=1.5, GoodColor="Blue", BadColor="Orange",OutColor="Vermillion",PointSize=5,
+
+GraphOpts<-reactiveValues(Legend=TRUE, FontSize=20, GoodColor="Blue", BadColor="Orange",OutColor="Vermillion",PointSize=10,
                             ThColor="Orange", TrColor="Green", LineWidth=1)
  
 #### Reactive Values for Choosing Data ####
@@ -99,12 +99,12 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       column(12,hr()),
       column(12,h4("Text:"),
         # column(3,checkboxInput("Legend","Show Legend",GraphOpts$Legend)),
-        column(3,sliderInput("FontSize", "Font Size", min=1, max=2.5,value=GraphOpts$FontSize, step=.25, width='130px'))
+        column(3,sliderInput("FontSize", "Font Size", min=10, max=50,value=GraphOpts$FontSize, step=1, width='130px'))
       
       ),
       column(12,hr()),
       column(12, h4("Points:"),
-        column(3,sliderInput("PointSize", "Point Size", min=10, max=30,value=10, step=1, width='130px'))
+        column(3,sliderInput("PointSize", "Point Size", min=10, max=30,value=GraphOpts$PointSize, step=1, width='130px'))
         # column(3,selectInput("GoodColor","Measurement Color:",choices=GraphColors$DisplayColor, 
         #                    selected=GraphOpts$GoodColor, width='130px')
         # ),
@@ -115,7 +115,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       ),
       column(12,hr()),
       column(12, h4("Lines:"),
-        column(3,sliderInput("LineWidth", "Line Width", min=.5, max=4,value=GraphOpts$LineWidth, step=.5, width='130px'))
+        column(3,sliderInput("LineWidth", "Line Width", min=1, max=10,value=GraphOpts$LineWidth, step=1, width='130px'))
         ,column(3,selectInput("ThColor","Threshold Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$ThColor, width='130px'))
         # column(3,selectInput("TrColor","Trend Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$TrColor, width='130px')),
         
@@ -132,8 +132,6 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   observeEvent(input$ThColor, GraphOpts$ThColor<-input$ThColor)
   observeEvent(input$TrColor, GraphOpts$TrColor<-input$TrColor)
   observeEvent(input$LineWidth, GraphOpts$LineWidth<-input$LineWidth)
-  # set defaults
-  # if (GraphOpts$PointSize == NA) {GraphOpts$PointSize <- 10}
   
   #### About this ... modals ####
   
@@ -922,16 +920,16 @@ WaterSeriesOutMultiple <- reactive({
       )
     ) %>% layout(
       mode = 'marker'
-      ,font=t
+      ,font=list(size=input$FontSize)
       ,margin=m
-      ,title = list(text=title ,font=t)
+      ,title = list(text=title ,font=list(size=input$FontSize))
       ,legend = list(
         title=list(text='<br>Site<br>')
-        ,font=t
+        ,font=list(size=input$FontSize)
         )
       ,showlegend=T
-      ,yaxis = list(title=list(text=paste0(yname, '<br>'), font=t), font=t)
-      ,xaxis = list(title=list(text=paste0(xname, '<br>'), font=t), font=t)
+      ,yaxis = list(title=list(text=paste0(yname, '<br>'), font=list(size=input$FontSize)), font=list(size=input$FontSize))
+      ,xaxis = list(title=list(text=paste0(xname, '<br>'), font=list(size=input$FontSize)), font=list(size=input$FontSize))
     )
 
   if (assessment==T & identical(threshold, numeric(0))==F) {
@@ -1168,7 +1166,7 @@ output$SeriesPlotMultiple<-renderPlotly({   WaterSeriesOutMultiple() })
 
 #### Box Plot 2.0 ####
 
-hline <- function(y = 0, color = "red", dash = 'dash') {
+hline <- function(y = 0, color = "red", dash = 'dash', size=1) {
     # Make a list of parameters to be passed to plotly to generate a horizontal dashed line for water quality threshold. 
     # Args:
     #  y: int, optional. Default 0. The vertical position at which the horizontal line should be drawn.
@@ -1188,7 +1186,7 @@ hline <- function(y = 0, color = "red", dash = 'dash') {
     xref = "paper",
     y0 = y,
     y1 = y,
-    line = list(color = color, dash = dash)
+    line = list(color = input$ThColor, dash = dash, width=input$LineWidth)
   )
 }
 
@@ -1326,16 +1324,16 @@ BoxPlotMultipleOut<-reactive({
       ,height = (0.75*as.numeric(input$dimension[2]))
     ) %>% layout(
       boxmode = 'group'
-      ,font=t
+      ,font=list(size=input$FontSize)
       ,margin=m
-      ,title = list(text=title ,font=t)
+      ,title = list(text=title ,font=list(size=input$FontSize))
       ,legend = list(
         title=list(text='<br>Site<br>')
-        ,font=t
+        ,font=list(size=input$FontSize)
         )
       ,showlegend=T
-      ,yaxis = list(title=list(text=paste0(yname, '<br>'), font=t), font=t)
-      ,xaxis = list(title=list(text=paste0(xname, '<br>'), font=t), font=t)
+      ,yaxis = list(title=list(text=paste0(yname, '<br>'), font=list(size=input$FontSize)), font=list(size=input$FontSize))
+      ,xaxis = list(title=list(text=paste0(xname, '<br>'), font=list(size=input$FontSize)), font=list(size=input$FontSize))
     )
 
   if (assessment==T & identical(threshold, numeric(0))==F) {

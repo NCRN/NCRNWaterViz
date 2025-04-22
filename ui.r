@@ -4,6 +4,22 @@ library(plotly)
 
 ColorNames<-GraphColors$DisplayColor
 
+fun_facts <- c(
+  "Did you know that NCRN has been monitoring streams since 2005! A",
+  "Did you know that NCRN has been monitoring streams since 2005! B",
+  "Did you know that NCRN has been monitoring streams since 2005! C",
+  "Did you know that NCRN has been monitoring streams since 2005! D",
+  "Did you know that NCRN has been monitoring streams since 2005! E",
+  "Did you know that NCRN has been monitoring streams since 2005! F"
+)
+
+
+# random <- sample(facts, 1)
+# text_length <- nchar(random)
+#typing_duration <- paste0(0.1 * text_length, "s")
+#typing_steps <- text_length
+
+
 shinyUI(
   fluidPage( theme="https://www.nps.gov/lib/bootstrap/3.3.2/css/nps-bootstrap.min.css", style="padding: 0px",
              title=paste0(Network, " Water Quality"),
@@ -23,56 +39,66 @@ shinyUI(
         ))
       )
     ),
-
-    tags$head(
-      #custom styling for loading message
-      tags$style(HTML("
-                    #loading_screen {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    z-index: 9999;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
+ 
+     tags$head(
+       #custom styling for loading message
+       tags$style(HTML("
+                    .typing-text {
+                    font-family: monospace;
+                    overflow: hidden;
+                    white-space: nowrap;
+                    border-right: 2px solid black;
+                    width: fit-content;
+                    margin: auto;
                     font-size: 24px;
-                    color: black;
+                    color: #333;
                     }
-                    .spinner {
-                    border: 8px solid #f3f3f3;
-                    border-top: 8px solid #3498db;
-                    border-radius: 50%;
-                    width: 60px;
-                    height: 60px;
-                    animation: spin 1s linear infinite;
+                    progress-container {
+                    border-radius: 10px;
+                    width: 200px;
+                    margin-top: 30px;
+                    background-color: #eee;
                     }
-                    @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
+                    .progress-bar {
+                    height: 10px;
+                    background-color: $4CAF50;
+                    border-radius: 10px;
+                    animation: loading 2s infinite alternate;
                     }
-                    ")),
+                    @keyframes loading {
+                    from { width: 0px; }
+                    to { width: 200px; }
+                    }
+                    "))
+       ),
+
+       #Loading screen HTML div (initially visible)
+       div(id = "loading_screen", #"Loading, please wait...",
+           style = "position: fixed; top: 0;
+        left: 0; width: 100%; height: 100%; background-color: white; z-index: 9999; display: flex; align-items: center; justify-content: center;
+        flex-direction: column;",
+          
+        tags$div(id =  "typingText", class = "typing-text"),
+        tags$div(class = "progress-container"),
+        tags$div(class = "progress-bar"),
+       
       #JavaScript to hide the loading screen
-      tags$script(HTML("
-                     Shiny.addCustomMessageHandler('hideLoading', function(message) {
-                     var loadingScreen =
-                     document.getElementById('loading_screen');
-                     if (loadingScreen) {
-                     loadingScreen.style.display = 'none';
+      tags$script(HTML(sprintf("
+                     const facts = %s;
+                     const fact = facts[Math.floor(Math.random() * facts.length)];
+                     let i=0;
+                     
+                     function typeFact() {
+                     if (i < fact.length) {
+                     document.getElementById('typingText').textContent += fact.charAt(i);
+                     i++;
+                     setTimeout(typeFact, 100);
+                      }
                      }
-                     });
-                     "))
-    ),
-    #Loading screen HTML div (initially visible)
-    div(id = "loading_screen", #"Loading, please wait...",
-        div(
-          style = "text-align: center;",
-          div(class = "spinner", style = "margin: 0 auto;"),
-          div("Loading, please wait...", style = "margin-top: 15px; font-size: 20px; color: #333; ")
-        )
-    ),
-  
+                     document.addEventListener('DOMContentLoaded', typeFact);",
+                               jsonlite::toJSON(fun_facts, auto_unbox = TRUE))))
+  ),
+
  #mainPanel(
   tabsetPanel(  
     tabPanel(h4("Summary"),

@@ -40,8 +40,38 @@ shinyServer(function(input,output,session){
   #   session$onFlushed(function() {
   #     session$sendCustomMessage("hideLoading", list()) 
   #   })
-session$onFlushed(function() {
-  session$sendCustomMessage("hideLoading", list()) }, once = TRUE)
+# session$onFlushed(function() {
+#   session$sendCustomMessage("hideLoading", list()) }, once = TRUE)
+  
+  
+  # facts <- c(
+  #   "Did you know that.....A",
+  #   "Did you know that.....B",
+  #   "Did you know that.....C",
+  #   "Did you know that.....D",
+  #   "Did you know that.....E",
+  #   "Did you know that.....F"
+  # )
+  
+  # 
+  # session$userData$fun_fact <- sample(facts, 1)
+  # 
+  # 
+  # output$fun_fact <- renderUI({
+  #   fact <- sample(facts, 1)
+  #   text_length <- nchar(fact)
+  # 
+  # tags$p(
+  #   fact,
+  #   class = "typing",
+  #   style = sprintf("animation: typing %ss steps(%s, end) forwards;", 0.08 * text_length, text_length))
+  # })
+  observe({
+    invalidateLater(4000, session)
+  removeUI(selector = "#loading_screen", immediate = TRUE)
+  })
+  
+  
 
 #output$Test<-renderText(exists("TrendsOut()$Analysis"))   #For debugging purposes
 

@@ -1,26 +1,46 @@
 library(shiny)
 library(leaflet)
 library(plotly)
+library(shinyBS)
 
 ColorNames<-GraphColors$DisplayColor
 
 shinyUI(
-  fluidPage( theme="https://www.nps.gov/lib/bootstrap/3.3.2/css/nps-bootstrap.min.css", style="padding: 0px",
-             title=paste0(Network, " Water Quality"),
-    
-    column(12, id="NPSBanner", style="margin: 0px",
-      tags$head(includeScript ("https://www.nps.gov/common/commonspot/templates/js/federated-analytics.js")),
-      tags$head(tags$script(
-        'type = "text/javascript"',' var ss = document.createElement("link"); ss.type="text/css"; ss.rel="stylesheet"; 
-        ss.href = window.self === window.top ? "NCRN.css" : "NCRNframe.css"; document.getElementsByTagName("head")[0].appendChild(ss);'
-      )),
-      tags$head(HTML( '<link rel="icon", href="AH_small_flat_4C_12x16.png", type="image/png" />')),
-          
-      div(
-        h1(style="background-color: black; color: white; height: 125px; padding: 10px; margin: 0px",
-            HTML('<img src="ah_large_black.gif", style="float:right; padding-right:25px"/>',
-            Network_long, '<br>', Viz_name
-        ))
+  fluidPage(
+    theme="https://www.nps.gov/lib/bootstrap/3.3.2/css/nps-bootstrap.min.css"
+    ,style="padding: 0px"
+    ,title=paste0(Network, " Water Quality")
+    ,column(
+      12
+      ,id="NPSBanner"
+      ,style="margin: 0px"
+      ,tags$head(includeScript ("https://www.nps.gov/common/commonspot/templates/js/federated-analytics.js"))
+      ,tags$head(
+        tags$script(
+        'type = "text/javascript"'
+        ,'
+        var ss = document.createElement("link"); ss.type="text/css"; ss.rel="stylesheet"; 
+        ss.href = window.self === window.top ? "NCRN.css" : "NCRNframe.css"; document.getElementsByTagName("head")[0].appendChild(ss);
+        var dimension = [0, 0];
+        $(document).on("shiny:connected", function(e) {
+        dimension[0] = window.innerWidth;
+        dimension[1] = window.innerHeight;
+        Shiny.onInputChange("dimension", dimension);
+        });
+        $(window).resize(function(e) {
+        dimension[0] = window.innerWidth;
+        dimension[1] = window.innerHeight;
+        Shiny.onInputChange("dimension", dimension);
+        });
+        '
+        )
+      )
+      ,tags$head(HTML( '<link rel="icon", href="AH_small_flat_4C_12x16.png", type="image/png" />'))
+      ,div(
+        h1(
+          style="background-color: black; color: white; height: 125px; padding: 10px; margin: 0px"
+          ,HTML('<img src="ah_large_black.gif", style="float:right; padding-right:25px"/>', Network_long, '<br>', Viz_name)
+          )
       )
     ),
     
@@ -34,17 +54,31 @@ shinyUI(
                     
         radioButtons(inputId="SummaryBoxBy", label="Compare by:", choices=c("year", "month", "site"), selected = "year", inline = T),
                     
-        parkChooserUI("SummaryPark"),
-        siteChooserUI("SummarySite"),
-        paramChooserUI("SummaryParam"),
-        yearChooserUI("SummaryYears") 
-        )),
+                            parkChooserUI("SummaryPark"),
+                            siteChooserUI("SummarySite"),
+                            paramChooserUI("SummaryParam"),
+                            yearChooserUI("SummaryYears"),
+      splitLayout(cellWidths="35%",
+                  h3("About:"),
+                  actionButton(inputId="AboutSummary", label="About this Table...", class="btn btn-primary",style="margin-top: 15px")
+      ))),
       
       column(9,
-          uiOutput("summary_text"),
-          DT::dataTableOutput("SummaryTable")
-    
-          ,tags$style(HTML("
+           # div(class = "summary-box",
+              uiOutput("summary_box_ui")
+           #  DT::dataTableOutput("SummaryTable")
+
+       ,tags$head(
+        tags$style(HTML("
+          .summary-box {
+          background-color: #f5f3e5;
+          padding: 10px;
+          border-radius: 5px;
+          margin-bottom: 15px;
+          }
+          .dt-buttons {
+          float: right !important;
+          }
           .shiny-notification {
           background-color: #D0342C;
           color: white;
@@ -55,10 +89,9 @@ shinyUI(
           .shiny-notification-close {
            color: white;
            } 
-           ")),
-           )
+           ")))
         ),
-    
+      ),
       tabPanel(h4("Time Series Plot"),
         column(3, div(style='padding: 5px 10px',class="panel panel-default", 
           
@@ -119,11 +152,11 @@ shinyUI(
         )
       ),
       
-      tabPanel(h4("Comparisons"),
+      tabPanel(h4("Boxplots"),
         column(3, div(style='padding: 5px 10px',class="panel panel-default", 
                              
-          h3("Comparison:"),
-          radioButtons(inputId="BoxBy", label="Compare by:", choices=c("year", "month", "site"), selected = "year", inline = T),
+          h3("Compare by"),
+          radioButtons(inputId="BoxBy", label="", choices=c("year", "month", "site"), selected = "year", inline = T),
           
           h3("Select Site Data"),
            
@@ -136,25 +169,30 @@ shinyUI(
           
           HTML('<hr>'),
           
-          splitLayout(h3(id="DownloadHeader","Downloads:"), cellWidths=c("35%","35%","30%"),
-            downloadButton("BoxPlot.PNG","Save Plot (.png)", class="btn btn-primary", style="margin-top: 15px"),
-            downloadButton("BoxPlot.JPG","Save Plot (.jpg)", class="btn btn-primary", style="margin-top: 15px")
+          # splitLayout(cellWidths=c("25%","25%", "25%", "25%"),
+          splitLayout(cellWidths=c("33%","33%", "33%"),
+            downloadButton("BoxPlot.PNG","Save Plot (.png)", class="btn btn-primary", style="margin-top: 15px")
+            ,downloadButton("BoxPlot.JPG","Save Plot (.jpg)", class="btn btn-primary", style="margin-top: 15px")
+            # ,actionButton(inputId="GraphicsModal2", label='Graphics Options', class="btn btn-primary",style="margin-top: 15px")
+            ,actionButton(inputId="AboutComparisons", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px")
           ),
-          splitLayout( cellWidths="35%",
-            h3("Options:"),
-            actionButton(inputId="GraphicsModal2", label='Graphics Options', class="btn btn-primary",style="margin-top: 15px")
-          ),
-          splitLayout(cellWidths="35%",
-            h3("About:"),
-            actionButton(inputId="AboutComparisons", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px")
-          )
-        )),
+          br(),
+          htmlOutput("BoxThresholdSummaryMultiple"),
+          br(),
+          htmlOutput("BoxRefSummaryMultiple")
+          # ,splitLayout( cellWidths="50%",
+          #   # h3("Options:"),
+          #   actionButton(inputId="GraphicsModal2", label='Graphics Options', class="btn btn-primary",style="margin-top: 15px")
+          # )
+          # ,splitLayout(cellWidths="50%",
+          #   # h3("About:"),
+          #   actionButton(inputId="AboutComparisons", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px")
+          # )
+        )
+        ),
         
         column(9,
-          plotOutput("BoxPlot"),
-          htmlOutput("BoxThresholdSummary"),
-          br(),
-          htmlOutput("BoxRefSummary")
+          plotlyOutput("BoxPlotMultiple", width="auto", height="auto"),
         )
       ),
 
@@ -163,9 +201,14 @@ shinyUI(
           h3("Data to Map"),
           br(),
           strong("National Park Service Monitoring"),
-          checkboxInput(inputId="MapNPS", label="Map NPS Water Monitoring", value=T),
+         # checkboxInput(inputId="MapNPS", label="Map NPS Water Monitoring", value=T),
           uiOutput("MapChars"),
-          
+
+         div(style = "display: block", 
+             checkboxInput(inputId="InactiveSites", label="Display inactive sites", value=F), 
+             checkboxGroupInput(inputId="MapIn",label="Select Parks:" , choices=NULL, inline = FALSE),
+             actionButton("refreshParks", "Reset park selections", class = "btn btn-primary", style = "margin-top: 10px;")),
+              
           # to hide the "US Geological Survey Stream Gages" checkbox, we'll make it only conditionally-visible
           # this approach leaves all of the downstream code intact to avoid breaking dependencies
           # take the contents out of the conditionalPanel and reload the app to restore functionality

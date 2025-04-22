@@ -14,8 +14,26 @@ library(openair)
 library(NADA)
 library(plotly)
 
+### Filtering data to active Characteristic Names ####
+metadata_df <- read.csv("./Data/NCRN/wqp_ncrnwater_metadata.csv")
+dataname_df <- read.csv("./Data/NCRN/wqp.csv")
+
+metadata_active_chars <- metadata_df %>%
+  filter(IsActiveCharacteristicName == "True") 
+
+write.csv(metadata_active_chars, "./Data/NCRN/metadata_onlyactiveChars.csv", row.names = FALSE)
+
+active_chars <- metadata_active_chars %>%
+  pull(DataName)
+
+filtered_data <- dataname_df %>%
+  filter(CharacteristicName %in% active_chars)
+
+write.csv(filtered_data, "./Data/NCRN/filtered_activeChars.csv", row.names = FALSE)
+
+
 #### Get data ####
-WaterData<-suppressWarnings(importNCRNWater(paste0("./Data/", Network), Data=dataname, MetaData = metadataname, wqx=wqx_bool))
+WaterData<-suppressWarnings(importNCRNWater(paste0("./Data/", Network), Data=dataname2, MetaData = metadataname2, wqx=wqx_bool))
 
 ####getThresholdText Function
 getTresholdText<-function(object, parkcode,sitecode,charname){    
@@ -113,6 +131,12 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   observeEvent(input$AboutMap, showModal(
     modalDialog(title="About the Map", footer=tagAppendAttributes( modalButton(tags$div("Close")), class="btn btn-primary"),
                 includeHTML("./www/AboutMap.html")                  
+    )
+  ))
+  
+  observeEvent(input$AboutSummary, showModal(
+    modalDialog(title="About the Table", footer=tagAppendAttributes( modalButton(tags$div("Close")), class="btn btn-primary"),
+                includeHTML("./www/AboutSummary.Rhtml")                  
     )
   ))
   
@@ -254,8 +278,9 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     #     Q3, num, 3rd Quartile (75th percentile)
     #     Maximum, num, maximum value
     #     SD, num, standard deviation
-    #     n_site_visit, int, count of observations for unique site visits
-    #     n, int, count of total observations
+    #     Site_Visits, int, count of observations for unique site visits
+    #     Total_Measurements, int, count of total observations 
+    #     Missing_Values, int, count of missing values
     #
     # Example:
     #   DataOpts$Years <- 2010,
@@ -270,28 +295,81 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     data_values <- DataUseMultiple () %>%
     
     dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #year filtering
-
-    #Aggregation
+      
     dplyr::mutate(Date = as.Date(Date)) %>%
     dplyr::mutate(Aggregation = dplyr::case_when(input$SummaryBoxBy == "month" ~ format(Date, "%b"),
-                                   input$SummaryBoxBy == "year" ~ format(Date, "%Y"), TRUE ~ as.character(Site))) %>%
-     
+                                                   input$SummaryBoxBy == "year" ~ format(Date, "%Y"), TRUE ~ as.character(Site))) %>%
+      dplyr::select(Site, Date, Value, Aggregation) %>%
+    #   dplyr::arrange(desc(Aggregation)) 
+    
+   # data_values <- data_values %>%
+      
+    dplyr::group_by(Aggregation, Site, Date) %>%
+    dplyr::summarise(
+        SiteVisitMean = mean(Value, na.rm = TRUE))
+
+    data_values_summary <- data_values %>%
     dplyr::group_by(Aggregation, Site) %>%
       dplyr::summarise(
-      Minimum = round(min(Value, na.rm = TRUE), 2),   
-      Q1 = round(stats::quantile(Value, 0.25, na.rm = TRUE), 2),   
-      Mean = round(mean(Value, na.rm = TRUE), 2),   
-      Median = round(stats::median(Value, na.rm = TRUE), 2),   
-      Q3 = round(stats::quantile(Value, 0.75, na.rm = TRUE),2),  
-      Maximum = round(max(Value, na.rm = TRUE), 2),  
-      SD = round(stats::sd(Value, na.rm = TRUE), 2),
-      n_site_visit = dplyr::n_distinct(Date),
-      n = dplyr::n(), .groups = "drop") %>%
-      dplyr::arrange(factor(Aggregation, levels = month.name), Site) 
-  
-  return(data_values) 
+        Minimum = min(SiteVisitMean, na.rm = TRUE),
+        Q1 = stats::quantile(SiteVisitMean, 0.25, na.rm = TRUE),
+        Mean = mean(SiteVisitMean, na.rm = TRUE),
+        Median = stats::median(SiteVisitMean, na.rm = TRUE),
+        Q3 = stats::quantile(SiteVisitMean, 0.75, na.rm = TRUE),
+        Maximum = max(SiteVisitMean, na.rm = TRUE),
+        Standard_Deviation = stats::sd(SiteVisitMean, na.rm = TRUE),
+        Site_Visits = dplyr::n_distinct(Date), .groups = "drop")
+    
+      data_values_summary <- data_values_summary %>%
+        dplyr::mutate(
+          Standard_Deviation = as.character(Standard_Deviation),
+          Standard_Deviation = dplyr::case_when(
+            (!is.na(Mean) & is.na(as.numeric(Standard_Deviation))) ~ "Not available",
+          is.na(as.numeric(Standard_Deviation)) ~ "Data not collected",
+          TRUE ~ formatC(as.numeric(Standard_Deviation), format = "f", digits = 2)),
+          Minimum = ifelse(is.na(Minimum) | Minimum == Inf | Minimum == -Inf, "Data not collected",
+                           formatC(Minimum, format = "f", digits = 2)),   
+          Maximum = ifelse(is.na(Maximum) | Maximum == Inf | Maximum == -Inf, "Data not collected",
+                           formatC(Maximum, format = "f", digits = 2))) %>%
+      dplyr::mutate(dplyr::across(c(Q1, Mean, Median, Q3), ~ifelse(is.na(.), "Data not collected", formatC(., format = "f", digits = 2))))
+
+      n_count = DataUseMultiple() %>%
+        dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #year filtering
+        
+        dplyr::mutate(Date = as.Date(Date)) %>%
+      dplyr::mutate(Aggregation = dplyr::case_when(input$SummaryBoxBy == "month" ~ format(Date, "%b"),
+                                 input$SummaryBoxBy == "year" ~ format(Date, "%Y"), TRUE ~ as.character(Site))) %>%
+      dplyr::group_by(Aggregation, Site) %>%
+        dplyr::summarise(Total_Measurements = dplyr::n(), .groups = "drop")
+      
+      missing_count = DataUseMultiple() %>%
+       # dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #year filtering
+        
+        dplyr::mutate(Date = as.Date(Date)) %>%
+        dplyr::mutate(Aggregation = dplyr::case_when(input$SummaryBoxBy == "month" ~ format(Date, "%b"),
+                                                     input$SummaryBoxBy == "year" ~ format(Date, "%Y"), TRUE ~ as.character(Site))) %>%
+        dplyr::filter(is.na(Value)) %>%
+        dplyr::group_by(Site, Aggregation) %>%
+        dplyr::summarise(Missing_Values = dplyr::n(), .groups = "drop")
+      
+      final_summary <- data_values_summary %>%
+        dplyr::left_join(n_count, by = c("Aggregation", "Site")) %>%
+        dplyr::left_join(missing_count, by = c("Aggregation", "Site")) %>%
+        dplyr::mutate(Missing_Values = tidyr::replace_na(Missing_Values, 0)) 
+
+      #dplyr::arrange(factor(Aggregation, levels = month.name), Site) 
+
+  return(final_summary) 
 })
 
+  output$summary_box_ui <- renderUI({
+    req(DataUseMultiple())
+    tagList(
+    div(class = "summary-box",
+        uiOutput("summary_text")),
+    DT::dataTableOutput("SummaryTable")
+  )
+  })
 ### Summary table output ####
   output$SummaryTable <-DT::renderDataTable({
     # Outputs a table with summary values from summary() and handles missing, infinite, and NAN values. 
@@ -313,13 +391,13 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     #   })
     
     table <- summary()
-    
-    table <- table %>%
-      dplyr::mutate(SD = ifelse(!is.na(Mean) & is.na(SD), "Not available", SD),
-             Minimum = ifelse(is.na(Minimum) | Minimum == Inf | Minimum == -Inf, "Data not collected", Minimum),
-             Maximum = ifelse(is.na(Maximum) | Maximum == Inf | Maximum == -Inf, "Data not collected", Maximum),
-             dplyr::across(everything(), ~ifelse(is.na(.), "Data not collected", .)))
-    
+
+    # table <- table %>%
+    #   dplyr::mutate(Standard_Deviation = ifelse(!is.na(Mean) & is.na(Standard_Deviation), "Not available", Standard_Deviation),
+    #          Minimum = ifelse(is.na(Minimum) | Minimum == Inf | Minimum == -Inf, "Data not collected", Minimum),
+    #          Maximum = ifelse(is.na(Maximum) | Maximum == Inf | Maximum == -Inf, "Data not collected", Maximum),
+    #          dplyr::across(everything(), ~ifelse(is.na(.), "Data not collected", .)))
+
     table <- table %>%
       dplyr::mutate(Aggregation = ifelse(Aggregation %in% month.abb, 
                                 month.name[match(Aggregation, month.abb)], Aggregation))
@@ -339,11 +417,21 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     if (input$SummaryBoxBy %in% c("month", "year")) {
       group_headers <- table %>%
       dplyr::distinct(Aggregation) %>%
-      dplyr::mutate(Site = Aggregation, Minimum = NA, Q1 = NA, Mean = NA, Median = NA, Q3 = NA, Maximum = NA, SD = NA, n_site_visit = NA, n = NA)
+      dplyr::mutate(Site = Aggregation, Minimum = NA, Q1 = NA, Mean = NA, Median = NA, Q3 = NA, Maximum = NA, 
+                    Standard_Deviation = NA, Site_Visits = NA, Total_Measurements = NA, Missing_Values = NA)
+      
+      aggregation_levels <- if (input$SummaryBoxBy == "month") {
+        month.name
+      } else {
+        sort(unique(as.character(table$Aggregation)), decreasing = TRUE)
+      }
 
     summary_table <- dplyr::bind_rows(group_headers, table) %>%
-      dplyr::mutate(Aggregation = factor(Aggregation, levels = c(month.name, 
-                                                          sort(unique(as.character(table$Aggregation[!table$Aggregation %in% month.name])))))) %>%
+      dplyr::mutate(Aggregation = factor(Aggregation, levels = aggregation_levels),
+                    is_group = Site == Aggregation) %>%
+    #                                       c(month.name, 
+    #                                                      sort(unique(as.character
+    #                                                                  (table$Aggregation[!table$Aggregation %in% month.name])))))) %>%
       
       dplyr::arrange(Aggregation, dplyr::desc(is.na(Minimum)), Site) %>%
       dplyr::mutate(is_group = Site == Aggregation)
@@ -352,19 +440,58 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       dplyr::arrange(Site) %>%
       dplyr::mutate(is_group = FALSE)
     }
+    
+    # summary_table <- summary_table %>%
+    #   ig (input$SummaryBoxBy == "year")
+    # list(0, 'desc')
+    # else
+    #   list(0, 'asc')
+    
     summary_table <- summary_table %>%
       dplyr::select(-Aggregation, -is_group)
 
-    DT::datatable(summary_table, extensions=c("Buttons", "KeyTable"),
+      tooltips <- list(
+        "Site" = "Monitoring location where data was collected",
+        "Minimum" = "Lowest recorded value",
+        "Q1" = "The first quartile (25th percentile)",
+        "Mean" = "The average value",
+        "Median" = "Central value in the sorted dataset",
+        "Q3" = "The third quartile (75th percentile)",
+        "Maximum" = "Highest recorded value",
+        "Standard<br>Deviation" = "Measure of variability",
+        "Site<br>Visits" = "Number of site visits",
+        "Total<br>Measurements" = "Number of measurements",
+        "Missing<br>Values" = "Number of missing values"
+      )
+      tooltips_json <- jsonlite::toJSON(tooltips, auto_unbox = TRUE)
+      dt<- DT::datatable(summary_table, colnames = c("Site", "Minimum", "Q1", "Mean", "Median", "Q3", "Maximum", "Standard<br>Deviation", "Site<br>Visits", "Total<br>Measurements", "Missing<br>Values"), escape = FALSE,
+                 extensions=c("Buttons", "KeyTable"),
                  #caption=tags$caption(h3(Title())),
-                 class="stripe hover order-column cell-border",
-                 rownames=F, options=list(paging = FALSE, autoWidth=TRUE, ordering= FALSE, 
-                                          dom= "Bltipr", buttons=c("copy","csv","excel","pdf","print"), keys = TRUE)) %>%
+                 class="stripe hover order-column cell-border", #filter="top",
+                 rownames=F, options=list(paging = FALSE, autoWidth=TRUE, ordering= FALSE,
+                                          dom= "<'dt-buttons'B>ltipr", buttons=c("copy","csv","excel","pdf","print"), keys = TRUE,
+                                          headerCallback = JS("function(thead, data, start, end, display){", 
+                                                              "$(thead).find('th').css('text-align', 'center');",
+                                                              "$(thead).find('th').filter(function() { 
+                                                              return $(this).html().trim() === 'Site'; }).css('text-align', 'left');",
+                                                              "$('th', thead).each(function(index){",
+                                                              " var tooltips = ",
+                                                              tooltips_json,";",
+                                                              " var colName = $
+                                                              (this).html().trim();",
+                                                              " if(tooltips[colName]) {",
+                                                              " $(this).attr('title', tooltips[colName]);",
+                                                              " }",
+                                                              "});",
+                                                              "}"))) %>%
     #,server=F)
-  
-    DT::formatStyle("Site", fontWeight = if(input$SummaryBoxBy %in% c("month", "year")) {
+
+      DT::formatStyle(columns = setdiff(names(summary_table), "Site"), textAlign = "center") %>%
+      DT::formatStyle(columns = "Site", textAlign = "left", fontWeight = if(input$SummaryBoxBy %in% c("month", "year")) {
       DT::styleEqual(group_headers$Site, rep("bold", nrow(group_headers)))
-    } else if (input$SummaryBoxBy == "site") { "bold" } else { NULL }
+      } else if (input$SummaryBoxBy == "site") { "bold" 
+      } else { 
+        NULL }
       ,backgroundColor = if(input$SummaryBoxBy %in% c("month", "year")) {
        DT::styleEqual(group_headers$Site, rep("#f0f0f0", nrow(group_headers)))
       } else {
@@ -399,7 +526,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     notifs <- summary()
     
     numeric_table <- notifs %>%
-      dplyr::select(-c(n, n_site_visit, Aggregation, Site))
+      dplyr::select(-c(Total_Measurements, Site_Visits, Missing_Values, Aggregation, Site))
     
     numeric_table <- as.data.frame(numeric_table)
     numeric_table[is.infinite(as.matrix(numeric_table)) | is.nan(as.matrix(numeric_table))] <- NA
@@ -452,8 +579,6 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     raw_data <- DataUseMultiple () %>%
       dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2])
     
-    summary_data <- summary()
-    
     #Full characteristic name
     char_info <- data.frame(
       Char = NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, info = "CharName"),
@@ -466,57 +591,67 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       Site = NCRNWater::getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteCode"),
       SiteName = NCRNWater::getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteName"), stringsAsFactors = FALSE)
 
-    summary_data <- summary_data %>%
-      dplyr::left_join(site_info, by = "Site") 
+    #Site visit average
+    site_visit_data <- raw_data %>%
+      dplyr::group_by(Site, Date) %>%
+      dplyr::summarise(text_sitevisit_mean = mean(Value, na.rm = TRUE), .groups = "drop")
     
-    raw_data <- raw_data %>%
-      dplyr::left_join(site_info, by = "Site") 
+    #Summary text calculated values
+    text_summary_stats <- site_visit_data %>%
+      dplyr::group_by(Site) %>%
+      dplyr::summarise(
+        Mean = mean(text_sitevisit_mean, na.rm = TRUE),
+        Median = stats::median(text_sitevisit_mean, na.rm = TRUE),
+        Maximum = max(text_sitevisit_mean, na.rm = TRUE),
+        Minimum = min(text_sitevisit_mean, na.rm = TRUE),
+        Date_max = Date[which.max(text_sitevisit_mean)],
+        Date_min = Date[which.min(text_sitevisit_mean)],
+        .groups = "drop") %>%
+      dplyr::right_join(site_info %>%
+      dplyr::filter(Site %in% DataOpts$Site), by = "Site")
+      
 
-    avg_summary <- raw_data %>%
-      dplyr::group_by(Site, SiteName) %>%
-      dplyr::summarize(
-        avg_mean = mean(Value, na.rm = TRUE),
-        avg_median = stats::median(Value, na.rm = TRUE)
-      )
     summary_units <- unique(NCRNWater::getCharInfo(WaterData,parkcode=DataOpts$Park, charname=DataOpts$Param, info="Units"))
     
     site_list <- paste(
-      sapply(1:length(avg_summary$Site), function(i) { 
-          site_name <- site_info$SiteName[i]
-          site_code <- site_info$Site[i]
-          site_data <- avg_summary %>%
+      sapply(1:length(text_summary_stats$Site), function(i) { 
+          site_name <- site_info$SiteName[match(text_summary_stats$Site[i], site_info$Site)]
+          site_code <- text_summary_stats$Site[i]
+          site_data <- text_summary_stats %>%
             dplyr::filter(Site == site_code)
+          
           if (nrow(site_data) == 0 ||
-              all(is.na(site_data$avg_mean))) {
+              all(is.na(site_data$Mean))) {
                         paste0("<li><b>", site_name, " -</b> Data not collected </li>")
           } else {
-                        paste0("<li><b>", site_name, " -</b> Mean: ", round(site_data$avg_mean, 2), " ", summary_units,
-                        ", Median: ", round(site_data$avg_median, 2), " ", summary_units, ".</li>") }
+                        paste0("<li><b>", site_name, " -</b> Mean: ", round(site_data$Mean, 2), " ", summary_units,
+                        ", Median: ", round(site_data$Median, 2), " ", summary_units, ".</li>") }
       }), 
       collapse = "")
 
     #Highest/Lowest values
-    highest_value <- raw_data[which.max(raw_data$Value), ]
-    lowest_value <- raw_data[which.min(raw_data$Value), ]
-  
+    highest_value <- text_summary_stats[which.max(text_summary_stats$Maximum), ]
+    lowest_value <- text_summary_stats[which.min(text_summary_stats$Minimum), ]
+
     highest_lowest_sentence <- ""
       if (nrow(highest_value) > 0 & nrow(lowest_value) > 0) {
-    highest_month <- format(as.Date(highest_value$Date), "%B")
-    highest_year <- format(as.Date(highest_value$Date), "%Y")
-    lowest_month <- format(as.Date(lowest_value$Date), "%B")
-    lowest_year <- format(as.Date(lowest_value$Date), "%Y")
+    highest_month <- format(as.Date(highest_value$Date_max), "%B")
+    highest_year <- format(as.Date(highest_value$Date_max), "%Y")
+    lowest_month <- format(as.Date(lowest_value$Date_min), "%B")
+    lowest_year <- format(as.Date(lowest_value$Date_min), "%Y")
     
     highest_lowest_sentence <- paste0(
-            "<p>The highest ", FullParamName, " value across selected sites was ", round(highest_value$Value, 2), " " 
+            "<p>The highest ", FullParamName, " value across selected sites was ", round(highest_value$Maximum, 2), " " 
             ,summary_units, " at ", highest_value$SiteName, " in ", highest_month, " ", highest_year
-            ,", while the lowest value was ", round(lowest_value$Value, 2), " ", summary_units, " at ", lowest_value$SiteName 
+            ,", while the lowest value was ", round(lowest_value$Minimum, 2), " ", summary_units, " at ", lowest_value$SiteName 
             ," in ", lowest_month, " ", lowest_year, ".</p>")}
 
     #Generate text
     HTML(paste0(
             "<p><b><span style='font-size: 18px;'>Summary Report:</b></p>"
             ,"<p>The mean and median values for ", FullParamName, " at the selected sites and years are as follows:</p>" 
-            ,"<ul>", site_list, "</ul>", highest_lowest_sentence)
+            ,"<ul>", site_list, "</ul>", highest_lowest_sentence, 
+            "<p>*Summary statistics of site visit averages.</p>")
             )
     })
   
@@ -831,50 +966,380 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   BoxSite<-callModule(siteChooser, id="BoxSite", data=WaterData, park=reactive(DataOpts$Park), chosen=reactive(DataOpts$Site))
   BoxParam<-callModule(paramChooser, id="BoxParam",data=WaterData, park=reactive(DataOpts$Park), site=reactive(DataOpts$Site), 
                         chosen=reactive(DataOpts$Param))
-  BoxYears<-callModule(yearChooser, id="BoxYears", data=DataUse, chosen=reactive(DataOpts$Years) )
-  
+  BoxYears<-callModule(yearChooser, id="BoxYears", data=DataUseMultiple, chosen=reactive(DataOpts$Years) )
   
   observeEvent(BoxPark(), DataOpts$Park<-BoxPark() )
   observeEvent(BoxSite(), DataOpts$Site<-BoxSite() )
   observeEvent(BoxParam(), DataOpts$Param<-BoxParam() )
   observeEvent(BoxYears(), DataOpts$Years<-BoxYears() )
+
+#### Box Plot 2.0 ####
+
+hline <- function(y = 0, color = "red", dash = 'dash') {
+    # Make a list of parameters to be passed to plotly to generate a horizontal dashed line for water quality threshold. 
+    # Args:
+    #  y: int, optional. Default 0. The vertical position at which the horizontal line should be drawn.
+    #  color: chr or c(int), optional. Default 'red'. The color of the horizontal line. Can pass str E.g., 'red' or str hex, or c(R,G,B).
+    #  dash: chr, optional. Default 'dash'. The linetype for the horizontal line.
+    #  
+    # Returns:
+    #  list
+    # 
+    # Example:
+    #   myhline <- hline(y=10)
+    #
+  list(
+    type = "line",
+    x0 = 0,
+    x1 = 1,
+    xref = "paper",
+    y0 = y,
+    y1 = y,
+    line = list(color = color, dash = dash)
+  )
+}
+
+BoxPlotMultipleOut<-reactive({
+    # A reactive function that a plotly of boxplots based on user selected site(s) and aggregation method (year, month, or site). 
+    # Args:
+    #  DataOpts$Years, c(int), required. The character string provided by yearChooser() in global.R. 
+    #  input$SummaryBoxBy, chr, required. Determines aggregation type and formats accordingly if month or year is selected. 
+    #  input$BoxThreshLine, bool, optional. Default False. If True, looks up the water quality threshold.
+    #  DataOpts$Park, chr, required. A park acronym. E.g., 'ROCR'.
+    #  DataOpts$Site, chr or c(chr), required. A site code. E.g., 'NCRN_ROCR_KLVA'
+    #  DataOpts$Param, chr, required. A characteristic abbreviation. E.g., 'DOper'.
+    #  
+    # Returns:
+    #  Plotly figure
+    # 
+    # Example:
+    #   DataOpts$Years <- c(2010,2024),
+    #   input$SummaryBoxBy <- "year"
+    #   input$BoxThreshLine <- T
+    #   DataOpts$Park <- 'ROCR'
+    #   DataOpts$Site <- c('NCRN_ROCR_KLVA', 'NCRN_ROCR_FEBR')
+    #   DataOpts$Param <- 'DOper'
+    #   
+    #   myfigure <- BoxPlotMutlipleOut(
+    #     DataOpts$Years
+    #     ,input$SummaryBoxBy
+    #     ,input$BoxThreshLine
+    #     ,DataOpts$Park
+    #     ,DataOpts$Site
+    #     ,DataOpts$Param
+    #   )
+    #
+  req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
+
+  # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L73
+  boxplot_df <- DataUseMultiple() %>%
+    dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) #year filtering
+
+  # initialize variables
+  ynames <- c()
+  xname <- NA
+  labels <- NA
+  assessment <- input$BoxThreshLine
+  assessments <- c()
+  threshold <- NA
+
+  # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L75-L98
+  for (site in DataOpts$Site){
+    yname<-paste0(
+      getCharInfo(
+        object=WaterData
+        ,parkcode=DataOpts$Park
+        ,sitecode = site
+        ,charname=DataOpts$Param
+        , info="DisplayName"
+        )
+      ," ("
+      ,getCharInfo(
+        object=WaterData
+        ,parkcode=DataOpts$Park
+        ,sitecode = site
+        ,charname=DataOpts$Param
+        ,info="Units"
+        )
+      ,")"
+      )
+
+    ynames <- c(yname, ynames)
+
+  }
+
+  # resolve conflicts that would happen if the metadata file was messed up
+  # e.g., if one characteristic had multiple units
+  n_ynames <- length(ynames %>% unique)
+  if (n_ynames == 1){
+    yname <- ynames %>% unique
+  } else if (n_ynames == 0){
+    yname <- ''
+  } else {
+    yname <- ynames[1]
+  }
+
+  xname<-switch(
+    input$BoxBy
+    ,year="Year"
+    ,month="Month"
+    ,site="Site"
+    )
+
+  if(assessment){
+      for (site in DataOpts$Site){
+        tmp<-c(getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="LowerPoint"),
+          getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="UpperPoint")) %>%
+          unlist %>% unique
+        assessments <- c(tmp, assessments)
+    }
+    threshold <- assessments %>% unique
+    threshold <- threshold[!is.na(threshold)] # needed if there is no upper or lower threshold.
+  }
   
+  # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L106-L127
+
+  Grouper<-switch(
+    input$BoxBy # the "Compare by:" selection (year, month, site)
+    ,year=boxplot_df$Date %>% lubridate::year() %>% factor
+    ,month=boxplot_df$Date %>% lubridate::month(label=T) %>% factor
+    ,site=boxplot_df$MonitoringLocationName
+    )
+
+  n_not_na <- nrow(boxplot_df %>% dplyr::filter(is.na(Value)==F))
+  n_na <- nrow(boxplot_df %>% dplyr::filter(is.na(Value)))
+  title <- paste0(NCRNWater::getParkInfo(object=WaterData, parkcode=DataOpts$Park, info="ParkLongName"), ': ', yname, ' [measurements: ', n_not_na, ', NAs: ', n_na,']')
+
+  m <- list(
+    l = 100,
+    r = 50,
+    b = 100,
+    t = 100,
+    pad = 20
+  )
+  t <- list(
+    size = global_textsize
+    )
+  baseplot <-
+    plotly::plot_ly(
+      boxplot_df
+      ,y= ~Value
+      ,x= ~Grouper
+      ,color= ~MonitoringLocationName
+      ,type='box'
+      # ,height = global_figure_height
+      # ,width = global_figure_width
+      ,width = (0.73*as.numeric(input$dimension[1]))
+      ,height = (0.75*as.numeric(input$dimension[2]))
+    ) %>% layout(
+      boxmode = 'group'
+      ,font=t
+      ,margin=m
+      ,title = list(text=title ,font=t)
+      ,legend = list(
+        title=list(text='<br>Site<br>')
+        ,font=t
+        )
+      ,yaxis = list(title=list(text=paste0(yname, '<br>'), font=t), font=t)
+      ,xaxis = list(title=list(text=paste0(xname, '<br>'), font=t), font=t)
+    )
+
+  if (assessment==T & identical(threshold, numeric(0))==F) {
+    # a <- list( # commented-out because the annotation doesn't look great
+    #   x = 1,
+    #   y = 0.95*threshold,
+    #   text = paste0(stringr::str_split_1(yname, '[(]')[1], 'threshold: ', threshold, ' ', stringr::str_extract(yname, '(?<=\\()[^\\^\\)]+')),
+    #   xref = "x",
+    #   yref = "y",
+    #   showarrow = F,
+    #   ax = 20,
+    #   ay = -40
+    # )
+
+    baseplot %>% layout(
+      shapes = list(hline(threshold))
+      # ,annotations = a # commented-out because the annotation doesn't look great
+    )
+
+  } else {
+    baseplot
+  }
+  # OutPlot<-ggplot( # commented out because replaced with plot_ly; saved just in case
+  #   boxplot_df
+  #   ,aes(
+  #     x=Grouper
+  #     ,y=Value
+  #     ,fill=MonitoringLocationName
+  #     # note: custom hovertext is not available for boxplots
+  #     # https://github.com/ua-snap/northern-climate-reports/issues/85
+  #     # https://github.com/plotly/plotly.R/issues/1636
+  #     # ,text=MonitoringLocationName
+  #     )
+  #   ) +
+  #   geom_boxplot(alpha=1) +
+  #   # geom_boxplot(outlier.size=sizes[1], outlier.color=outliercolor, lwd=sizes[2]) +
+  #   {if (is.numeric(assessment)) geom_hline(yintercept=assessment,color='red',linetype="dashed",size=2)}+
+  #   labs(title=title,y=yname)+
+  #   scale_x_discrete(name=xname)+
+  #   scale_fill_discrete(name = "Site<br>")+
+  #   theme_bw()+
+  #   theme(
+  #     panel.grid = element_blank()
+  #     ,text = element_text(size=global_textsize)
+  #     )
+
+  # plotly::ggplotly(OutPlot) %>% layout(boxmode = "group", height = global_figure_height, width = global_figure_width)
+
+  })
+
+output$BoxPlotMultiple<-renderPlotly({   BoxPlotMultipleOut() })
+
 #### Box Plot ####
   
-  BoxPlotOut<-reactive({
-    req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
-    waterbox(object=WaterData, parkcode=DataOpts$Park, sitecode=if(input$BoxBy !="site") DataOpts$Site else NA, 
-             charname = DataOpts$Param, by=input$BoxBy, title=Title(),
-             years=DataOpts$Years[1]:DataOpts$Years[2], assessment=input$BoxThreshLine, assesscolor=ThCol(), outliercolor = BadCol(),
-             sizes=c(GraphOpts$PointSize, GraphOpts$LineWidth, GraphOpts$LineWidth),
-             labels=if(input$BoxBy=="site") getSiteInfo(WaterData, parkcode= DataOpts$Park, info="SiteName") else NA) +
-              theme(text=element_text(size=GraphOpts$FontSize*10))
-  })
+  # BoxPlotOut<-reactive({
+  #   req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
+  #   p <- waterbox(
+  #     object=WaterData
+  #     ,parkcode=DataOpts$Park
+  #     ,sitecode=if(input$BoxBy !="site") DataOpts$Site else NA
+  #     ,charname = DataOpts$Param
+  #     ,by=input$BoxBy
+  #     ,title=Title()
+  #     ,years=DataOpts$Years[1]:DataOpts$Years[2]
+  #     ,assessment=input$BoxThreshLine
+  #     ,assesscolor=ThCol()
+  #     ,outliercolor = BadCol()
+  #     # ,webplot=T
+  #     ,sizes=c(GraphOpts$PointSize, GraphOpts$LineWidth, GraphOpts$LineWidth)
+  #     ,labels=if(input$BoxBy=="site") getSiteInfo(WaterData, parkcode= DataOpts$Park, info="SiteName") else NA) +
+  #   theme(text=element_text(size=GraphOpts$FontSize*10))
+    
+  #   # plotly::ggplotly(p, tooltip = "text")
+  #   plotly::ggplotly(p)
+
+  # })
    
-  output$BoxPlot<-renderPlot({   BoxPlotOut() })
+  # output$BoxPlot<-renderPlotly({   BoxPlotOut() })
+
   
   #### BoxThreshold Summary ####
   
-  BoxThresholdSummary<-reactive({    
-    req(input$BoxThreshLine)
-    paste(h4("Threshold:"),"\n",
-          c(getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="LowerDescription"),
-            getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, 
-                        info="UpperDescription"))[!is.na(Thresholds())])
+  # BoxThresholdSummary<-reactive({    
+  #   req(input$BoxThreshLine)
+  #   paste(h4("Threshold:"),"\n",
+  #         c(getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="LowerDescription"),
+  #           getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, 
+  #                       info="UpperDescription"))[!is.na(Thresholds())])
+  # })
+  
+  # output$BoxThresholdSummary<-renderUI( HTML(BoxThresholdSummary()) )
+
+  BoxThresholdSummaryMultiple<-reactive({    
+    # Make an html string of water quality thresholds to be displayed when the user asks for the thresholds. 
+    # Args:
+    #  input$BoxThreshLine, bool, optional. Default False. If True, looks up the water quality threshold.
+    #  DataOpts$Park, chr, required. A park acronym. E.g., 'ROCR'.
+    #  DataOpts$Site, chr or c(chr), required. A site code. E.g., 'NCRN_ROCR_KLVA'
+    #  DataOpts$Param, chr, required. A characteristic abbreviation. E.g., 'DOper'.
+    #  
+    # Returns:
+    #  chr
+    # 
+    # Example:
+    #   input$BoxThreshLine <- T
+    #   DataOpts$Park <- 'ROCR'
+    #   DataOpts$Site <- c('NCRN_ROCR_KLVA', 'NCRN_ROCR_FEBR')
+    #   DataOpts$Param <- 'DOper'
+    #   
+    #   mythresholds <- 
+    #     BoxThresholdSummaryMultiple(
+    #       ,input$BoxThreshLine
+    #       ,DataOpts$Park
+    #       ,DataOpts$Site
+    #       ,DataOpts$Param
+    #     )
+    #
+    req(input$BoxThreshLine, DataOpts$Park, DataOpts$Site, DataOpts$Param)
+
+    sitethreshes <- c()
+
+    if(input$BoxThreshLine){
+        for (site in DataOpts$Site){
+          tmp<-c(getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="LowerDescription"),
+            getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="UpperDescription")) %>%
+            unlist %>% unique
+          sitethreshes <- c(tmp, sitethreshes)
+      }
+      sitethresh <- sitethreshes %>% unique
+      sitethresh <- sitethresh[!is.na(sitethresh)] # needed if there is no upper or lower sitethresh.
+    }
+
+    if (length(sitethresh)>0){
+      paste(h4("Threshold:"),"\n",sitethresh)
+    } else {
+      paste(h4("This parameter has no water quality threshold."),"\n")
+    }
   })
   
-  output$BoxThresholdSummary<-renderUI( HTML(BoxThresholdSummary()) )
+  output$BoxThresholdSummaryMultiple<-renderUI( HTML(BoxThresholdSummaryMultiple()) )
+    
+  # BoxRefSummary<-reactive({
+  #   req(input$BoxThreshLine) 
+  #   paste(h4("Threshold Reference:"),"\n",
+  #         getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="AssessmentDetails")) 
+  # })      
   
+  # output$BoxRefSummary<-renderUI(HTML(BoxRefSummary()))     
   
-  BoxRefSummary<-reactive({
-    req(input$BoxThreshLine) 
-    paste(h4("Threshold Reference:"),"\n",
-          getCharInfo(WaterData,parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="AssessmentDetails")) 
-  })      
-  
-  output$BoxRefSummary<-renderUI(HTML(BoxRefSummary()))
+  BoxRefSummaryMultiple<-reactive({    
+    # Make an html string of water quality threshold references to be displayed when the user asks for the thresholds. 
+    # Args:
+    #  input$BoxThreshLine, bool, optional. Default False. If True, looks up the water quality threshold.
+    #  DataOpts$Park, chr, required. A park acronym. E.g., 'ROCR'.
+    #  DataOpts$Site, chr or c(chr), required. A site code. E.g., 'NCRN_ROCR_KLVA'
+    #  DataOpts$Param, chr, required. A characteristic abbreviation. E.g., 'DOper'.
+    #  
+    # Returns:
+    #  chr
+    # 
+    # Example:
+    #   input$BoxThreshLine <- T
+    #   DataOpts$Park <- 'ROCR'
+    #   DataOpts$Site <- c('NCRN_ROCR_KLVA', 'NCRN_ROCR_FEBR')
+    #   DataOpts$Param <- 'DOper'
+    #   
+    #   mythreshold_references <- 
+    #     BoxRefSummaryMultiple(
+    #       ,input$BoxThreshLine
+    #       ,DataOpts$Park
+    #       ,DataOpts$Site
+    #       ,DataOpts$Param
+    #   )
+    #
+    req(input$BoxThreshLine, DataOpts$Park, DataOpts$Site, DataOpts$Param)
 
+    sitethreshes <- c()
+
+    if(input$BoxThreshLine){
+      for (site in DataOpts$Site){
+        tmp<-c(getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="AssessmentDetails"),
+          getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="AssessmentDetails")) %>%
+          unlist %>% unique
+        sitethreshes <- c(tmp, sitethreshes)
+      }
+      sitethresh <- sitethreshes %>% unique
+      sitethresh <- sitethresh[!is.na(sitethresh)] # needed if there is no upper or lower sitethresh.
+      
+      print(sitethresh)
+      print('got here\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n')
+      if (length(sitethresh)>0){
+        paste(h4("Threshold Reference:"),"\n",sitethresh)
+      }
+    }
+  })
   
+output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
+
   #### Plot downloads ####
   output$BoxPlot.PNG<-downloadHandler(
     filename=function(){paste(Title(), ".png", sep="")}, 
@@ -1093,12 +1558,50 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   
 ### Exceedances Data Table Output ###
   
+  exceedances_tooltips <- list(
+    "OrganizationFormalName" = "Name of organization conducting monitoring activities"
+    ,"ActivityMediaSubdivisionName" = "Code corresponding to a unique water quality monitoring event at a certain site and date"
+    ,"Date" = "Date of monitoring event"
+    ,"Characteristic" = "Water quality parameter"
+    ,"Value" = "Numeric measurement of a water quality parameter"
+    ,"ResultMeasure.MeasureUnitCode" = "Units of the measured value"
+    ,"UpperThreshold" = "Description of the upper threshold for this site and parameter"
+    ,"LowerThreshold" = "Description of the lower threshold for this site and parameter"
+  )
+  exceedances_tooltips_json <- jsonlite::toJSON(exceedances_tooltips, auto_unbox = TRUE)
+  
   output$ExceedancesTable <-DT::renderDataTable(
-    expr=datatable(ExceedancesDataUse(), extensions=c("Buttons","KeyTable"),caption=htmltools::tags$caption(htmltools::h3(Title())),
-                   class="stripe hover order-column cell-border",filter="top",
-                   rownames=F, options=list(autoWidth=TRUE, dom="Bltirp", buttons=c("copy","csv","excel","pdf","print"), keys=TRUE)
-    ),server=F
-  )  
+    expr=datatable(ExceedancesDataUse()
+                   ,extensions=c("Buttons","KeyTable")
+                   ,caption=htmltools::tags$caption(htmltools::h3(Title()))
+                   ,class="stripe hover order-column cell-border"
+                   ,filter="top"
+                   ,rownames=F
+                   ,options=list(
+                     autoWidth=TRUE
+                     ,dom="Bltirp"
+                     ,buttons=c("copy","csv","excel","pdf","print")
+                     ,keys=TRUE
+                     ,headerCallback = JS("function(thead, data, start, end, display){", 
+                                          "$(thead).find('th').css('text-align', 'center');",
+                                          "$(thead).find('th').filter(function() { 
+                                          return $(this).html().trim() === 'Site'; }).css('text-align', 'left');",
+                                          "$('th', thead).each(function(index){",
+                                          " var tooltips = ",
+                                          exceedances_tooltips_json,";",
+                                          " var colName = $
+                                          (this).html().trim();",
+                                          " if(tooltips[colName]) {",
+                                          " $(this).attr('title', tooltips[colName]);",
+                                          " }",
+                                          "});",
+                                          "}"
+                     )
+                   )
+    )
+    ,server=F
+  ) 
+  
   
 ### SummarizeExceedances() Function ###
   
@@ -1181,12 +1684,12 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   oldest_year<- min(histdata$Year)
   nex<- histdata[histdata$Year == recent_year, "nex"]
   ntot<- histdata[histdata$Year == recent_year, "ntot"]
-  recent_freq<- sprintf("%.2f%%", (nex/ntot)*100)
+  # recent_freq<- sprintf("%.2f%%", (nex/ntot)*100)
   sum_nex<- sum(histdata$nex)
   sum_ntot<- sum(histdata$ntot)
-  sum_freq<- sprintf("%.2f%%", (sum_nex/sum_ntot)*100)
-  freq_comp<- ifelse((nex/ntot) > (sum_nex/sum_ntot), "greater than",
-                       ifelse((nex/ntot) == (sum_nex/sum_ntot), "equal to", "less than"))
+  # sum_freq<- sprintf("%.2f%%", (sum_nex/sum_ntot)*100)
+  # freq_comp<- ifelse((nex/ntot) > (sum_nex/sum_ntot), "greater than",
+  #                      ifelse((nex/ntot) == (sum_nex/sum_ntot), "equal to", "less than"))
   grammar1<- if(nex==1) {
     paste("There was", nex, "exceedance of the ")
   } else {
@@ -1202,7 +1705,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   summary<- c(
     paste0(grammar1, Characteristic, " water quality threshold among ", ntot, " observations at ", Sitename, " in ", recent_year, ".")
     ,paste0(grammar2, Characteristic, " water quality threshold among ", sum_ntot, " observations at ", Sitename, " since monitoring began in ", oldest_year, ".")
-    ,paste0("<u>", recent_freq, "</u>", " of observations exceeded the water quality threshold in ", recent_year, ", ", freq_comp, " the overall exceedance percentage of ", "<u>", sum_freq, "</u>", ".")
+    # ,paste0("<u>", recent_freq, "</u>", " of observations exceeded the water quality threshold in ", recent_year, ", ", freq_comp, " the overall exceedance percentage of ", "<u>", sum_freq, "</u>", ".")
   )
   summary_bullets<- paste0("<li>", summary, "</li>", collapse = "")
    
@@ -1370,8 +1873,15 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   })
   
  #### NPS Data ####
-  NPSGeoData<-data.frame(ParkCode=getSiteInfo(WaterData, info="ParkCode"), SiteCode=getSiteInfo(WaterData, info="SiteCode"), SiteName=getSiteInfo(WaterData, info= "SiteName"), 
-                         latitude=getSiteInfo(WaterData, info="lat"), longitude=getSiteInfo(WaterData, info="long"), stringsAsFactors = F)
+  NPSGeoData <- data.frame(ParkCode=getSiteInfo(WaterData, info="ParkCode"), SiteCode=getSiteInfo(WaterData, info="SiteCode"), ParkName=getSiteInfo(WaterData, info = "ParkShortName"), SiteName=getSiteInfo(WaterData, info= "SiteName"), 
+                          latitude=getSiteInfo(WaterData, info="lat"), longitude=getSiteInfo(WaterData, info="long"), stringsAsFactors = F)
+
+  active_sites <- metadata_active_chars %>%
+    filter(IsActiveSiteCode == "True") %>%
+    pull(SiteCode)
+  
+  NPSGeoData_filtered <- NPSGeoData %>%
+      filter(SiteCode %in% active_sites)
   
   #CharIndex is a true/false of characters that have thresholds
   CharIndex<-{getCharInfo(WaterData,info="LowerPoint") %>% is.na %>% not} | {getCharInfo(WaterData,info="UpperPoint") %>% is.na %>% not} 
@@ -1380,7 +1890,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   output$MapChars<-renderUI( selectizeInput(inputId="MapChar",label="Charactersitic to Map", choices=NPSchars[order(names(NPSchars))] ))
   
   #coloring
-  MapColors<-colorNumeric(palette="viridis", domain=c(0,1)) # NPS % meets threshol
+  MapColors<-colorNumeric(palette="viridis", domain=c(0,1)) # NPS % meets threshold
   MapColors2<-colorFactor(palette="viridis", domain=c("<5th percentile","5th - 25th percentile", 
           "25th - 50th percentile", "50th - 75th percentile", "75th - 95th percentile", "> 95th percentile" ), ordered = T )  # USGS percentile category for discharge
   
@@ -1388,27 +1898,106 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
     req(input$MapChar)
     exceed(WaterData, charname=input$MapChar)
   })
-
+  
+  map_values <- reactiveValues(
+    # Initializes a reactiveValues object to store dynamic map settings including longitude, latitude, and zoom level. 
+    # Args:
+    #   netlon, num, required. Longitude for map centering, initially set to NA. 
+    #   netlat, num, required. Latitude for map centering, initially set to NA. 
+    #   netzoom, num, required. Zoom level for map centering, initially set to NA. 
+    #
+    # Returns:
+    #   A reactiveValues object, 'map_values', with fields netlon, netlat, and netzom. 
+    #
+    # Example:
+    #   map_values$netlat <- mean(NPSGeoData$latitude, na.rm = TRUE)
+    #   map_values$netlon <- mean(NPSGeoData$longitude, na.rm = TRUE)
+    #   map_values$netzoom <- 9
+    
+    netlon = NA, 
+    netlat = NA, 
+    netzoom = NA
+  )
+  
   #### the Map ####
-  output$WaterMap<-renderLeaflet({ 
-    netlat<-dplyr::case_when(Network == "NCRN" ~ 39.25, 
-                             Network == "NETN" ~ 42.5)
-    netlon<-dplyr::case_when(Network == "NCRN" ~ -77,
-                             Network == "NETN" ~ -71.6)
+  output$WaterMap<-leaflet::renderLeaflet({ 
+    # Renders a map widget centered on water monitoring sites, with dynamic zoom and basemap options.  
+    # Args:
+    #   NPSGeoData$latitude, num, required. Numeric vector containing the latitude coordinates for water monitoring sites. 
+    #   NPSGeoData$longitude, num, required. Numeric vector containing the longitude coordinates for water monitoring sites. 
+    #   map_values$netlat, num, required. Reactive value used to store the map's central latitude.
+    #   map_values$netlon, num, required. Reactive value used to store the map's central longitude.
+    #   map_values$netzoom, num, required. Reactive value used to store the zoom level dynamically based on coordinate range. 
+    # 
+    # Returns:
+    #  A Leaflet map with configured basemap layers ("map", "slate") and zoom extent.
+    #
+    # Example:
+    #   output$WaterMap<-leaflet::renderLeaflet({ 
+    #   netlat<- mean(NPSGeoData$latitude, na.rm = TRUE)
+    #   netlon<- mean(NPSGeoData$longitude, na.rm = TRUE)
+    #   netzoom <- 8
+    #
+    #   map_values$netlat <- netlat
+    #   map_values$netlon <- netlon
+    #   map_values$netzoom <- netzoom
+    #
+    #   leaflet::leaflet() %>%
+    #   leaflet::setView(lng = netlon, lat = netlat , zoom = netzoom) 
+    #   })
     
-    netzoom<-dplyr::case_when(Network == "NCRN" ~ 9,
-                              Network == "NETN" ~ 7)
+    #buffer_factor<- 0.05
+    netlat<- mean(NPSGeoData$latitude, na.rm = TRUE)
+    netlon<- mean(NPSGeoData$longitude, na.rm = TRUE)
+
+    min_lat<- min(NPSGeoData$latitude, na.rm = TRUE)
+    max_lat<- max(NPSGeoData$latitude, na.rm = TRUE)
+    min_lon<- min(NPSGeoData$longitude, na.rm = TRUE)
+    max_lon<- max(NPSGeoData$longitude, na.rm = TRUE)
+
+    lat_range<- max_lat - min_lat
+    lon_range<- max_lon - min_lon
     
-    leaflet() %>% 
-    setView(lng = netlon, lat = netlat, zoom = netzoom) %>% 
-      
-    addTiles() # temporary workaround to provide a basemap
+    max_range<- max(lat_range, lon_range)
+
+    netzoom<- dplyr::case_when(
+      max_range > 10 ~5,
+      max_range > 5 ~7,
+      max_range > 2.5 ~8,
+      max_range > 1.5 ~9,
+      max_range > 1 ~9,
+      max_range > 0.5 ~10,
+      TRUE ~10
+    )
+
+    map_values$netlat <- netlat
+    map_values$netlon <- netlon
+    map_values$netzoom <- netzoom
+
+  #netzoom<- ifelse(max(lat_range, long_range) >5, 7, 9)
+
+  # netlat<-dplyr::case_when(Network == "NCRN" ~ 39.25,
+  #                          Network == "NETN" ~ 42.5)
+  # netlon<-dplyr::case_when(Network == "NCRN" ~ -77,
+  #                          Network == "NETN" ~ -71.6)
+  # netzoom<-dplyr::case_when(Network == "NCRN" ~ 9,
+  #                          Network == "NETN" ~ 7)
+
+    leaflet() %>%
+      leaflet::addTiles(group="Map", urlTemplate="https://atlas-stg.geoplatform.gov/styles/v1/atlas-user/ck58pyquo009v01p99xebegr9/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiYXRsYXMtdXNlciIsImEiOiJjazFmdGx2bjQwMDAwMG5wZmYwbmJwbmE2In0.lWXK2UexpXuyVitesLdwUg", attribution="National Park Service, © Mapbox, and © OpenStreetMap") %>%
+    #  leaflet::addTiles(group="Imagery", urlTemplate="https://atlas-stg.geoplatform.gov/styles/v1/atlas-user/ck72fwp2642dv07o7tbqinvz4/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiYXRsYXMtdXNlciIsImEiOiJjazFmdGx2bjQwMDAwMG5wZmYwbmJwbmE2In0.lWXK2UexpXuyVitesLdwUg", attribution="National Park Service, © Mapbox, and © OpenStreetMap") %>%
+      leaflet::addTiles(group="Slate", urlTemplate = "https://atlas-stg.geoplatform.gov/styles/v1/atlas-user/ck5cpvc2e0avf01p9zaw4co8o/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiYXRsYXMtdXNlciIsImEiOiJjazFmdGx2bjQwMDAwMG5wZmYwbmJwbmE2In0.lWXK2UexpXuyVitesLdwUg", attribution ="National Park Service, © Mapbox, and © OpenStreetMap") %>%
+      leaflet::addLayersControl(map=., baseGroups=c("Map","Slate"), options=layersControlOptions(collapsed=T)) %>%
+
+    # addTiles() # temporary workaround to provide a basemap
     # broken map tiles:
-    # addTiles(group="Map", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.397cfb9a,nps.3cf3d4ab,nps.b0add3e6/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q",attribution=NPSAttrib, options=tileOptions(minZoom=netzoom)) %>% 
-    # addTiles(group="Imagery", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.2c589204,nps.25abf75b,nps.7531d30a/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q",attribution=NPSAttrib, options=tileOptions(minZoom=netzoom)) %>% 
-    # addTiles(group="Slate", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.9e521899,nps.17f575d9,nps.e091bdaf/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q", attribution=NPSAttrib, options=tileOptions(minZoom=netzoom) ) %>% 
-    # addLayersControl(map=., baseGroups=c("Map","Imagery","Slate"), options=layersControlOptions(collapsed=T))
-  })
+    # addTiles(group="Map", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.397cfb9a,nps.3cf3d4ab,nps.b0add3e6/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q",attribution=NPSAttrib, options=tileOptions(minZoom=netzoom)) %>%
+    # addTiles(group="Imagery", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.2c589204,nps.25abf75b,nps.7531d30a/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q",attribution=NPSAttrib, options=tileOptions(minZoom=netzoom)) %>%
+    # addTiles(group="Slate", urlTemplate="//{s}.tiles.mapbox.com/v4/nps.9e521899,nps.17f575d9,nps.e091bdaf/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibnBzIiwiYSI6IkdfeS1OY1UifQ.K8Qn5ojTw4RV1GwBlsci-Q", attribution=NPSAttrib, options=tileOptions(minZoom=netzoom) ) %>%
+    # addLayersControl(map=., baseGroups=c("Map","Imagery","Slate"), options=layersControlOptions(collapsed=T)) %>%
+
+    leaflet::setView(lng = netlon, lat = netlat , zoom = netzoom) 
+     })
 
   NPSAttrib<-HTML("<a href='https://www.nps.gov/npmap/disclaimer/'>Disclaimer</a> | 
       &copy; <a href='http://mapbox.com/about/maps' target='_blank'>Mapbox</a>
@@ -1416,24 +2005,226 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       <a class='improve-park-tiles' 
       href='http://insidemaps.nps.gov/places/editor/#background=mapbox-satellite&map=4/-95.97656/39.02772&overlays=park-tiles-overlay'
       target='_blank'>Improve Park Tiles</a>")
+   
+  #  observe({
+  #   if(input$MapNPS){
+  #     leafletProxy("WaterMap") %>% 
+  #       clearGroup("NPS") %>% 
+  #       addCircleMarkers(data=NPSGeoData, group="NPS", 
+  #                        layerId=NPSGeoData$SiteCode, 
+  #                        fillColor=MapColors(ExceedData()$Acceptable/ExceedData()$Total),
+  #                        fillOpacity=.8, stroke=FALSE) %>% 
+  #       
+  #       addLegend(position="topright", pal=MapColors, values=c(0,1), opacity=1,
+  #                   layerId="npsLegend",title=paste0("<svg height='15' width='20'>
+  #                   <circle cx='10' cy='10' r='5', stroke='black' fill='black'/></svg> NPS: % of Acceptable <br>Measurements"),
+  #                 labFormat=labelFormat(suffix="%", transform= function(x) 100*x))
+  #       } else {leafletProxy("WaterMap") %>% clearGroup("NPS") %>% removeControl(layerId="npsLegend")}
+  # })
   
   observe({
-    if(input$MapNPS){
-      leafletProxy("WaterMap") %>% 
-        clearGroup("NPS") %>% 
-        addCircleMarkers(data=NPSGeoData, group="NPS", 
-                         layerId=NPSGeoData$SiteCode, 
-                         fillColor=MapColors(ExceedData()$Acceptable/ExceedData()$Total),
-                         fillOpacity=.8, stroke=FALSE) %>% 
-        
-        addLegend(position="topright", pal=MapColors, values=c(0,1), opacity=1,
-                    layerId="npsLegend",title=paste0("<svg height='15' width='20'>
-                    <circle cx='10' cy='10' r='5', stroke='black' fill='black'/></svg> NPS: % of Acceptable <br>Measurements"),
-                  labFormat=labelFormat(suffix="%", transform= function(x) 100*x))
-        } else {leafletProxy("WaterMap") %>% clearGroup("NPS") %>% removeControl(layerId="npsLegend")}
+    # Updates the "MapIn" checkbox group input dynamically based on unique park names found in NPSGeoData dataset.  
+    # Args:
+    #   NPSGeoData, dataframe, required. Contains park, site, latitude and longitude information.  
+    #
+    # Returns:
+    #   None. An observer that triggers UI changes when the app loads.  
+    #
+    # Example:
+    #   NPSGeoData <- data.frame(ParkCode=getSiteInfo(WaterData, info="ParkCode"), ParkName=getSiteInfo(WaterData, info = "ParkShortName"), stringsAsFactors = F)
+    #   unique_park_names <- unique(NPSGeoData$ParkName)
+    
+    req(NPSGeoData)
+    updateCheckboxGroupInput(session, "MapIn", choices = unique(NPSGeoData$ParkName), inline = FALSE)
   })
   
+  directions <- c("top", "bottom", "left", "right", "tr", "tl", "br", "bl")
+  offset <- list(
+    top = c(0, -18),
+    bottom = c(0, 18),
+    left = c(-18, 0),
+    right = c(18, 0),
+    tr = c(18, -18),
+    tl = c(-18, -18),
+    br = c(18, 18),
+    bl = c(-18, 18)
+    #,center = c(0,0)
+  )
+  
+  NPSGeoData$label_dir <- directions[ (seq_len(nrow(NPSGeoData)) %%
+                                         length(directions)) +1]
+  NPSGeoData$xoffset <- sapply(NPSGeoData$label_dir, function(dir) offset[[dir]][1])
+  NPSGeoData$yoffset <- sapply(NPSGeoData$label_dir, function(dir) offset[[dir]][2])
+  
+  
+  observe({
+    # Handles updates to the map's zoom level, the visibility of labels, and the display of active or inactive sites based on user input.  
+    # Args:
+    #   input$WaterMap_zoom, int, required. The map zoom level. 
+    #   input$MapIn, chr, required. User-selected park names from UI input.
+    #   input$InactiveSites, logical, required. A checkbox input for "Display inactive sites" that indicates whether to display inactive sites.   
+    #   input$WaterMap_groups, chr, required. Indicates which map overlay groups are currently visible on map.  
+    #
+    # Returns:
+    #   Updates map zoom level, adds/removes markers, and updates labels based on the filtered data and user input. 
+    #
+    # Examples:
+    #   input$WaterMap_zoom <- 12
+    #   input$MapIn <- "Catoctin"
+    #   input$InactiveSites <- FALSE
+    #   input$WaterMap_groups <- c("Map", "NPS")
+    #   
+    #   show_labels <- if (is.null(input$MapIn) || length(input$MapIn) == 0) {
+    #     input$WaterMap_zoom >= 13
+    #     } else {
+    #     input$WaterMap_zoom >= 11
+    #   }
+    # 
+    #   site_data <- if (input$InactiveSites) {
+    #     NPSGeoData
+    #     } else{
+    #     NPSGeoData_filtered
+    #   }
+    # 
+    #   label_color <- if ("Slate" %in% input$WaterMap_groups) {
+    #     "white" 
+    #     } else {
+    #     "black"
+    #   }
+    
+    req(input$WaterMap_zoom)
+    
+    zoom_level <- input$WaterMap_zoom
+    parks <- input$MapIn
 
+    show_labels <- if (is.null(parks) || length(parks) == 0) {
+                    zoom_level >= 13
+    } else {
+      zoom_level >= 11
+    }
+
+    site_data <- if (input$InactiveSites) {
+      NPSGeoData
+    } else{
+      NPSGeoData_filtered
+    }
+
+    filtered_data <- if (is.null(parks) || length(parks) == 0) {
+      site_data
+    } else {
+      site_data[site_data$ParkName %in% parks, ]}
+    
+    filtered_exceed <- ExceedData()
+    
+    merge_data <- dplyr::left_join(filtered_data, filtered_exceed, by = c("SiteCode"="Site"))
+    
+    label_color <- if ("Slate" %in% input$WaterMap_groups) {
+      "white" 
+    } else {
+      "black"
+    }
+
+    #When parks are selected
+    leaflet::leafletProxy("WaterMap") %>%
+      leaflet::clearGroup("NPS") %>%
+      leaflet::addCircleMarkers(data = merge_data, group = "NPS", 
+                       layerId = merge_data$SiteCode, 
+                       fillColor = MapColors(merge_data$Acceptable/merge_data$Total),
+                       fillOpacity = 1, stroke = FALSE) %>%
+      leaflet::addLegend(position="topright", pal=MapColors, values=c(0,1), opacity=1,
+                layerId="npsLegend",title=paste0("<svg height='15' width='20'>
+                    <circle cx='10' cy='10' r='5', stroke='black' fill='black'/></svg> NPS: % of Acceptable <br>Measurements"),
+                labFormat=labelFormat(suffix="%", transform= function(x) 100*x)) 
+
+    if (show_labels) {
+          leaflet::leafletProxy("WaterMap") %>%    
+            leaflet::clearGroup("Sites")
+      for (i in seq_len(nrow(merge_data))) {
+        leaflet::leafletProxy("WaterMap") %>%
+        leaflet::addLabelOnlyMarkers(group = "Sites",
+                            lng = merge_data$longitude[i], lat = merge_data$latitude[i],
+                            label = merge_data$SiteName[i],
+                            labelOptions = labelOptions(noHide = TRUE, textOnly = TRUE, direction = merge_data$label_dir[i], offset= c(merge_data$xoffset[i], merge_data$yoffset[i]),
+                                                        , style = list("font-weight"="bold", "font-size"="13px", "color"=label_color)))
+        } 
+          } else {
+          leaflet::leafletProxy("WaterMap") %>%
+              leaflet::clearGroup("Sites")
+          }
+  })
+
+  observe({
+    # Adjusts map view to selected park(s)
+    # Args:
+    #   input$MapIn, chr, required. User-selected park names from UI input. 
+    #   selected_parks$latitude, num, required. Latitude values for the selected park(s).
+    #   selected_parks$longitude, num, required. Longitude values for the selected park(s). 
+    #
+    # Returns:
+    #   Updated Leaflet map ("WaterMap") that zooms to extent of all selected park locations. 
+    #
+    # Example:
+    #   req(input$MapIn)
+    #   selected_parks <- NPSGeoData %>%
+    #   filter(ParkName %in% input$MapIn)
+    #   if (nrow(selected_parks) > 0 ) {
+    #   leafletProxy("WaterMap") %>%
+    #   fitBounds(
+    #     lat1 = min(selected_parks$latitude, na.rm = TRUE),
+    #     lat2 = max(selected_parks$latitude, na.rm = TRUE),
+    #     lng1 = min(selected_parks$longitude, na.rm = TRUE),
+    #     lng2 = max(selected_parks$longitude, na.rm = TRUE)
+    #   )}
+    
+    req(input$MapIn)
+    selected_parks <- NPSGeoData %>%
+    dplyr::filter(ParkName %in% input$MapIn)
+    if (nrow(selected_parks) > 0 ) {
+      minLat <- min(selected_parks$latitude, na.rm = TRUE)
+      maxLat <- max(selected_parks$latitude, na.rm = TRUE)
+      minLon <- min(selected_parks$longitude, na.rm = TRUE)
+      maxLon <- max(selected_parks$longitude, na.rm = TRUE)
+
+    latPadding <- (maxLat - minLat) * 0.1
+    lonPadding <- (maxLon - minLon) * 0.1
+
+    leaflet::leafletProxy("WaterMap") %>%
+      leaflet::fitBounds(lng1 = minLon - lonPadding,
+                lat1 = minLat - latPadding,
+                lng2 = maxLon + lonPadding,
+                lat2 = maxLat + latPadding)
+    }
+  })
+  
+  observeEvent(
+    # Resets park selection and restores the default Leaflet map view.   
+    # Args:
+    #   input$refreshParks, chr, required. Reactive input triggered by clicking the "Refresh park selections" button.  
+    #   map_values$netlon, chr, required. Default longitude for resetting the map view. 
+    #   map_values$netlat, num, required. Default latitude for resetting the map view. 
+    #   map_values$netzoom, num, required. Default zoom level. 
+    #
+    # Returns:
+    #   Clears the selected parks checkbox group.
+    #   Resets the map view to default latitude/longitude/zoom. 
+    #
+    # Example:
+    #   map_values <- list(netlon = -77.25951, netlat = 38.92281, netzoom = 9)
+    #   observeEvent(
+    #    input$refreshParks, {
+    #    updateCheckboxGroupInput(session, "MapIn", selected = character(0))
+    #    leafletProxy("WaterMap") %>%
+    #    setView(lng = map_values$netlon, lat = map_values$netlat, zoom = map_values$netzoom)
+    #   })
+    
+    input$refreshParks, {
+    shiny::updateCheckboxGroupInput(session, "MapIn", selected = character(0))
+     leaflet::leafletProxy("WaterMap") %>%
+       leaflet::setView(lng = map_values$netlon, lat = map_values$netlat, zoom = map_values$netzoom) %>%
+       leaflet::clearGroup("Sites") %>%
+       leaflet::clearGroup("NPS") %>%
+       leaflet::removeControl(layerId="npsLegend")
+  })
   
   observe({
     if(input$MapUSGS){
@@ -1477,8 +2268,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
         )
     }
   })
-  
-  
+
 
 }) #End of Shiny Server function
     

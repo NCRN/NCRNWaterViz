@@ -70,7 +70,7 @@ shinyServer(function(input,output,session){
 #### Reactive Values for Graphics Options with Defaults ####
 
 GraphOpts<-reactiveValues(Legend=TRUE, FontSize=20, GoodColor="Blue", BadColor="Orange",OutColor="Vermillion",PointSize=10,
-                            ThColor="Orange", TrColor="Green", LineWidth=1)
+                            ThColor="Orange", TrColor="Green", LineWidth=2, ShowHidePoint=F)
  
 #### Reactive Values for Choosing Data ####
 
@@ -110,6 +110,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
         # ),
         ,column(3,selectInput("BadColor","Poor Quality Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$BadColor,
                              width='130px') )
+        ,column(3,checkboxInput("ShowHidePoint", "Show points", value=GraphOpts$ShowHidePoint, width='130px'))
         # column(3,selectInput("OutColor","Outlier Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$OutColor, width='130px')),   
         
       ),
@@ -132,6 +133,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   observeEvent(input$ThColor, GraphOpts$ThColor<-input$ThColor)
   observeEvent(input$TrColor, GraphOpts$TrColor<-input$TrColor)
   observeEvent(input$LineWidth, GraphOpts$LineWidth<-input$LineWidth)
+  observeEvent(input$ShowHidePoint, GraphOpts$ShowHidePoint<-input$ShowHidePoint)
   
   #### About this ... modals ####
   
@@ -919,7 +921,7 @@ WaterSeriesOutMultiple <- reactive({
       ,line=list(width=input$LineWidth)
       ,marker=list(
         size=input$PointSize
-        ,opacity=0
+        ,opacity=as.numeric(input$ShowHidePoint)
         )
     ) %>% layout(
       font=list(size=input$FontSize)
@@ -932,7 +934,7 @@ WaterSeriesOutMultiple <- reactive({
       ,showlegend=T
       ,yaxis = list(title=list(text=paste0(yname, '<br>'), font=list(size=input$FontSize)), font=list(size=input$FontSize))
       ,xaxis = list(title=list(text=paste0(xname, '<br>'), font=list(size=input$FontSize)), font=list(size=input$FontSize))
-    )
+    )   
 
   if (assessment==T & identical(threshold, numeric(0))==F) {
     # a <- list( # commented-out because the annotation doesn't look great

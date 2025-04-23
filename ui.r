@@ -6,18 +6,18 @@ ColorNames<-GraphColors$DisplayColor
 
 #Facts and images for loading screen
 loading_facts <- c(
-  "Did you know that NCRN has been monitoring streams since 2005! A",
-  "Did you know that NCRN has been monitoring streams since 2005! B",
-  "Did you know that NCRN has been monitoring streams since 2005! C",
-  "Did you know that NCRN has been monitoring streams since 2005! D",
-  "Did you know that NCRN has been monitoring streams since 2005! E",
-  "Did you know that NCRN has been monitoring streams since 2005! F"
+  "Did you know that NCRN has been monitoring streams since 2005 A",
+  "Did you know that NCRN has been monitoring streams since 2005 B",
+  "Did you know that NCRN has been monitoring streams since 2005 C",
+  "Did you know that NCRN has been monitoring streams since 2005 D",
+  "Did you know that NCRN has been monitoring streams since 2005 E",
+  "Did you know that NCRN has been monitoring streams since 2005 F"
 )
 
-loading_images <- c(
-  "dwq_NCRN_ANTI_SHCK_2024-06-04_20240604-131442.jpg"
-  ,"dwq_NCRN_MONO_BUCK_2024-06-04_20240604-084406.jpg"
-  ,"dwq_NCRN_PRWI_BONE_2024-06-11_20240611-130821.jpg"
+loading_images <- list(
+   list(src= "dwq_NCRN_ANTI_SHCK_2024-06-04_20240604-131442.jpg", location = "Antietam", date = "June 2024")
+  ,list(src= "dwq_NCRN_MONO_BUCK_2024-06-04_20240604-084406.jpg", location = "Monocacy", date = "June 2024")
+  ,list(src= "dwq_NCRN_PRWI_BONE_2024-06-11_20240611-130821.jpg", location = "Prince William", date = "June 2024")
 )
   
 shinyUI(
@@ -71,12 +71,18 @@ shinyUI(
                     color: #333;
                     text-align: center;
                     position: relative;
-                    margin-top: 50px
+                    margin-top: 50px;
+                    margin: 40px;
+                    display: none;
                     }
                     .loading-image {
-                    max-width: 800px;
+                    max-width: 700px;
                     max-height: 500px;
                     margin: 0 auto;
+                    display: none;
+                    }
+                    .caption-text {
+                    margin-top: 12px; font-size: 18px; color: #333; display: none
                     }
                     .Spinner {
                     color: $4CAF50;
@@ -88,6 +94,7 @@ shinyUI(
                     border-radius: 50%;
                     margin-top: 40px;
                     margin: 72 auto;
+                    display: none;
                     position: center;
                     -webkit-transform: translateZ(0);
                     -ms-transform: translateZ(0);
@@ -152,16 +159,17 @@ shinyUI(
           style = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: white; opacity: 0.8; 
           z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column;",
           
-          tags$div(id =  "typingText", class = "typing-text", style = "margin: 40px; display: none"),
-          tags$img(id = "loadingImage", class = "loading-image", src = "", alt = "Water monitoring Image", style = "display: none"),
-          tags$div(id = "spinner", class = "Spinner", style = "display: none")),
+          tags$div(id =  "typingText", class = "typing-text"),
+          tags$img(id = "loadingImage", class = "loading-image", alt = "Water monitoring Image"),
+          tags$div(id = "captionText"),
+          tags$div(id = "spinner", class = "Spinner")),
       
         tags$script(HTML(sprintf("
                      const facts = %s;
                      const images = %s;
                      
               setTimeout(() => {
-              if (!window.shinyAppLoaded) {
+                     if (!window.shinyAppLoaded) {
                      const fact_index = Math.floor(Math.random() * facts.length);
                      const image_index = Math.floor(Math.random() * images.length);
                    
@@ -169,12 +177,16 @@ shinyUI(
                       fact1.textContent = facts[fact_index];
                       fact1.style.display = 'block';
                     const img1 = document.getElementById('loadingImage')
-                      img1.src = images[image_index];
+                      img1.src = images[image_index].src;
                       img1.style.display = 'block';
+                    const caption1 = document.getElementById('captionText')
+                      caption1.textContent = images[image_index].location + ' - ' + images[image_index].date;
+                      caption1.style.display = 'block';  
                     const spinner1 = document.getElementById('spinner');
                       spinner1.style.display = 'block';
-                  }
-                 }, 1500);",
+  
+                    }
+                  }, 1500);",
                  jsonlite::toJSON(loading_facts, auto_unbox = TRUE),
                  jsonlite::toJSON(loading_images, auto_unbox = TRUE))))
     ),

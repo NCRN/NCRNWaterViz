@@ -108,8 +108,8 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
         # column(3,selectInput("GoodColor","Measurement Color:",choices=GraphColors$DisplayColor, 
         #                    selected=GraphOpts$GoodColor, width='130px')
         # ),
-        ,column(3,selectInput("BadColor","Poor Quality Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$BadColor,
-                             width='130px') )
+        # ,column(3,selectInput("BadColor","Poor Quality Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$BadColor,
+        #                      width='130px') )
         ,column(3,checkboxInput("ShowHidePoint", "Show points", value=GraphOpts$ShowHidePoint, width='130px'))
         # column(3,selectInput("OutColor","Outlier Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$OutColor, width='130px')),   
         
@@ -963,6 +963,8 @@ WaterSeriesOutMultiple <- reactive({
       shapes = list(
         hline(threshold[1])
         ,hline(threshold[2])
+        ) %>% add_trace(
+          
         )
       # ,annotations = a # commented-out because the annotation doesn't look great
     )
@@ -1205,6 +1207,32 @@ hline <- function(y = 0, color = "red", dash = 'dash', size=1) {
   )
 }
 
+hbox <- function(y = 0, color = "red", opacity=0.1) {
+    # Make a list of parameters to be passed to plotly to generate a horizontal rectangle for water quality threshold. 
+    # Args:
+    #  y: int, optional. Default 0. The vertical position at which the rectangle should be drawn.
+    #  color: chr or c(int), optional. Default 'red'. The color of the rectangle fill. Can pass str E.g., 'red' or str hex, or c(R,G,B).
+    #  opacity: num (0,1), optional. Default 0.1. How transparent the rectangle should be. 0 fully transparent to 1 fully opaque.
+    #  
+    # Returns:
+    #  list
+    # 
+    # Example:
+    #   myhbox <- hbox(y=10)
+    #
+  list(
+    type = "rect"
+    ,x0 = 0
+    ,x1 = 1
+    ,xref = "paper"
+    ,y0 = y
+    ,y1 = y+10
+    ,opacity=opacity
+    ,fillcolor = input$ThColor
+    ,line = list(color = input$ThColor)
+  )
+}
+
 BoxPlotMultipleOut<-reactive({
     # A reactive function that a plotly of boxplots based on user selected site(s) and aggregation method (year, month, or site). 
     # Args:
@@ -1368,13 +1396,18 @@ BoxPlotMultipleOut<-reactive({
       shapes = list(
         hline(threshold[1])
         ,hline(threshold[2])
+        # ,hbox(y=threshold[1], opacity=0.5)
+        # ,hbox(threshold[2])
         )
       # ,annotations = a # commented-out because the annotation doesn't look great
     )
 
     } else if (length(threshold)==1){
       baseplot %>% layout(
-        shapes = list(hline(threshold))
+        shapes = list(
+          hline(threshold)
+          # ,hbox(y=threshold, opacity=0.5)
+          )
       # ,annotations = a # commented-out because the annotation doesn't look great
       )
     }

@@ -108,7 +108,7 @@ shinyUI(
           h3(id="ThreshHeader","Thresholds"),
           
           checkboxInput("SeriesThreshLine","Show Water Quality Threshold Line", TRUE),
-          checkboxInput("ThreshPoint","Indicate Points with Poor Water Quality",FALSE),
+          # checkboxInput("ThreshPoint","Indicate Points with Poor Water Quality",FALSE),
           HTML('<hr>'),
           
           

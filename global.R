@@ -126,6 +126,8 @@ paramChooser<-function(input, output, session, data, park, site, chosen){
 global_textsize <- 20
 global_figure_height <- 1200 # pixels
 global_figure_width <- 2000 # pixels
+FIGURE_VERTICAL_SCALING <- 0.5
+FIGURE_HORIZONTAL_SCALING <- 0.75
 
 
 

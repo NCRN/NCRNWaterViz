@@ -68,7 +68,6 @@ shinyServer(function(input,output,session){
     invalidateLater(4000, session)
     removeUI(selector = "#loading_screen", immediate = TRUE)
   })
-  
 
 #output$Test<-renderText(exists("TrendsOut()$Analysis"))   #For debugging purposes
 

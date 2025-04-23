@@ -77,9 +77,8 @@ shinyUI(
                     max-width: 800px;
                     max-height: 500px;
                     margin: 0 auto;
-                    display: block;
                     }
-                    .loader {
+                    .Spinner {
                     color: $4CAF50;
                     font-size: 60px;
                     text-indent: -9999em;
@@ -146,28 +145,36 @@ shinyUI(
                         transform: rotate(360deg);
                       }
                     }
-                    "))
-    ),
+                    ")),
     
-    #Loading screen HTML div (initially visible)
-    div(id = "loading_screen", #"Loading, please wait...",
-        style = "position: fixed; top: 0;
-        left: 0; width: 100%; height: 100%; background-color: white; opacity: 0.8; z-index: 9999; display: flex; align-items: center; justify-content: center;
-        flex-direction: column;",
-        
-        tags$div(id =  "typingText", class = "typing-text", style = "margin: 40px"),
-        tags$img(id = "loadingImage", class = "loading-image", src = "", alt = "Water monitoring Image"),
-        tags$div(class = "loader"),
-        
+      #Loading screen HTML div (initially visible)
+      div(id = "loading_screen", #"Loading, please wait...",
+          style = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: white; opacity: 0.8; 
+          z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column;",
+          
+          tags$div(id =  "typingText", class = "typing-text", style = "margin: 40px; display: none"),
+          tags$img(id = "loadingImage", class = "loading-image", src = "", alt = "Water monitoring Image", style = "display: none"),
+          tags$div(id = "spinner", class = "Spinner", style = "display: none")),
+      
         tags$script(HTML(sprintf("
                      const facts = %s;
                      const images = %s;
+                     
+              setTimeout(() => {
+              if (!window.shinyAppLoaded) {
                      const fact_index = Math.floor(Math.random() * facts.length);
                      const image_index = Math.floor(Math.random() * images.length);
                    
-              document.addEventListener('DOMContentLoaded', () => {
-                     document.getElementById('typingText').textContent = facts[fact_index];
-                     document.getElementById('loadingImage').src = images[image_index];})",
+                    const fact1 = document.getElementById('typingText'); 
+                      fact1.textContent = facts[fact_index];
+                      fact1.style.display = 'block';
+                    const img1 = document.getElementById('loadingImage')
+                      img1.src = images[image_index];
+                      img1.style.display = 'block';
+                    const spinner1 = document.getElementById('spinner');
+                      spinner1.style.display = 'block';
+                  }
+                 }, 1500);",
                  jsonlite::toJSON(loading_facts, auto_unbox = TRUE),
                  jsonlite::toJSON(loading_images, auto_unbox = TRUE))))
     ),

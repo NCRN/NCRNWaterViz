@@ -840,31 +840,33 @@ WaterSeriesOutMultiple <- reactive({
   assessment <- input$SeriesThreshLine
   assessments <- c()
   threshold <- NA
+  units <- c()
+  displaynames <- c()
 
   # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L75-L98
   for (site in DataOpts$Site){
-    yname<-paste0(
-      getCharInfo(
+    displayname <- getCharInfo(
         object=WaterData
         ,parkcode=DataOpts$Park
         ,sitecode = site
         ,charname=DataOpts$Param
         , info="DisplayName"
         )
-      ," ("
-      ,getCharInfo(
+      displaynames <- c(displaynames, displayname)
+      unit <- getCharInfo(
         object=WaterData
         ,parkcode=DataOpts$Park
         ,sitecode = site
         ,charname=DataOpts$Param
         ,info="Units"
         )
-      ,")"
-      )
-
+      units <- c(units, unit)
+    yname<-paste0(displayname," (", unit,")")
     ynames <- c(yname, ynames)
-
   }
+
+  units <- units %>% unique
+  displaynames <- displaynames %>% unique
 
   # resolve conflicts that would happen if the metadata file was messed up
   # e.g., if one characteristic had multiple units
@@ -923,6 +925,15 @@ WaterSeriesOutMultiple <- reactive({
         size=input$PointSize
         ,opacity=as.numeric(input$ShowHidePoint)
         )
+      ,hovertemplate = paste(
+        "<br>Date :", series_df$Date
+        ,"<br>Site :", series_df$MonitoringLocationName
+        ,"<br>Measurement :", series_df$Value, " ", units
+        # extra is a secondary bit of hovertext that's visible on the right-ide of the main hovertext
+        # https://community.plotly.com/t/disabling-default-tooltip-while-using-a-hovertemplate-in-python/85824/3
+        ,'<extra></extra>'
+        )
+      ,text=NULL
     ) %>% layout(
       font=list(size=input$FontSize)
       ,margin=m

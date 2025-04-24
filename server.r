@@ -379,7 +379,6 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
         dplyr::mutate(Missing_Values = tidyr::replace_na(Missing_Values, 0)) 
 
       #dplyr::arrange(factor(Aggregation, levels = month.name), Site) 
-
   return(final_summary) 
 })
 
@@ -1266,12 +1265,6 @@ BoxPlotMultipleOut<-reactive({
   # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L73
   table <- summary()
 
-    # table <- table %>%
-    #   dplyr::mutate(Standard_Deviation = ifelse(!is.na(Mean) & is.na(Standard_Deviation), "Not available", Standard_Deviation),
-    #          Minimum = ifelse(is.na(Minimum) | Minimum == Inf | Minimum == -Inf, "Data not collected", Minimum),
-    #          Maximum = ifelse(is.na(Maximum) | Maximum == Inf | Maximum == -Inf, "Data not collected", Maximum),
-    #          dplyr::across(everything(), ~ifelse(is.na(.), "Data not collected", .)))
-
   #SiteCodes to full site names
   site_codes <- NCRNWater::getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteCode")
   site_names <- NCRNWater::getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteName")
@@ -1375,6 +1368,8 @@ BoxPlotMultipleOut<-reactive({
       table
       ,x= ~Aggregation
       ,color= ~Site
+      ,width = (FIGURE_HORIZONTAL_SCALING*as.numeric(input$dimension[1]))
+      ,height = (FIGURE_VERTICAL_SCALING*as.numeric(input$dimension[2]))
       # boxplot_df
       # ,y= ~Value
       # ,x= ~Grouper
@@ -1389,8 +1384,6 @@ BoxPlotMultipleOut<-reactive({
       ,q3= ~Q3
       ,upperfence= ~Maximum
       ,type='box'
-      # ,width = (FIGURE_HORIZONTAL_SCALING*as.numeric(input$dimension[1]))
-      # ,height = (FIGURE_VERTICAL_SCALING*as.numeric(input$dimension[2]))
     ) %>% layout(
       boxmode = 'group'
       ,font=list(size=input$FontSize)

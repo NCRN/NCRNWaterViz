@@ -895,7 +895,7 @@ WaterSeriesOutMultiple <- reactive({
 
   n_not_na <- nrow(series_df %>% dplyr::filter(is.na(Value)==F))
   n_na <- nrow(series_df %>% dplyr::filter(is.na(Value)))
-  title <- paste0(NCRNWater::getParkInfo(object=WaterData, parkcode=DataOpts$Park, info="ParkLongName"), ': ', yname, ' [measurements: ', n_not_na, ', NAs: ', n_na,']')
+  title <- paste0(NCRNWater::getParkInfo(object=WaterData, parkcode=DataOpts$Park, info="ParkLongName"), ': ', yname, '\n[Total measurements: ',n_not_na+n_na,'; non-NA: ', n_not_na, ', NA: ', n_na,']')
 
   m <- list( # figure margins
     l = 100,
@@ -1265,6 +1265,10 @@ BoxPlotMultipleOut<-reactive({
   # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L73
   table <- summary()
 
+  table <- table %>%
+    dplyr::mutate(Aggregation = ifelse(Aggregation %in% month.abb, 
+                              month.name[match(Aggregation, month.abb)], Aggregation))
+
   #SiteCodes to full site names
   site_codes <- NCRNWater::getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteCode")
   site_names <- NCRNWater::getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteName")
@@ -1275,8 +1279,31 @@ BoxPlotMultipleOut<-reactive({
     dplyr::left_join(site_info, by = c("Site" = "SiteCode")) %>%
     dplyr::mutate(Site = ifelse(!is.na(SiteName), SiteName, Site)) %>% 
     dplyr::select(-SiteName)
+    
+  #Table grouping
+  if (input$SummaryBoxBy %in% c("month", "year")) {
+    
+    aggregation_levels <- if (input$SummaryBoxBy == "month") {
+      month.name
+    } else {
+      sort(unique(as.character(table$Aggregation)), decreasing = F)
+    }
 
-  print(head(table))
+  summary_table <- table %>%
+    dplyr::mutate(Aggregation = factor(Aggregation, levels = aggregation_levels),
+                  is_group = Site == Aggregation) %>%
+    dplyr::arrange(Aggregation, dplyr::desc(is.na(Minimum)), Site) %>%
+    dplyr::mutate(is_group = Site == Aggregation)
+  } else {
+  summary_table <- table %>%
+    dplyr::arrange(Site) %>%
+    dplyr::mutate(is_group = FALSE)
+  }
+  
+  # summary_table <- summary_table %>%
+  #   dplyr::select(-Aggregation, -is_group)
+
+  print(head(summary_table))
 
   # initialize variables
   ynames <- c()
@@ -1349,9 +1376,9 @@ BoxPlotMultipleOut<-reactive({
   #   ,site=boxplot_df$MonitoringLocationName
   #   )
 
-  n_not_na <- sum(table$Total_Measurements) - sum(table$Missing_Values)
-  n_na <- sum(table$Missing_Values)
-  title <- paste0(NCRNWater::getParkInfo(object=WaterData, parkcode=DataOpts$Park, info="ParkLongName"), ': ', yname, ' [measurements: ', n_not_na, ', NAs: ', n_na,']')
+  n_not_na <- sum(summary_table$Total_Measurements) - sum(summary_table$Missing_Values)
+  n_na <- sum(summary_table$Missing_Values)
+  title <- paste0(NCRNWater::getParkInfo(object=WaterData, parkcode=DataOpts$Park, info="ParkLongName"), ': ', yname, '\n[Total measurements: ', sum(summary_table$Total_Measurements),'; non-NA: ', n_not_na, ', NA: ', n_na,']')
 
   m <- list(
     l = 100,
@@ -1365,7 +1392,7 @@ BoxPlotMultipleOut<-reactive({
     )
   baseplot <-
     plotly::plot_ly(
-      table
+      summary_table
       ,x= ~Aggregation
       ,color= ~Site
       ,width = (FIGURE_HORIZONTAL_SCALING*as.numeric(input$dimension[1]))

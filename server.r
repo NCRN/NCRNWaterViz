@@ -1264,9 +1264,26 @@ BoxPlotMultipleOut<-reactive({
   req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
 
   # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L73
-  boxplot_df <- DataUseMultiple() %>%
-    dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #year filtering
-    dplyr::arrange(MonitoringLocationName, Date)
+  table <- summary()
+
+    # table <- table %>%
+    #   dplyr::mutate(Standard_Deviation = ifelse(!is.na(Mean) & is.na(Standard_Deviation), "Not available", Standard_Deviation),
+    #          Minimum = ifelse(is.na(Minimum) | Minimum == Inf | Minimum == -Inf, "Data not collected", Minimum),
+    #          Maximum = ifelse(is.na(Maximum) | Maximum == Inf | Maximum == -Inf, "Data not collected", Maximum),
+    #          dplyr::across(everything(), ~ifelse(is.na(.), "Data not collected", .)))
+
+  #SiteCodes to full site names
+  site_codes <- NCRNWater::getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteCode")
+  site_names <- NCRNWater::getSiteInfo(WaterData, parkcode = DataOpts$Park, info = "SiteName")
+  
+  site_info <- data.frame(SiteCode = site_codes, SiteName = site_names, stringsAsFactors = FALSE)
+
+  table <- table %>%
+    dplyr::left_join(site_info, by = c("Site" = "SiteCode")) %>%
+    dplyr::mutate(Site = ifelse(!is.na(SiteName), SiteName, Site)) %>% 
+    dplyr::select(-SiteName)
+
+  print(head(table))
 
   # initialize variables
   ynames <- c()
@@ -1332,15 +1349,15 @@ BoxPlotMultipleOut<-reactive({
   
   # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L106-L127
 
-  Grouper<-switch(
-    input$BoxBy # the "Compare by:" selection (year, month, site)
-    ,year=boxplot_df$Date %>% lubridate::year() %>% factor
-    ,month=boxplot_df$Date %>% lubridate::month(label=T) %>% factor
-    ,site=boxplot_df$MonitoringLocationName
-    )
+  # Grouper<-switch(
+  #   input$BoxBy # the "Compare by:" selection (year, month, site)
+  #   ,year=boxplot_df$Date %>% lubridate::year() %>% factor
+  #   ,month=boxplot_df$Date %>% lubridate::month(label=T) %>% factor
+  #   ,site=boxplot_df$MonitoringLocationName
+  #   )
 
-  n_not_na <- nrow(boxplot_df %>% dplyr::filter(is.na(Value)==F))
-  n_na <- nrow(boxplot_df %>% dplyr::filter(is.na(Value)))
+  n_not_na <- sum(table$Total_Measurements) - sum(table$Missing_Values)
+  n_na <- sum(table$Missing_Values)
   title <- paste0(NCRNWater::getParkInfo(object=WaterData, parkcode=DataOpts$Park, info="ParkLongName"), ': ', yname, ' [measurements: ', n_not_na, ', NAs: ', n_na,']')
 
   m <- list(
@@ -1355,15 +1372,25 @@ BoxPlotMultipleOut<-reactive({
     )
   baseplot <-
     plotly::plot_ly(
-      boxplot_df
-      ,y= ~Value
-      ,x= ~Grouper
-      ,color= ~MonitoringLocationName
+      table
+      ,x= ~Aggregation
+      ,color= ~Site
+      # boxplot_df
+      # ,y= ~Value
+      # ,x= ~Grouper
+      # ,color= ~MonitoringLocationName
+      # ,type='box'
+      # # ,height = global_figure_height
+      # # ,width = global_figure_width
+    ) %>% add_trace(
+      lowerfence= ~Minimum
+      ,q1= ~Q1
+      ,median= ~Median
+      ,q3= ~Q3
+      ,upperfence= ~Maximum
       ,type='box'
-      # ,height = global_figure_height
-      # ,width = global_figure_width
-      ,width = (FIGURE_HORIZONTAL_SCALING*as.numeric(input$dimension[1]))
-      ,height = (FIGURE_VERTICAL_SCALING*as.numeric(input$dimension[2]))
+      # ,width = (FIGURE_HORIZONTAL_SCALING*as.numeric(input$dimension[1]))
+      # ,height = (FIGURE_VERTICAL_SCALING*as.numeric(input$dimension[2]))
     ) %>% layout(
       boxmode = 'group'
       ,font=list(size=input$FontSize)

@@ -133,7 +133,7 @@ shinyUI(
           ),
           br(),
           htmlOutput("SeriesThresholdSummaryMultiple"),
-          br(),
+          # br(),
           htmlOutput("SeriesRefSummaryMultiple")
           ) #end controls div
         ),         
@@ -169,7 +169,7 @@ shinyUI(
           ),
           br(),
           htmlOutput("BoxThresholdSummaryMultiple"),
-          br(),
+          # br(),
           htmlOutput("BoxRefSummaryMultiple")
           # ,splitLayout( cellWidths="50%",
           #   # h3("Options:"),

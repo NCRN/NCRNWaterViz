@@ -963,8 +963,6 @@ WaterSeriesOutMultiple <- reactive({
       shapes = list(
         hline(threshold[1])
         ,hline(threshold[2])
-        ) %>% add_trace(
-          
         )
       # ,annotations = a # commented-out because the annotation doesn't look great
     )

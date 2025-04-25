@@ -1008,7 +1008,12 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   output$MapChars<-renderUI( selectizeInput(inputId="MapChar",label="Charactersitic to Map", choices=NPSchars[order(names(NPSchars))] ))
   
   #coloring
-  MapColors<-colorNumeric(palette="viridis", domain=c(0,1)) # NPS % meets threshold
+  MapColors<- colorBin(
+    palette = c("red", "yellow", "blue"),
+    domain = c(0,1)
+    ,bins = c(0, 0.33, 0.66, 1)
+  )
+ # MapColors<-colorNumeric(palette="viridis", domain=c(0,1)) # NPS % meets threshold
   MapColors2<-colorFactor(palette="viridis", domain=c("<5th percentile","5th - 25th percentile", 
           "25th - 50th percentile", "50th - 75th percentile", "75th - 95th percentile", "> 95th percentile" ), ordered = T )  # USGS percentile category for discharge
   
@@ -1222,11 +1227,11 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       leaflet::clearGroup("NPS") %>%
       leaflet::addCircleMarkers(data = merge_data, group = "NPS", 
                        layerId = merge_data$SiteCode, 
-                       fillColor = MapColors(merge_data$Acceptable/merge_data$Total),
+                       fillColor = ~MapColors(merge_data$Acceptable/merge_data$Total),
                        fillOpacity = 1, stroke = FALSE) %>%
       leaflet::addLegend(position="topright", pal=MapColors, values=c(0,1), opacity=1,
                 layerId="npsLegend",title=paste0("<svg height='15' width='20'>
-                    <circle cx='10' cy='10' r='5', stroke='black' fill='black'/></svg> NPS: % of Acceptable <br>Measurements"),
+                    <circle cx='10' cy='10' r='5', stroke='black' fill='black'/></svg> Percent of Acceptable <br>Measurements"),
                 labFormat=labelFormat(suffix="%", transform= function(x) 100*x)) 
 
     if (show_labels) {
@@ -1318,7 +1323,7 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
        leaflet::clearGroup("NPS") %>%
        leaflet::removeControl(layerId="npsLegend")
   })
-  
+
   observe({
     if(input$MapUSGS){
       req(DataOpts$USGSdata)
@@ -1326,10 +1331,10 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
       clearGroup("USGS") %>%
       addCircleMarkers(data=DataOpts$USGSdata, group="USGS", layerId=DataOpts$USGSdata$Site,
                  label=DataOpts$USGSdata$Site,
-                 color=MapColors2(DataOpts$USGSdata$DLevel),opacity=.8, fillOpacity=0, stroke=TRUE, weight=8) %>% 
-                 addLegend(position="topright", opacity=1,colors=MapColors2(c("<5th percentile","5th - 25th percentile", 
-                 "25th - 50th percentile", "50th - 75th percentile", "75th - 95th percentile", "> 95th percentile" )), 
-                 labels=c("<5th percentile","5th - 25th percentile", 
+                 color=MapColors2(DataOpts$USGSdata$DLevel),opacity=.8, fillOpacity=0, stroke=TRUE, weight=8) %>%
+                 addLegend(position="topright", opacity=1,colors=MapColors2(c("<5th percentile","5th - 25th percentile",
+                 "25th - 50th percentile", "50th - 75th percentile", "75th - 95th percentile", "> 95th percentile" )),
+                 labels=c("<5th percentile","5th - 25th percentile",
                                      "25th - 50th percentile", "50th - 75th percentile", "75th - 95th percentile", "> 95th percentile" ),
                  layerId="usgsLegend",title=" <svg height='15' width='20'> <circle cx='10' cy='10' r='4' stroke='black' stroke-width='3'
                             fill='transparent'/></svg>USGS: Discharge" )

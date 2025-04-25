@@ -126,23 +126,23 @@ shinyServer(function(input,output,session){
     ,{
       DataOpts$Park<-TimePark()
       ;DataOpts$Site<-NA
-      ;DataOpts$Param<-NA
-      ;DataOpts$Years<-c(1900,2100)
+      # ;DataOpts$Param<-NA
+      # ;DataOpts$Years<-c(1900,2100)
       }
     )
   shiny::observeEvent(
     TimeSite()
     ,{
       DataOpts$Site<-TimeSite()
-      ;DataOpts$Param<-NA
-      ;DataOpts$Years<-c(1900,2100)
+      # ;DataOpts$Param<-NA
+      # ;DataOpts$Years<-c(1900,2100)
       }
     )
   shiny::observeEvent(
     TimeParam()
     ,{
       DataOpts$Param<-TimeParam()
-      ;DataOpts$Years<-c(1900,2100)
+      # ;DataOpts$Years<-c(1900,2100)
       }
     )
   shiny::observeEvent(
@@ -185,23 +185,23 @@ shinyServer(function(input,output,session){
     ,{
       DataOpts$Park<-SummaryPark()
       ;DataOpts$Site<-NA
-      ;DataOpts$Param<-NA
-      ;DataOpts$Years<-c(1900,2100)
+      # ;DataOpts$Param<-NA
+      # ;DataOpts$Years<-c(1900,2100)
       }
     )
   shiny::observeEvent(
     SummarySite()
     ,{
       DataOpts$Site<-SummarySite()
-      ;DataOpts$Param<-NA
-      ;DataOpts$Years<-c(1900,2100)
+      # ;DataOpts$Param<-NA
+      # ;DataOpts$Years<-c(1900,2100)
       }
     )
   shiny::observeEvent(
     SummaryParam()
     ,{
       DataOpts$Param<-SummaryParam()
-      ;DataOpts$Years<-c(1900,2100)
+      # ;DataOpts$Years<-c(1900,2100)
       }
     )
   shiny::observeEvent(
@@ -241,23 +241,23 @@ shinyServer(function(input,output,session){
     ,{
       DataOpts$Park<-BoxPark()
       ;DataOpts$Site<-NA
-      ;DataOpts$Param<-NA
-      ;DataOpts$Years<-c(1900,2100)
+      # ;DataOpts$Param<-NA
+      # ;DataOpts$Years<-c(1900,2100)
       }
     )
   shiny::observeEvent(
     BoxSite()
     ,{
       DataOpts$Site<-BoxSite()
-      ;DataOpts$Param<-NA
-      ;DataOpts$Years<-c(1900,2100)
+      # ;DataOpts$Param<-NA
+      # ;DataOpts$Years<-c(1900,2100)
       }
     )
   shiny::observeEvent(
     BoxParam()
     ,{
       DataOpts$Param<-BoxParam()
-      ;DataOpts$Years<-c(1900,2100)
+      # ;DataOpts$Years<-c(1900,2100)
       }
     )
   shiny::observeEvent(

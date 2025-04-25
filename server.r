@@ -65,8 +65,8 @@ getTresholdText<-function(object, parkcode,sitecode,charname){
 shinyServer(function(input,output,session){
 
   observe({
-    invalidateLater(4000, session)
-    removeUI(selector = "#loading_screen", immediate = TRUE)
+    shiny::invalidateLater(4000, session)
+    shiny::removeUI(selector = "#loading_screen", immediate = TRUE)
   })
 
 #output$Test<-renderText(exists("TrendsOut()$Analysis"))   #For debugging purposes

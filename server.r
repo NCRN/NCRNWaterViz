@@ -78,6 +78,22 @@ DataOpts<-reactiveValues(Park=NA, Site=NA, Param=NA, Agg=NA, DateRange=NA, Years
 
 #### UI Controls ####  
 
+# Have the threshold lines observe each other so they stay in-sync
+observeEvent(input$SeriesThreshLine,  {
+  updateCheckboxInput(session = session, inputId = "BoxThreshLine", value = input$SeriesThreshLine)
+})
+observeEvent(input$BoxThreshLine,  {
+  updateCheckboxInput(session = session, inputId = "SeriesThreshLine", value = input$BoxThreshLine)
+})
+
+# Have the group-by (i.e., "Compare by:") radio buttons observe each other so they stay in-sync
+observeEvent(input$BoxBy,  {
+  updateRadioButtons(session = session, inputId = "SummaryBoxBy", selected = input$BoxBy)
+})
+observeEvent(input$SummaryBoxBy,  {
+  updateRadioButtons(session = session, inputId = "BoxBy", selected = input$SummaryBoxBy)
+})
+
 #### Time Series Controls ####
 TimePark<-callModule(parkChooser, id="TimePark", data=WaterData, chosen=reactive(DataOpts$Park))
 TimeSite<-callModule(siteChooser, id="TimeSite", data=WaterData, park=reactive(DataOpts$Park), 

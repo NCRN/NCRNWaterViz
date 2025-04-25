@@ -64,49 +64,203 @@ getTresholdText<-function(object, parkcode,sitecode,charname){
 
 shinyServer(function(input,output,session){
 
+  #### Reactive Values for Graphics Options with Defaults ####
+  GraphOpts<-shiny::reactiveValues(Legend=TRUE, FontSize=20, GoodColor="Blue", BadColor="Orange",OutColor="Vermillion",PointSize=10,
+                              ThColor="Orange", TrColor="Green", LineWidth=2, ShowHidePoint=F)
+  
+  #### Reactive Values for Choosing Data ####
+  DataOpts<-shiny::reactiveValues(Park=NA, Site=NA, Param=NA, Agg=NA, DateRange=NA, Years=NA, USGSload=FALSE, USGSdata=NA)
 
-#output$Test<-renderText(exists("TrendsOut()$Analysis"))   #For debugging purposes
+  #### UI Controls ####  
+  # Have the threshold lines observe each other so they stay in-sync
+  shiny::observeEvent(input$SeriesThreshLine,  {
+    updateCheckboxInput(session = session, inputId = "BoxThreshLine", value = input$SeriesThreshLine)
+  })
+  shiny::observeEvent(input$BoxThreshLine,  {
+    updateCheckboxInput(session = session, inputId = "SeriesThreshLine", value = input$BoxThreshLine)
+  })
+  # Have the group-by (i.e., "Compare by:") radio buttons observe each other so they stay in-sync
+  shiny::observeEvent(input$BoxBy,  {
+    updateRadioButtons(session = session, inputId = "SummaryBoxBy", selected = input$BoxBy)
+  })
+  shiny::observeEvent(input$SummaryBoxBy,  {
+    updateRadioButtons(session = session, inputId = "BoxBy", selected = input$SummaryBoxBy)
+  })
 
-#### Reactive Values for Graphics Options with Defaults ####
-
-GraphOpts<-reactiveValues(Legend=TRUE, FontSize=20, GoodColor="Blue", BadColor="Orange",OutColor="Vermillion",PointSize=10,
-                            ThColor="Orange", TrColor="Green", LineWidth=2, ShowHidePoint=F)
- 
-#### Reactive Values for Choosing Data ####
-
-DataOpts<-reactiveValues(Park=NA, Site=NA, Param=NA, Agg=NA, DateRange=NA, Years=NA, USGSload=FALSE, USGSdata=NA)
-
-#### UI Controls ####  
-
-# Have the threshold lines observe each other so they stay in-sync
-observeEvent(input$SeriesThreshLine,  {
-  updateCheckboxInput(session = session, inputId = "BoxThreshLine", value = input$SeriesThreshLine)
-})
-observeEvent(input$BoxThreshLine,  {
-  updateCheckboxInput(session = session, inputId = "SeriesThreshLine", value = input$BoxThreshLine)
-})
-
-# Have the group-by (i.e., "Compare by:") radio buttons observe each other so they stay in-sync
-observeEvent(input$BoxBy,  {
-  updateRadioButtons(session = session, inputId = "SummaryBoxBy", selected = input$BoxBy)
-})
-observeEvent(input$SummaryBoxBy,  {
-  updateRadioButtons(session = session, inputId = "BoxBy", selected = input$SummaryBoxBy)
-})
-
-#### Time Series Controls ####
-TimePark<-callModule(parkChooser, id="TimePark", data=WaterData, chosen=reactive(DataOpts$Park))
-TimeSite<-callModule(siteChooser, id="TimeSite", data=WaterData, park=reactive(DataOpts$Park), 
-                     chosen=reactive(DataOpts$Site))
-TimeParam<-callModule(paramChooser, id="TimeParam",data=WaterData, park=reactive(DataOpts$Park), 
-                      site=reactive(DataOpts$Site), chosen=reactive(DataOpts$Param))
-TimeYears<-callModule(yearChooser, id="TimeYears", data=DataUse, chosen=reactive(DataOpts$Years) )
-
-
-observeEvent(TimePark(), {DataOpts$Park<-TimePark(); DataOpts$Site<-NA; DataOpts$Param<-NA; DataOpts$Years<-c(1900,2100)} )
-observeEvent(TimeSite(), {DataOpts$Site<-TimeSite(); DataOpts$Param<-NA; DataOpts$Years<-c(1900,2100)} )
-observeEvent(TimeParam(), {DataOpts$Param<-TimeParam(); DataOpts$Years<-c(1900,2100) })
-observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
+  #### Time Series Controls ####
+  # callModule tells the conditional picklists to update
+  # e.g., input$TimeSite should only show sites that correspond to the value of input$TimePark
+  # and, since `chosen` is always the DataOpts value, the picklist of one tab (e.g., Summary) is synced with all other tabs
+  TimePark<-shiny::callModule(
+    parkChooser
+    ,id="TimePark"
+    ,data=WaterData
+    ,chosen=reactive(DataOpts$Park)
+    )
+  TimeSite<-shiny::callModule(
+    siteChooser
+    ,id="TimeSite"
+    ,data=WaterData
+    ,park=reactive(DataOpts$Park)
+    ,chosen=reactive(DataOpts$Site)
+    )
+  TimeParam<-shiny::callModule(
+    paramChooser
+    ,id="TimeParam"
+    ,data=WaterData
+    ,park=reactive(DataOpts$Park)
+    ,site=reactive(DataOpts$Site)
+    ,chosen=reactive(DataOpts$Param)
+    )
+  TimeYears<-shiny::callModule(
+    yearChooser
+    ,id="TimeYears"
+    ,data=DataUse
+    ,chosen=reactive(DataOpts$Years)
+    )
+  # observeEvent resets the values of conditional picklists to their starting point so downstream code (e.g., data()) won't error
+  # when the input specified in the function updates it triggers one or more values to update
+  # e.g., when input$TimePark changes in the app, it updates DataOpts$Park, DataOpts$Site, DataOpts$Param, and DataOpts$Years
+  shiny::observeEvent(
+    TimePark()
+    ,{
+      DataOpts$Park<-TimePark()
+      ;DataOpts$Site<-NA
+      ;DataOpts$Param<-NA
+      ;DataOpts$Years<-c(1900,2100)
+      }
+    )
+  shiny::observeEvent(
+    TimeSite()
+    ,{
+      DataOpts$Site<-TimeSite()
+      ;DataOpts$Param<-NA
+      ;DataOpts$Years<-c(1900,2100)
+      }
+    )
+  shiny::observeEvent(
+    TimeParam()
+    ,{
+      DataOpts$Param<-TimeParam()
+      ;DataOpts$Years<-c(1900,2100)
+      }
+    )
+  shiny::observeEvent(
+    TimeYears()
+    ,DataOpts$Years<-TimeYears()
+    )
+  ### Summary Controls ###
+  SummaryPark<-shiny::callModule(
+    parkChooser
+    ,id="SummaryPark"
+    ,data=WaterData
+    ,chosen=reactive(DataOpts$Park)
+    )
+  SummarySite<-shiny::callModule(
+    siteChooser
+    ,id="SummarySite"
+    ,data=WaterData
+    ,park=reactive(DataOpts$Park)
+    ,chosen=reactive(DataOpts$Site)
+    )
+  SummaryParam<-shiny::callModule(
+    paramChooser
+    ,id="SummaryParam"
+    ,data=WaterData
+    ,park=reactive(DataOpts$Park)
+    ,site=reactive(DataOpts$Site)
+    ,chosen=reactive(DataOpts$Param)
+    )
+  SummaryYears<-shiny::callModule(
+    yearChooser
+    ,id="SummaryYears"
+    ,data=DataUseMultiple
+    ,chosen=reactive(DataOpts$Years)
+    )
+  shiny::observeEvent(
+    SummaryPark()
+    ,{
+      DataOpts$Park<-SummaryPark()
+      ;DataOpts$Site<-NA
+      ;DataOpts$Param<-NA
+      ;DataOpts$Years<-c(1900,2100)
+      }
+    )
+  shiny::observeEvent(
+    SummarySite()
+    ,{
+      DataOpts$Site<-SummarySite()
+      ;DataOpts$Param<-NA
+      ;DataOpts$Years<-c(1900,2100)
+      }
+    )
+  shiny::observeEvent(
+    SummaryParam()
+    ,{
+      DataOpts$Param<-SummaryParam()
+      ;DataOpts$Years<-c(1900,2100)
+      }
+    )
+  shiny::observeEvent(
+    SummaryYears()
+    ,DataOpts$Years<-SummaryYears()
+    )
+  ### Boxplot Controls ###
+  BoxPark<-shiny::callModule(
+    parkChooser
+    ,id="BoxPark"
+    ,data=WaterData
+    ,chosen=reactive(DataOpts$Park)
+    )
+  BoxSite<-shiny::callModule(
+    siteChooser
+    ,id="BoxSite"
+    ,data=WaterData
+    ,park=reactive(DataOpts$Park)
+    ,chosen=reactive(DataOpts$Site)
+    )
+  BoxParam<-shiny::callModule(
+    paramChooser
+    ,id="BoxParam"
+    ,data=WaterData
+    ,park=reactive(DataOpts$Park)
+    ,site=reactive(DataOpts$Site)
+    ,chosen=reactive(DataOpts$Param)
+    )
+  BoxYears<-shiny::callModule(
+    yearChooser
+    ,id="BoxYears"
+    ,data=DataUseMultiple
+    ,chosen=reactive(DataOpts$Years)
+    )
+  shiny::observeEvent(
+    BoxPark()
+    ,{
+      DataOpts$Park<-BoxPark()
+      ;DataOpts$Site<-NA
+      ;DataOpts$Param<-NA
+      ;DataOpts$Years<-c(1900,2100)
+      }
+    )
+  shiny::observeEvent(
+    BoxSite()
+    ,{
+      DataOpts$Site<-BoxSite()
+      ;DataOpts$Param<-NA
+      ;DataOpts$Years<-c(1900,2100)
+      }
+    )
+  shiny::observeEvent(
+    BoxParam()
+    ,{
+      DataOpts$Param<-BoxParam()
+      ;DataOpts$Years<-c(1900,2100)
+      }
+    )
+  shiny::observeEvent(
+    BoxYears()
+    ,DataOpts$Years<-BoxYears()
+    )
 
 #### Graphics Modal Control ####
   
@@ -179,6 +333,10 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   
 #### Housekeeping of data ####
   DataUse<-reactive({ 
+    # DataUse() is deprecated as of 2025-04-25 because
+    # this function will only accept one site but
+    # all picklists in the app now allow a user to choose >1 site
+    # choosing >1 site and calling DataUse() will crash the app
      shiny::validate(
        need(DataOpts$Park, message="Choose a Park"),
        need(DataOpts$Site, message="Choose a Site"),
@@ -285,19 +443,6 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   TrCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$TrColor,]$Rcolor})
   
 #### Summary Table ####
-  SummaryPark<-shiny::callModule(parkChooser, id="SummaryPark", data=WaterData, chosen=reactive(DataOpts$Park))
-  SummarySite<-shiny::callModule(siteChooser, id="SummarySite", data=WaterData, park=reactive(DataOpts$Park), chosen=reactive(DataOpts$Site))
-  SummaryParam<-shiny::callModule(paramChooser, id="SummaryParam",data=WaterData, park=reactive(DataOpts$Park), site=reactive(DataOpts$Site), 
-                           chosen=reactive(DataOpts$Param))
-  SummaryYears<-shiny::callModule(yearChooser, id="SummaryYears", data=DataUseMultiple, chosen=reactive(DataOpts$Years) )
-  
-  #SummaryDateRange<-callModule(daterangeChooser, id="SummaryDateRange", data=DataUseMultiple, chosen=reactive(DataOpts$DateRange))
-
-  shiny::observeEvent(SummaryPark(), DataOpts$Park<-SummaryPark() )
-  shiny::observeEvent(SummarySite(), DataOpts$Site<-SummarySite() )
-  shiny::observeEvent(SummaryParam(), DataOpts$Param<-SummaryParam() )
-  shiny::observeEvent(SummaryYears(), DataOpts$Years<-SummaryYears() )
-
   summary <- shiny::reactive({
     # A reactive function that calculates summary statistics based on user selected site(s) and aggregation method (year, month, or site). 
     # Args:

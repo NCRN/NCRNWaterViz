@@ -911,7 +911,7 @@ WaterSeriesOutMultiple <- reactive({
 
   n_not_na <- nrow(series_df %>% dplyr::filter(is.na(Value)==F))
   n_na <- nrow(series_df %>% dplyr::filter(is.na(Value)))
-  title <- paste0(NCRNWater::getParkInfo(object=WaterData, parkcode=DataOpts$Park, info="ParkLongName"), ': ', yname, '\n[Total measurements: ',n_not_na+n_na,'; non-NA: ', n_not_na, ', NA: ', n_na,']')
+  title <- paste0(NCRNWater::getParkInfo(object=WaterData, parkcode=DataOpts$Park, info="ParkLongName"), ': ', yname, '\nYears: ',DataOpts$Years[1], '-', DataOpts$Years[2],'; Total measurements: ',n_not_na+n_na,' (non-NA: ', n_not_na, ', NA: ', n_na,')')
 
   m <- list( # figure margins
     l = 100,
@@ -1394,7 +1394,7 @@ BoxPlotMultipleOut<-reactive({
 
   n_not_na <- sum(summary_table$Total_Measurements) - sum(summary_table$Missing_Values)
   n_na <- sum(summary_table$Missing_Values)
-  title <- paste0(NCRNWater::getParkInfo(object=WaterData, parkcode=DataOpts$Park, info="ParkLongName"), ': ', yname, '\n[Total measurements: ', sum(summary_table$Total_Measurements),'; non-NA: ', n_not_na, ', NA: ', n_na,']')
+  title <- paste0(NCRNWater::getParkInfo(object=WaterData, parkcode=DataOpts$Park, info="ParkLongName"), ': ', yname, '\nYears: ',DataOpts$Years[1], '-', DataOpts$Years[2],'; Total measurements: ', sum(summary_table$Total_Measurements),' (non-NA: ', n_not_na, ', NA: ', n_na,')')
 
   m <- list(
     l = 100,

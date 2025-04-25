@@ -65,6 +65,16 @@ getTresholdText<-function(object, parkcode,sitecode,charname){
 shinyServer(function(input,output,session){
 
   observe({
+    #Removes the loading screen in the browser after the app has fully loaded.
+    # Args:
+    #   None.
+    #
+    # Returns:
+    #   None. Triggers removal of the UI element "loading_screen" from the browser.
+    #
+    # Example:
+    #   removeUI(selector = "#message")
+    
     shiny::invalidateLater(4000, session)
     shiny::removeUI(selector = "#loading_screen", immediate = TRUE)
   })

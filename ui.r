@@ -13,11 +13,11 @@ loading_facts <- c(
   "Did you know that NCRN has been monitoring streams since 2005 E",
   "Did you know that NCRN has been monitoring streams since 2005 F"
 )
-
+#Loading screen images with captions
 loading_images <- list(
-   list(src= "dwq_NCRN_ANTI_SHCK_2024-06-04_20240604-131442.jpg", location = "Antietam", date = "June 2024")
-  ,list(src= "dwq_NCRN_MONO_BUCK_2024-06-04_20240604-084406.jpg", location = "Monocacy", date = "June 2024")
-  ,list(src= "dwq_NCRN_PRWI_BONE_2024-06-11_20240611-130821.jpg", location = "Prince William", date = "June 2024")
+   list(src= "dwq_NCRN_ANTI_SHCK_2024-06-04_20240604-131442.jpg", location = "Sharpsburg Creek, Antietam", date = "June 4, 2024")
+  ,list(src= "dwq_NCRN_MONO_BUCK_2024-06-04_20240604-084406.jpg", location = "Bush Creek, Monocacy", date = "June 4, 2024")
+  ,list(src= "dwq_NCRN_PRWI_BONE_2024-06-11_20240611-130821.jpg", location = "Boneyard Run, Prince William", date = "June 11, 2024")
 )
   
 shinyUI(
@@ -77,7 +77,8 @@ shinyUI(
                     }
                     .loading-image {
                     max-width: 700px;
-                    max-height: 500px;
+                    width: 40%;
+                    max-height: 45%;
                     margin: 0 auto;
                     display: none;
                     }
@@ -181,17 +182,19 @@ shinyUI(
           tags$div(id =  "typingText", class = "typing-text"),
           tags$img(id = "loadingImage", class = "loading-image", alt = "Water monitoring Image"),
           tags$div(id = "captionText"),
-          tags$div(id = "spinner", class = "loading-bar-container",
+          tags$div(id = "progressContainer", class = "loading-bar-container",
                    tags$div(id = "progressBar", class = "loading-bar"))),
       
       tags$script(HTML(sprintf("
                      const facts = %s;
                      const images = %s;
-                     
+ 
+              if (!window.shinyAppLoaded) {
               setTimeout(() => {
-                     if (!window.shinyAppLoaded) {
                      const fact_index = Math.floor(Math.random() * facts.length);
                      const image_index = Math.floor(Math.random() * images.length);
+                   
+                   document.getElementById('loading_screen').style.display = 'flex';
                    
                     const fact1 = document.getElementById('typingText'); 
                       fact1.textContent = facts[fact_index];
@@ -202,22 +205,59 @@ shinyUI(
                     const caption1 = document.getElementById('captionText')
                       caption1.textContent = images[image_index].location + ' - ' + images[image_index].date;
                       caption1.style.display = 'block';  
-                    const spinner1 = document.getElementById('spinner');
+                   
+                    const progressContainer1 = document.getElementById('progressContainer');
+                    progressContainer1.style.display = 'block';
+                      let progress = 0;
                     const progressBar = document.getElementById('progressBar');
-                      spinner1.style.display = 'block';
-                         
-                    let progress = 0;
-                    const progressInterval = setInterval(() => {
-                    if (progress < 100) {
-                    progress += 0.7;
-                    
-                    document.getElementById('progressBar').style.width = progress + '%%';
-                    } else {
+                      let progressInterval;
+                 
+                function fillTo(target, speed, next) {
+                progressInterval = setInterval(() => {
+                  if (progress < target) {
+                    progress += 1;
+                    progressBar.style.width = progress + '%%';
+                  } else {
                     clearInterval(progressInterval);
-                      }
-                     }, 60);
+                    if (next) setTimeout(next, 1000);
                     }
-                  }, 1500);",
+                  }, speed);
+                }
+              
+               function waitandfill() {
+               if (!window.shinyAppLoaded) {
+                    const wait = setInterval(() => {
+                    if (window.ShinyAppLoaded) {
+                    clearInterval(wait);
+                    fillTo(100, 30, () => {
+                    setTimeout(() => {
+                    document.getElementById('loading_screen').style.display = 'none';
+                    }, 1000);
+                    });
+                    }
+                    }, 100);
+               } else {
+               fillTo(100, 30, () => {
+               setTimeout(() => {
+               document.getElementById('loading_screen').style.display = 'none';
+               }, 1000);
+               });
+               }
+               }
+              
+              fillTo(30, 60, () => {
+              fillTo(85, 80, () => {
+              fillTo(99, 100, () => {
+              waitandfill();
+              });
+              });
+              });
+              }, 1500);
+                setTimeout(() => {
+           window.shinyAppLoaded = true;
+                                 }, 15000);
+                               }
+                               ",
                                jsonlite::toJSON(loading_facts, auto_unbox = TRUE),
                                jsonlite::toJSON(loading_images, auto_unbox = TRUE))))
     ),

@@ -147,7 +147,10 @@ shinyServer(function(input,output,session){
     )
   shiny::observeEvent(
     TimeYears()
-    ,DataOpts$Years<-TimeYears()
+      ,{
+        DataOpts$Years<-TimeYears()
+        ;shiny::callModule(yearChooser, id="SummaryYears", data=DataUseMultiple, chosen=reactive(DataOpts$Years))
+      }
     )
   ### Summary Controls ###
   SummaryPark<-shiny::callModule(

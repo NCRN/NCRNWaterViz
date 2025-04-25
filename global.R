@@ -27,8 +27,7 @@ yearChooser<-function(input,output,session,data,chosen)  {
     if(class(data()$Date)=="Date"){
       YrMax<-reactive(max(year(data()$Date), na.rm=T))
       YrMin<-reactive(min(year(data()$Date), na.rm=T))
-      updateSliderInput(session, inputId="YearsShow", min=YrMin(),max=YrMax(),val=c(YrMin(),YrMax()) )
-      #value=chosen())
+      updateSliderInput(session, inputId="YearsShow", min=YrMin(),max=YrMax(),val=chosen())
     }
   })
 

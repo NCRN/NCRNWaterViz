@@ -1009,9 +1009,9 @@ observeEvent(TimeYears(), DataOpts$Years<-TimeYears() )
   
   #coloring
   MapColors<- colorBin(
-    palette = c("red", "yellow", "blue"),
+    palette = c("blue", "yellow", "red"),
     domain = c(0,1)
-    ,bins = c(0, 0.33, 0.66, 1)
+    ,bins = c(1, 0.66, 0.33, 0)
   )
  # MapColors<-colorNumeric(palette="viridis", domain=c(0,1)) # NPS % meets threshold
   MapColors2<-colorFactor(palette="viridis", domain=c("<5th percentile","5th - 25th percentile", 

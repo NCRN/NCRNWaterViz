@@ -1463,6 +1463,35 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
       return(mydatastructure)
   })
   
+### Multiple DT Output ###
+  output$site_tabs <- renderUI({
+    req(input$DataOpts$Site)
+
+    for (site in names(mydatastructure)) {
+      title <- mydatastructure[[site]][["Sitename"]]
+      dt_output <- paste0("dt_", site)
+      mydatastructure[[site]][["tab_panel"]] <- tabPanel(title = title,
+                                                         DTOutput(outputId = dt_output))
+    }
+
+    # mytabs<- list()
+    # for (site in names(mydatastructure)) {
+    #   title <- mydatastructure[[site]][["Sitename"]]
+    #   mytabs[[title]] <- mydatastructure[[site]][["tab_panel"]]
+    # }
+    
+    mytabs = lapply(paste('Tab', 1: length(names(mydatastructure))), tabPanel)
+
+    do.call(tabsetPanel, mytabs)
+
+  })
+  
+  # output$mytabs = renderUI({
+  #   nTabs = input$nTabs
+  #   myTabs = lapply(paste('Tab', 1: nTabs), tabPanel)
+  #   do.call(tabsetPanel, myTabs)
+  # })
+  
 ### Exceedances Prep ###
   
   ExceedancesPrep<- function(Park, Site, Param, WaterData){
@@ -1642,37 +1671,37 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
   )
   exceedances_tooltips_json <- jsonlite::toJSON(exceedances_tooltips, auto_unbox = TRUE)
   
-  output$ExceedancesTable <-DT::renderDataTable(
-    expr=datatable(ExceedancesDataUse()
-                   ,extensions=c("Buttons","KeyTable")
-                   ,caption=htmltools::tags$caption(htmltools::h3(Title()))
-                   ,class="stripe hover order-column cell-border"
-                   ,filter="top"
-                   ,rownames=F
-                   ,options=list(
-                     autoWidth=TRUE
-                     ,dom="Bltirp"
-                     ,buttons=c("copy","csv","excel","pdf","print")
-                     ,keys=TRUE
-                     ,headerCallback = JS("function(thead, data, start, end, display){", 
-                                          "$(thead).find('th').css('text-align', 'center');",
-                                          "$(thead).find('th').filter(function() { 
-                                          return $(this).html().trim() === 'Site'; }).css('text-align', 'left');",
-                                          "$('th', thead).each(function(index){",
-                                          " var tooltips = ",
-                                          exceedances_tooltips_json,";",
-                                          " var colName = $
-                                          (this).html().trim();",
-                                          " if(tooltips[colName]) {",
-                                          " $(this).attr('title', tooltips[colName]);",
-                                          " }",
-                                          "});",
-                                          "}"
-                     )
-                   )
-    )
-    ,server=F
-  ) 
+  # output$ExceedancesTable <-DT::renderDataTable(
+  #   expr=datatable(ExceedancesDataUse()
+  #                  ,extensions=c("Buttons","KeyTable")
+  #                  ,caption=htmltools::tags$caption(htmltools::h3(Title()))
+  #                  ,class="stripe hover order-column cell-border"
+  #                  ,filter="top"
+  #                  ,rownames=F
+  #                  ,options=list(
+  #                    autoWidth=TRUE
+  #                    ,dom="Bltirp"
+  #                    ,buttons=c("copy","csv","excel","pdf","print")
+  #                    ,keys=TRUE
+  #                    ,headerCallback = JS("function(thead, data, start, end, display){", 
+  #                                         "$(thead).find('th').css('text-align', 'center');",
+  #                                         "$(thead).find('th').filter(function() { 
+  #                                         return $(this).html().trim() === 'Site'; }).css('text-align', 'left');",
+  #                                         "$('th', thead).each(function(index){",
+  #                                         " var tooltips = ",
+  #                                         exceedances_tooltips_json,";",
+  #                                         " var colName = $
+  #                                         (this).html().trim();",
+  #                                         " if(tooltips[colName]) {",
+  #                                         " $(this).attr('title', tooltips[colName]);",
+  #                                         " }",
+  #                                         "});",
+  #                                         "}"
+  #                    )
+  #                  )
+  #   )
+  #   ,server=F
+  # ) 
   
   
 ### SummarizeExceedances() Function ###

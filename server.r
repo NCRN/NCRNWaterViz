@@ -1392,6 +1392,77 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
   shiny::observeEvent(ExceedancesSite(), DataOpts$Site<-ExceedancesSite() )
   shiny::observeEvent(ExceedancesParam(), DataOpts$Param<-ExceedancesParam() )
   
+### Exceedances Data Use Multiple ###
+  exDUM <-reactive({
+    # Get threshold exceedance data to use in a tab that allows for multiple site selections and reacts to user input.
+    # Args:
+    #  DataOpts$Park, chr, required. The character string provided by parkChooser() in global.R.
+    #  DataOpts$Site, chr or vector if multiple sites selected, required. The character string provided by siteChooser() in global.R.
+    #  DataOpts$Param, chr, required. The character string provided by paramChooser() in global.R.
+    #  WaterData, list, required. The list of NCRN water quality data assembled from /wqp_ncrnwater_metadata.csv and /wqp.csv
+    # 
+    # Return:
+    #  mydatastrucure, list. A temporary package containing:
+    #    [[site]], list. A temporary package for each selected site containing:
+    #      df, data.frame. A data.frame that includes water records for a [[site]].
+    #      exdf, data.frame. A data.frame that includes water records for threshold exceedances at a [[site]].
+    #
+    # Examples:
+    #
+    shiny::validate(
+      need(DataOpts$Park, message="Choose a Park"),
+      need(DataOpts$Site, message="Choose a Site"),
+      need(DataOpts$Param, message="Choose a Water Quality Parameter")
+    )  
+    
+    mydatastructure <- list()
+    for (site in DataOpts$Site) {
+      mydatastructure[[site]]<-list()
+      mydatastructure[[site]][["df"]] <- getWData(WaterData, parkcode=DataOpts$Park, sitecode = site, charname=DataOpts$Param)
+      mydatastructure[[site]][["df"]] <- mydatastructure[[site]][["df"]][, c("OrganizationFormalName", "ActivityMediaSubdivisionName", "Date", "Characteristic", "Value", "ResultMeasure.MeasureUnitCode")]
+      mydatastructure[[site]][["df"]] <- subset(mydatastructure[[site]][["df"]], !is.na(Value))
+      
+      mydatastructure[[site]][["LowerThreshold"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="LowerDescription")
+      mydatastructure[[site]][["UpperThreshold"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="UpperDescription")
+      mydatastructure[[site]][["LowerPoint"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="LowerPoint")
+      mydatastructure[[site]][["UpperPoint"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="UpperPoint")
+      mydatastructure[[site]][["Sitename"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info = "SiteName")
+      mydatastructure[[site]][["Characteristic"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info = "DisplayName")
+      mydatastructure[[site]][["Unit"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="Units")
+      mydatastructure[[site]][["notification_text"]] <- dplyr::case_when(
+        !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & all(mydatastructure[[site]][["df"]]$Value > mydatastructure[[site]][["LowerPoint"]]) ~ 
+          paste0("No measurements of ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]],
+                 "fall below the water quality threshold of ", mydatastructure[[site]][["LowerPoint"]], " ", mydatastructure[[site]][["Unit"]])
+        ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & all(mydatastructure[[site]][["df"]]$Value < mydatastructure[[site]][["UpperPoint"]]) ~
+          paste0("No measurements of ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]],
+                 "exceed the water quality threshold of ", mydatastructure[[site]][["UpperPoint"]], " ", mydatastructure[[site]][["Unit"]])
+        ,is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE ~
+          paste0("There is no recorded water quality threshold for ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]])
+      )
+      
+      if(any(mydatastructure[[site]][["df"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm = TRUE)) {
+        lower_sd<- mydatastructure[[site]][["df"]][mydatastructure[[site]][["df"]]$Value < mydatastructure[[site]][["LowerPoint"]], ]
+        lower_sd$LowerThreshold <- mydatastructure[[site]][["LowerThreshold"]]
+      } else{
+        lower_sd<- mydatastructure[[site]][["df"]][0, ]
+      }
+      
+      if(any(mydatastructure[[site]][["df"]]$Value >= mydatastructure[[site]][["UpperPoint"]], na.rm = TRUE)) {
+        upper_sd<- mydatastructure[[site]][["df"]][mydatastructure[[site]][["df"]]$Value > mydatastructure[[site]][["UpperPoint"]], ]
+        upper_sd$UpperThreshold <- mydatastructure[[site]][["UpperThreshold"]]
+      } else {
+        upper_sd<- mydatastructure[[site]][["df"]][0, ]
+      }
+      
+      mydatastructure[[site]][["exdf"]] <- dplyr::bind_rows(lower_sd, upper_sd)
+      
+      mydatastructure[[site]][["desc_exdf"]]<- mydatastructure[[site]][["exdf"]] %>%
+        dplyr::arrange(desc(Date))
+      
+    }
+      return(mydatastructure)
+  })
+  
 ### Exceedances Prep ###
   
   ExceedancesPrep<- function(Park, Site, Param, WaterData){
@@ -1433,22 +1504,23 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
     #   WaterData<- NCRN::getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
     #   tmp <- ExceedancesPrep(DataOpts$Park, DataOpts$Site, DataOpts$Param, WaterData)
     #   exdf<- tmp$exdf
-    df2 <- getWData(WaterData, parkcode=Park, sitecode=Site, charname=Param)
-    df1 <- suppressWarnings(df2 %>% 
-                              dplyr::mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
-                              dplyr::group_by(month) %>%
-                              dplyr::mutate(num_meas = sum(!is.na(Value))) %>% 
-                              dplyr::ungroup()) %>% dplyr::mutate(num_mos = length(unique(month)))
-    df <- df1[, c("OrganizationFormalName", "ActivityMediaSubdivisionName", "Date", "Characteristic", "Value", "ResultMeasure.MeasureUnitCode")]
+    # df2 <- getWData(WaterData, parkcode=Park, sitecode=Site, charname=Param)
+    # df1 <- suppressWarnings(df2 %>% 
+    #                           dplyr::mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
+    #                           dplyr::group_by(month) %>%
+    #                           dplyr::mutate(num_meas = sum(!is.na(Value))) %>% 
+    #                           dplyr::ungroup()) %>% dplyr::mutate(num_mos = length(unique(month)))
+    df <- DataUseMultiple()
+    df <- df[, c("OrganizationFormalName", "ActivityMediaSubdivisionName", "Date", "Characteristic", "Value", "ResultMeasure.MeasureUnitCode")]
     df <- subset(df, !is.na(Value))
     
-    LowerThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info="LowerDescription")
-    UpperThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info="UpperDescription")
-    LowerPoint<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info="LowerPoint")
-    UpperPoint<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info="UpperPoint")
-    Unit<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info="Units")
-    Sitename<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info = "SiteName")
-    Characteristic<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info = "DisplayName")
+    LowerThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="LowerDescription")
+    UpperThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="UpperDescription")
+    LowerPoint<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="LowerPoint")
+    UpperPoint<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="UpperPoint")
+    Unit<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info="Units")
+    Sitename<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info = "SiteName")
+    Characteristic<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = DataOpts$Site, charname = DataOpts$Param, info = "DisplayName")
     
     if(any(df$Value <= LowerPoint, na.rm = TRUE)) {
       lowerdf<- df[df$Value < LowerPoint, ]
@@ -1716,7 +1788,7 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
    
   })
   
-  ### HTML Text Tutput ###
+  ### HTML Text Output ###
   
   output$exceedances_summary<- shiny::renderText({
     exceedances_text()

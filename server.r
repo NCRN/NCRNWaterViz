@@ -66,7 +66,7 @@ shinyServer(function(input,output,session){
 
   #### Reactive Values for Graphics Options with Defaults ####
   GraphOpts<-shiny::reactiveValues(Legend=TRUE, FontSize=20, GoodColor="Blue", BadColor="Orange",OutColor="Vermillion",PointSize=10,
-                              ThColor="Orange", TrColor="Green", LineWidth=2, ShowHidePoint=F)
+                              ThColor="Orange", TrColor="Green", LineWidth=2, ShowHidePoint=F, FigureHorizontalScaling=0.7, FigureVerticalScaling=0.7)
   
   #### Reactive Values for Choosing Data ####
   DataOpts<-shiny::reactiveValues(Park=NA, Site=NA, Param=NA, Agg=NA, DateRange=NA, Years=NA, USGSload=FALSE, USGSdata=NA)
@@ -86,6 +86,13 @@ shinyServer(function(input,output,session){
   shiny::observeEvent(input$SummaryBoxBy,  {
     updateRadioButtons(session = session, inputId = "BoxBy", selected = input$SummaryBoxBy)
   })
+
+  shiny::observeEvent(input$FigureHorizontalScaling,  {
+    GraphOpts$FigureHorizontalScaling <- input$FigureHorizontalScaling
+   })
+  shiny::observeEvent(input$FigureVerticalScaling,  {
+    GraphOpts$FigureVerticalScaling <- input$FigureVerticalScaling
+   })
 
   #### Time Series Controls ####
   # callModule tells the conditional picklists to update
@@ -270,31 +277,40 @@ shinyServer(function(input,output,session){
   observeEvent(eventExpr = c( input$GraphicsModal,input$GraphicsModal2), ignoreInit = TRUE,
     showModal(modalDialog(title="Graphics Options", footer=tagAppendAttributes( modalButton(tags$div("Close")), class="btn btn-primary"),
       column(12,hr()),
-      column(12,h4("Text:"),
+      column(12,h4("Figure size:"),
         # column(3,checkboxInput("Legend","Show Legend",GraphOpts$Legend)),
-        column(3,sliderInput("FontSize", "Font Size", min=10, max=50,value=GraphOpts$FontSize, step=1, width='130px'))
+        column(6,sliderInput("FigureHorizontalScaling", "Figure Horizontal Scaling", min=0.1, max=1,value=GraphOpts$FigureHorizontalScaling, step=0.1))
+        ,column(6,sliderInput("FigureVerticalScaling", "Figure Vertical Scaling", min=0.1, max=1,value=GraphOpts$FigureVerticalScaling, step=0.1))
+      ),
+      # column(12,hr()),
+      column(12,h4("Figure Text:"),
+        # column(3,checkboxInput("Legend","Show Legend",GraphOpts$Legend)),
+        column(12,sliderInput("FontSize", "Title, legend, and axis label font size", min=10, max=50,value=GraphOpts$FontSize, step=1))
       
       ),
-      column(12,hr()),
+      # column(12,hr()),
+      # column(12,hr()),
       column(12, h4("Points:"),
-        column(3,sliderInput("PointSize", "Point Size", min=1, max=30,value=GraphOpts$PointSize, step=1, width='130px'))
+        column(6,sliderInput("PointSize", "Point Size", min=1, max=30,value=GraphOpts$PointSize, step=1))
         # column(3,selectInput("GoodColor","Measurement Color:",choices=GraphColors$DisplayColor, 
         #                    selected=GraphOpts$GoodColor, width='130px')
         # ),
         # ,column(3,selectInput("BadColor","Poor Quality Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$BadColor,
         #                      width='130px') )
-        ,column(3,checkboxInput("ShowHidePoint", "Show points", value=GraphOpts$ShowHidePoint, width='130px'))
+        ,column(6,checkboxInput("ShowHidePoint", "Show/hide points", value=GraphOpts$ShowHidePoint))
         # column(3,selectInput("OutColor","Outlier Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$OutColor, width='130px')),   
         
       ),
-      column(12,hr()),
+      # column(12,hr()),
       column(12, h4("Lines:"),
-        column(3,sliderInput("LineWidth", "Line Width", min=1, max=10,value=GraphOpts$LineWidth, step=1, width='130px'))
-        ,column(3,selectInput("ThColor","Threshold Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$ThColor, width='130px'))
+        column(6,sliderInput("LineWidth", "Line Width", min=1, max=10,value=GraphOpts$LineWidth, step=1))
+        ,column(6,selectInput("ThColor","Threshold Line Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$ThColor))
         # column(3,selectInput("TrColor","Trend Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$TrColor, width='130px')),
-        
       )
-    ))
+      ,column(12) # required to make the below hr() show up
+      ,column(12,hr())
+    )
+    )
   )
   
   observeEvent(input$Legend, GraphOpts$Legend<-input$Legend)
@@ -1081,8 +1097,8 @@ WaterSeriesOutMultiple <- reactive({
       ,type='scatter'
       ,mode='lines'
       ,connectgaps=TRUE # set to FALSE to create breaks in the line for NAs
-      ,width = (FIGURE_HORIZONTAL_SCALING*as.numeric(input$dimension[1])) # to dynamically resize fig
-      ,height = (FIGURE_VERTICAL_SCALING*as.numeric(input$dimension[2]))
+      ,width = (GraphOpts$FigureHorizontalScaling*as.numeric(input$dimension[1])) # to dynamically resize fig
+      ,height = (GraphOpts$FigureVerticalScaling*as.numeric(input$dimension[2]))
       ,line=list(width=input$LineWidth)
       ,marker=list(
         size=input$PointSize
@@ -1559,8 +1575,8 @@ BoxPlotMultipleOut<-reactive({
       summary_table
       ,x= ~Aggregation
       ,color= ~Site
-      ,width = (FIGURE_HORIZONTAL_SCALING*as.numeric(input$dimension[1]))
-      ,height = (FIGURE_VERTICAL_SCALING*as.numeric(input$dimension[2]))
+      ,width = (GraphOpts$FigureHorizontalScaling*as.numeric(input$dimension[1])) # to dynamically resize fig
+      ,height = (GraphOpts$FigureVerticalScaling*as.numeric(input$dimension[2]))
       # boxplot_df
       # ,y= ~Value
       # ,x= ~Grouper

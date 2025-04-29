@@ -2424,7 +2424,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
   MapColors<- colorBin(
     palette = c("red", "yellow", "blue"),
     domain = c(0,1)
-    ,bins = c(0, 0.33, 0.66, 1)
+    ,bins = c(1, 0.66, 0.33, 0)
   )
   MapColors2<-colorFactor(palette="viridis", domain=c("<5th percentile","5th - 25th percentile", 
           "25th - 50th percentile", "50th - 75th percentile", "75th - 95th percentile", "> 95th percentile" ), ordered = T )  # USGS percentile category for discharge

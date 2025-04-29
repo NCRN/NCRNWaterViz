@@ -1477,6 +1477,7 @@ BoxPlotMultipleOut<-reactive({
   } else {
   summary_table <- table %>%
     dplyr::arrange(Site) %>%
+    dplyr::mutate(Aggregation = Site) %>%
     dplyr::mutate(is_group = FALSE)
   }
   

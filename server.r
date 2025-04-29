@@ -1465,64 +1465,31 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
   
 ### Multiple DT Output ###
 
-  output$mytabs <- renderUI({
-    mydatastructure <- exDUM()
+  output$mytabs <- shiny::renderUI({
+    req(DataOpts$Park, DataOpts$Site, DataOpts$Param) # execute output$mytabs only if user makes selections
 
-    for (site in names(mydatastructure)) {
-      title <- mydatastructure[[site]][["Sitename"]]
-      dt_output <- paste0("dt_", site)
-      # mydatastructure[[site]][["tab_panel"]] <- tabPanel(title = title,
-      #                                                    DTOutput(outputId = dt_output))
-      mydatastructure[[site]][["tab_output"]] <- DT::dataTableOutput(dt_output)
-    }
+    mydatastructure <- exDUM() # get the data
 
-    mytabs<- list()
-    for (site in names(mydatastructure)) {
-      title <- mydatastructure[[site]][["Sitename"]]
-      # mytabs[[title]] <- mydatastructure[[site]][["tab_panel"]]
-      mytabs[[title]] <- mydatastructure[[site]][["tab_output"]]
-    }
-
-    mytabs = lapply(names(mytabs), tabPanel)
-
-    do.call(tabsetPanel, mytabs)
-
-  })
-
-  # observe(
-  #   lapply(names(mytabs), function(site_table) {
-  #     output[[paste0("dt_", site)]] <- DT::renderDataTable({
-  #       datatable(mydatastructure[[site]][["desc_exdf"]])
-  #     })
-  #   })
-  # )
-  observe(
-    for (site in names(mydatastructure)) {
-      dt_output <- paste0("dt_", site)
-      output[[dt_output]] <- DT::renderDataTable({
-        mydatastructure[[site]][["desc_exdf"]]
+    nTabs = length(names(mydatastructure))
+    myTabs = lapply(seq_len(nTabs), function(i) { # i is the index (e.g., 1, 2, 3)
+      shiny::tabPanel(
+        mydatastructure[[i]][['Sitename']] # this is the name displayed on the tab
+        ,DT::dataTableOutput(paste0("datatable_",i))
+        )
       })
-    }
-  )
-  
+    do.call(tabsetPanel, myTabs) # make a tabsetPanel containing one tab per site
+    })
 
-  # observe({
-  #   # req(input$DataOpts$Site)
-  #   
-  #   lapply(mydatastructure, function(site_table) {
-  #     output[[paste0("dt_", site)]] <- renderDT({
-  #       datatable(mydatastructure[[site]][["desc_exdf"]])
-  #     })
-  #   })
-  # })
-  
-  # output$mytabs = renderUI({
-  #   # nTabs = input$nTabs
-  #   # myTabs = lapply(paste('Tab', 1: nTabs), tabPanel)
-  #   myTabs = lapply(DataOpts$Site, tabPanel)
-  #   # myTabs = lapply(paste('Tab ', 1:length(DataOpts$Site)), tabPanel)
-  #   do.call(tabsetPanel, myTabs)
-  # })
+  shiny::observe(
+    lapply(seq_len(length(DataOpts$Site)), function(i) { # i is the index (e.g., 1, 2, 3)
+
+      mydatastructure <- exDUM() # get the data, again
+      site <- DataOpts$Site[i] # site ID (e.g., 'NCRN_GWMP_TURU')
+      output[[paste0("datatable_",i)]] <- DT::renderDataTable({mydatastructure[[site]][['desc_exdf']]})
+
+      }
+    )
+  )  
   
 ### Exceedances Prep ###
   

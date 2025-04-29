@@ -244,7 +244,7 @@ shinyUI(
                              siteChooserUI("DataSiteExceedances"),
                              paramChooserUI("DataParamExceedances"),
                              actionButton("hist_button", "Show Histogram")
-                            #  ,numericInput("nTabs", 'No. of Tabs', 5)
+                             # ,numericInput("nTabs", 'No. of Tabs', 5)
                )),
                column(9,              
                       # uiOutput("exceedances_summary"),

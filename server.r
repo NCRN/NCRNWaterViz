@@ -1464,27 +1464,57 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
   })
   
 ### Multiple DT Output ###
+
   output$mytabs <- renderUI({
     mydatastructure <- exDUM()
 
     for (site in names(mydatastructure)) {
       title <- mydatastructure[[site]][["Sitename"]]
       dt_output <- paste0("dt_", site)
-      mydatastructure[[site]][["tab_panel"]] <- tabPanel(title = title,
-                                                         DTOutput(outputId = dt_output))
+      # mydatastructure[[site]][["tab_panel"]] <- tabPanel(title = title,
+      #                                                    DTOutput(outputId = dt_output))
+      mydatastructure[[site]][["tab_output"]] <- DT::dataTableOutput(dt_output)
     }
 
     mytabs<- list()
     for (site in names(mydatastructure)) {
       title <- mydatastructure[[site]][["Sitename"]]
-      mytabs[[title]] <- mydatastructure[[site]][["tab_panel"]]
+      # mytabs[[title]] <- mydatastructure[[site]][["tab_panel"]]
+      mytabs[[title]] <- mydatastructure[[site]][["tab_output"]]
     }
-    
+
     mytabs = lapply(names(mytabs), tabPanel)
 
     do.call(tabsetPanel, mytabs)
 
   })
+
+  # observe(
+  #   lapply(names(mytabs), function(site_table) {
+  #     output[[paste0("dt_", site)]] <- DT::renderDataTable({
+  #       datatable(mydatastructure[[site]][["desc_exdf"]])
+  #     })
+  #   })
+  # )
+  observe(
+    for (site in names(mydatastructure)) {
+      dt_output <- paste0("dt_", site)
+      output[[dt_output]] <- DT::renderDataTable({
+        mydatastructure[[site]][["desc_exdf"]]
+      })
+    }
+  )
+  
+
+  # observe({
+  #   # req(input$DataOpts$Site)
+  #   
+  #   lapply(mydatastructure, function(site_table) {
+  #     output[[paste0("dt_", site)]] <- renderDT({
+  #       datatable(mydatastructure[[site]][["desc_exdf"]])
+  #     })
+  #   })
+  # })
   
   # output$mytabs = renderUI({
   #   # nTabs = input$nTabs

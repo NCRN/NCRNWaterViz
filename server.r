@@ -2662,25 +2662,46 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     #When parks are selected
     leaflet::leafletProxy("WaterMap") %>%
       leaflet::clearGroup("NPS") %>%
-      leaflet::addCircleMarkers(data = merge_data, group = "NPS", 
-                       layerId = merge_data$SiteCode, 
-                       fillColor = ~MapColors(merge_data$Acceptable/merge_data$Total),
-                       fillOpacity = 1, stroke = FALSE) %>%
-      leaflet::addLegend(position="topright", pal=MapColors, values=c(0,1), opacity=1,
-                layerId="npsLegend",title=paste0("<svg height='15' width='20'>
-                    <circle cx='10' cy='10' r='5', stroke='black' fill='black'/></svg> Percent of Acceptable <br>Measurements"),
-                labFormat=labelFormat(suffix="%", transform= function(x) 100*x))
+      leaflet::addCircleMarkers(
+        data = merge_data
+        ,group = "NPS"
+        ,layerId = merge_data$SiteCode
+        ,fillColor = ~MapColors(merge_data$Acceptable/merge_data$Total)
+        ,fillOpacity = 1
+        , stroke = FALSE
+        ) %>%
+      leaflet::addLegend(
+        position="topright"
+        ,pal=MapColors
+        ,values=c(0,1)
+        ,opacity=1
+        ,layerId="npsLegend"
+        ,title=paste0(
+          "
+          <svg height='15' width='20'>
+          <circle cx='10' cy='10' r='5', stroke='black' fill='black'/></svg>
+          Percent of Acceptable <br>Measurements
+          "
+        ),labFormat=labelFormat(suffix="%", transform= function(x) 100*x))
 
     if (show_labels) {
           leaflet::leafletProxy("WaterMap") %>%    
             leaflet::clearGroup("Sites")
       for (i in seq_len(nrow(merge_data))) {
         leaflet::leafletProxy("WaterMap") %>%
-        leaflet::addLabelOnlyMarkers(group = "Sites",
-                            lng = merge_data$longitude[i], lat = merge_data$latitude[i],
-                            label = merge_data$SiteName[i],
-                            labelOptions = labelOptions(noHide = TRUE, textOnly = TRUE, direction = merge_data$label_dir[i], offset= c(merge_data$xoffset[i], merge_data$yoffset[i]),
-                                                        , style = list("font-weight"="bold", "font-size"="13px", "color"=label_color)))
+        leaflet::addLabelOnlyMarkers(
+          group = "Sites"
+          ,lng = merge_data$longitude[i]
+          ,lat = merge_data$latitude[i]
+          ,label = merge_data$SiteName[i]
+          ,labelOptions = labelOptions(
+            noHide = TRUE
+            ,textOnly = TRUE
+            ,direction = merge_data$label_dir[i]
+            ,offset= c(merge_data$xoffset[i], merge_data$yoffset[i])
+            ,style = list("font-weight"="bold", "font-size"="13px", "color"=label_color)
+            )
+          )
         } 
           } else {
           leaflet::leafletProxy("WaterMap") %>%

@@ -2421,7 +2421,11 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
   output$MapChars<-renderUI( selectizeInput(inputId="MapChar",label="Charactersitic to Map", choices=NPSchars[order(names(NPSchars))] ))
   
   #coloring
-  MapColors<-colorNumeric(palette="viridis", domain=c(0,1)) # NPS % meets threshold
+  MapColors<- colorBin(
+    palette = c("red", "yellow", "blue"),
+    domain = c(0,1)
+    ,bins = c(0, 0.33, 0.66, 1)
+  )
   MapColors2<-colorFactor(palette="viridis", domain=c("<5th percentile","5th - 25th percentile", 
           "25th - 50th percentile", "50th - 75th percentile", "75th - 95th percentile", "> 95th percentile" ), ordered = T )  # USGS percentile category for discharge
   
@@ -2660,12 +2664,12 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
       leaflet::clearGroup("NPS") %>%
       leaflet::addCircleMarkers(data = merge_data, group = "NPS", 
                        layerId = merge_data$SiteCode, 
-                       fillColor = MapColors(merge_data$Acceptable/merge_data$Total),
+                       fillColor = ~MapColors(merge_data$Acceptable/merge_data$Total),
                        fillOpacity = 1, stroke = FALSE) %>%
       leaflet::addLegend(position="topright", pal=MapColors, values=c(0,1), opacity=1,
                 layerId="npsLegend",title=paste0("<svg height='15' width='20'>
-                    <circle cx='10' cy='10' r='5', stroke='black' fill='black'/></svg> NPS: % of Acceptable <br>Measurements"),
-                labFormat=labelFormat(suffix="%", transform= function(x) 100*x)) 
+                    <circle cx='10' cy='10' r='5', stroke='black' fill='black'/></svg> Percent of Acceptable <br>Measurements"),
+                labFormat=labelFormat(suffix="%", transform= function(x) 100*x))
 
     if (show_labels) {
           leaflet::leafletProxy("WaterMap") %>%    

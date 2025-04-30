@@ -238,16 +238,19 @@ shinyUI(
                leafletOutput("WaterMap",width = "100%", height="900px")
         ) 
       ),
-      tabPanel(h4("Data"),
-               column(3, div(style='padding: 5px 10px',class="panel panel-default", 
-                             
-                             h3("Select Site Data"),
-                             parkChooserUI("DataPark"),
-                             siteChooserUI("DataSite"),
-                             paramChooserUI("DataParam")
-               )),
-               column(9,              
-                      DT::dataTableOutput("WaterTable"))
+      tabPanel(
+        h4("Data")
+        ,div(
+          style='padding: 5px 10px'
+          ,class="panel panel-default"
+          ,h3("Select Site Data")
+          ,fluidRow(
+            column(width=4, parkChooserUI("DataPark"))
+            ,column(width=4, siteChooserUI("DataSite"))
+            ,column(width=4, paramChooserUI("DataParam"))
+          )
+        )
+        ,DT::dataTableOutput("WaterTable")
       ),
       tabPanel(h4("Exceedances"),
                column(3, div(style='padding: 5px 10px',class="panel panel-default", 

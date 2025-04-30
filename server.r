@@ -1262,34 +1262,33 @@ WaterSeriesOutMultiple <- reactive({
 
 output$SeriesPlotMultiple<-renderPlotly({   WaterSeriesOutMultiple() })
 
-WaterSeriesOutMultiple2 <- reactive({
-    # A reactive function that a plotly of boxplots based on user selected site(s) and aggregation method (year, month, or site). 
+CorrPlotOutMultiple <- reactive({
+    # A reactive function that returns a plotly scatterplot of two user-selected parameters. 
     # Args:
     #  DataOpts$Years, c(int), required. The character string provided by yearChooser() in global.R. 
-    #  input$SummaryBoxBy, chr, required. Determines aggregation type and formats accordingly if month or year is selected. 
-    #  input$BoxThreshLine, bool, optional. Default False. If True, looks up the water quality threshold.
     #  DataOpts$Park, chr, required. A park acronym. E.g., 'ROCR'.
     #  DataOpts$Site, chr or c(chr), required. A site code. E.g., 'NCRN_ROCR_KLVA'
     #  DataOpts$Param, chr, required. A characteristic abbreviation. E.g., 'DOper'.
+    #  DataOpts$Param2, chr, required. A characteristic abbreviation. E.g., 'TN'.
     #  
     # Returns:
     #  Plotly figure
     # 
     # Example:
     #   DataOpts$Years <- c(2010,2024),
-    #   input$SummaryBoxBy <- "year"
-    #   input$BoxThreshLine <- T
     #   DataOpts$Park <- 'ROCR'
     #   DataOpts$Site <- c('NCRN_ROCR_KLVA', 'NCRN_ROCR_FEBR')
     #   DataOpts$Param <- 'DOper'
+    #   DataOpts$Param2 <- 'TN'
     #   
-    #   myfigure <- BoxPlotMutlipleOut(
+    #   myfigure <- CorrPlotOutMultiple(
     #     DataOpts$Years
     #     ,input$SummaryBoxBy
     #     ,input$SeriesThreshLine
     #     ,DataOpts$Park
     #     ,DataOpts$Site
     #     ,DataOpts$Param
+    #     ,DataOpts$Param2
     #   )
     #
   req(DataOpts$Park, DataOpts$Site, DataOpts$Param, DataOpts$Param2)
@@ -1466,7 +1465,7 @@ WaterSeriesOutMultiple2 <- reactive({
 
   })
 
-output$SeriesPlotMultiple2<-renderPlotly({   WaterSeriesOutMultiple2() })
+output$CorrPlot<-renderPlotly({   CorrPlotOutMultiple() })
 
 #### Time Series Plot ####
   #   WaterSeriesOut<-reactive({

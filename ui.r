@@ -204,7 +204,7 @@ shinyUI(
         )
         )
         ,column(9,
-          plotlyOutput("SeriesPlotMultiple2", width="auto", height="auto"),
+          plotlyOutput("CorrPlot", width="auto", height="auto"),
         )
       ),
 

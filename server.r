@@ -1311,8 +1311,8 @@ WaterSeriesOutMultiple2 <- reactive({
     dplyr::summarize(sitevisit_meanvalue = mean(Value)) %>%
     dplyr::ungroup() %>%
     dplyr::rename(all_of(colname_lookup))
+  # print(head(df_firstparam))
 
-  print(head(df_firstparam))
   colname_lookup <- c(Characteristic_y = 'Characteristic', sitevisit_meanvalue_y = 'sitevisit_meanvalue')
   df_secondparam <- DataUseMultipleParam2() %>%
     dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #year filtering
@@ -1320,12 +1320,16 @@ WaterSeriesOutMultiple2 <- reactive({
     dplyr::group_by(ActivityMediaSubdivisionName, MonitoringLocationName, Characteristic, Date) %>%
     dplyr::summarize(sitevisit_meanvalue = mean(Value)) %>%
     dplyr::ungroup() %>%
-    dplyr::rename(all_of(colname_lookup))
-  print(head(df_secondparam))
+    dplyr::rename(all_of(colname_lookup)) %>%
+    dplyr::select(ActivityMediaSubdivisionName, Characteristic_y, sitevisit_meanvalue_y)
+  # print(head(df_secondparam))
   
   print(paste0('Is the row count equal in each dataframe? , ',nrow(df_firstparam) == nrow(df_secondparam)))
   print(paste0('nrow df_firstparam: ',nrow(df_firstparam)))
   print(paste0('nrow df_secondparam: ',nrow(df_secondparam)))
+
+  df <- dplyr::inner_join(df_firstparam, df_secondparam, by=dplyr::join_by(ActivityMediaSubdivisionName))
+  print(head(df))
   
   # initialize variables
   ynames <- c()

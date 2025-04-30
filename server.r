@@ -1439,14 +1439,15 @@ WaterSeriesOutMultiple2 <- reactive({
         size=GraphOpts$PointSize
         ,opacity=1
         )
-      # ,hovertemplate = paste(
-      #   "<br>Date :", series_df$Date
-      #   ,"<br>Site :", series_df$MonitoringLocationName
-      #   ,"<br>Measurement :", series_df$Value, " ", units
-      #   # extra is a secondary bit of hovertext that's visible on the right-ide of the main hovertext
-      #   # https://community.plotly.com/t/disabling-default-tooltip-while-using-a-hovertemplate-in-python/85824/3
-      #   ,'<extra></extra>'
-      #   )
+      ,hovertemplate = paste(
+        "<br>Date :", df$Date
+        ,"<br>Site :", df$MonitoringLocationName
+        ,"<br>",xname, ": ", df$sitevisit_meanvalue_x
+        ,"<br>",yname, ": ", df$sitevisit_meanvalue_y
+        # extra is a secondary bit of hovertext that's visible on the right-ide of the main hovertext
+        # https://community.plotly.com/t/disabling-default-tooltip-while-using-a-hovertemplate-in-python/85824/3
+        ,'<extra></extra>'
+        )
       ,text=NULL
     ) %>% layout(
       font=list(size=input$FontSize)

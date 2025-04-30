@@ -135,7 +135,7 @@ paramChooser2<-function(input, output, session, data, park, site, chosen){
    })
   
   observe(
-    updateSelectizeInput(session, inputId="ParamIn2",selected=chosen(), 
+    updateSelectizeInput(session, inputId="ParamIn2",selected=NA, 
                          choices=c("Choose a Parameter"="", as.list(sort(PChoices()))))
   )
   

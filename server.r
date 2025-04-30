@@ -299,7 +299,7 @@ shinyServer(function(input,output,session){
     ,data=WaterData
     ,park=reactive(DataOpts$Park)
     ,site=reactive(DataOpts$Site)
-    ,chosen=reactive(DataOpts$Param)
+    ,chosen=NA
     )
   CorrYears<-shiny::callModule(
     yearChooser

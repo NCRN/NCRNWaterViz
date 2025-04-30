@@ -139,7 +139,7 @@ paramChooser2<-function(input, output, session, data, park, site, chosen){
                          choices=c("Choose a Parameter"="", as.list(sort(PChoices()))))
   )
   
-  return(reactive(input$ParamIn))
+  return(reactive(input$ParamIn2))
 }
   
 

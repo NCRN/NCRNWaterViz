@@ -12,6 +12,7 @@ Network <- "NCRN" # for leaflet map center
 Network_long <- "National Capital Region Network" # for navbar title
 Viz_name <- "Stream Water Quality"
 GraphColors<-read.csv("colors.csv", header=T, as.is=T)
+DATASET_URL <- a("Click here to export the whole dataset from NPS DataStore\n", href="https://irma.nps.gov/DataStore/Reference/Profile/2309154")
 
 #### Years Module ####
 yearChooserUI<-function(id){
@@ -152,7 +153,6 @@ global_figure_height <- 1200 # pixels
 global_figure_width <- 2000 # pixels
 FIGURE_VERTICAL_SCALING <- 0.5
 FIGURE_HORIZONTAL_SCALING <- 0.75
-
 
 
 

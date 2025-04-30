@@ -2252,7 +2252,8 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
   #observeEvent(DataYears(), DataOpts$Years<-DataYears() )
   
 ### Data table output ####
- output$WaterTable <-DT::renderDataTable(
+  output$DatasetURL <- renderUI({tagList(DATASET_URL)})
+  output$WaterTable <-DT::renderDataTable(
     expr=datatable(
       DataUseMultiple() %>% dplyr::select(
         OrganizationFormalName

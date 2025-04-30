@@ -244,6 +244,7 @@ shinyUI(
           style='padding: 5px 10px'
           ,class="panel panel-default"
           ,h3("Select Site Data")
+          ,uiOutput('DatasetURL')
           ,fluidRow(
             column(width=4, parkChooserUI("DataPark"))
             ,column(width=4, siteChooserUI("DataSite"))

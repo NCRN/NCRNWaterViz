@@ -1393,7 +1393,7 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
   shiny::observeEvent(ExceedancesParam(), DataOpts$Param<-ExceedancesParam() )
   
 ### Exceedances Data Use Multiple ###
-  exDUM <-reactive({
+  exDUM <-shiny::reactive({
     # Get threshold exceedance data to use in a tab that allows for multiple site selections and reacts to user input.
     # Args:
     #  DataOpts$Park, chr, required. The character string provided by parkChooser() in global.R.
@@ -1418,10 +1418,13 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
     mydatastructure <- list()
     for (site in DataOpts$Site) {
       mydatastructure[[site]]<-list()
+      
+      # Building df
       mydatastructure[[site]][["df"]] <- getWData(WaterData, parkcode=DataOpts$Park, sitecode = site, charname=DataOpts$Param)
       mydatastructure[[site]][["df"]] <- mydatastructure[[site]][["df"]][, c("OrganizationFormalName", "ActivityMediaSubdivisionName", "Date", "Characteristic", "Value", "ResultMeasure.MeasureUnitCode")]
       mydatastructure[[site]][["df"]] <- subset(mydatastructure[[site]][["df"]], !is.na(Value))
       
+      # Getting characters
       mydatastructure[[site]][["LowerThreshold"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="LowerDescription")
       mydatastructure[[site]][["UpperThreshold"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="UpperDescription")
       mydatastructure[[site]][["LowerPoint"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="LowerPoint")
@@ -1440,30 +1443,84 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
           paste0("There is no recorded water quality threshold for ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]])
       )
       
+      # Building *exdf
       if(any(mydatastructure[[site]][["df"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm = TRUE)) {
         lower_sd<- mydatastructure[[site]][["df"]][mydatastructure[[site]][["df"]]$Value < mydatastructure[[site]][["LowerPoint"]], ]
         lower_sd$LowerThreshold <- mydatastructure[[site]][["LowerThreshold"]]
       } else{
         lower_sd<- mydatastructure[[site]][["df"]][0, ]
       }
-      
       if(any(mydatastructure[[site]][["df"]]$Value >= mydatastructure[[site]][["UpperPoint"]], na.rm = TRUE)) {
         upper_sd<- mydatastructure[[site]][["df"]][mydatastructure[[site]][["df"]]$Value > mydatastructure[[site]][["UpperPoint"]], ]
         upper_sd$UpperThreshold <- mydatastructure[[site]][["UpperThreshold"]]
       } else {
         upper_sd<- mydatastructure[[site]][["df"]][0, ]
       }
-      
       mydatastructure[[site]][["exdf"]] <- dplyr::bind_rows(lower_sd, upper_sd)
-      
       mydatastructure[[site]][["desc_exdf"]]<- mydatastructure[[site]][["exdf"]] %>%
         dplyr::arrange(desc(Date))
+      
+      # Data wrangle for text and hist
+      mydatastructure[[site]][["histyears"]]<- data.frame(Year = lubridate::year(mydatastructure[[site]][["df"]]$Date))
+      mydatastructure[[site]][["totcount"]]<- mydatastructure[[site]][["histyears"]] %>%
+        dplyr::count(Year) %>%
+        dplyr::rename("ntot" = "n")
+      mydatastructure[[site]][["totcount"]] <- subset(mydatastructure[[site]][["totcount"]], !is.na(Year))
+      
+      mydatastructure[[site]][["excount"]] <- mydatastructure[[site]][["exdf"]] %>%
+        dplyr::mutate(Year = lubridate::year(Date)) %>%
+        dplyr::count(Year) %>%
+        dplyr::rename("nex" = "n")
+      mydatastructure[[site]][["excount"]] <- subset(mydatastructure[[site]][["excount"]], !is.na(Year))
+      
+      mydatastructure[[site]][["histdata"]] <- dplyr::left_join(mydatastructure[[site]][["totcount"]], mydatastructure[[site]][["excount"]], by = "Year")
+      mydatastructure[[site]][["histdata"]][is.na(mydatastructure[[site]][["histdata"]])] <- 0
+      mydatastructure[[site]][["histdata"]] <- mydatastructure[[site]][["histdata"]] %>%
+        dplyr::mutate(percent_ex = (nex / ntot) * 100) %>%
+        dplyr::mutate(formatted_percent_ex = scales::percent(percent_ex / 100, accuracy = 0.01))
+      
+      # Text prep
+      mydatastructure[[site]][["recent_year"]]<- max(mydatastructure[[site]][["histdata"]]$Year)
+      mydatastructure[[site]][["oldest_year"]]<- min(mydatastructure[[site]][["histdata"]]$Year)
+      mydatastructure[[site]][["nex"]]<- mydatastructure[[site]][["histdata"]][mydatastructure[[site]][["histdata"]]$Year == mydatastructure[[site]][["recent_year"]], "nex"]
+      mydatastructure[[site]][["ntot"]]<- mydatastructure[[site]][["histdata"]][mydatastructure[[site]][["histdata"]]$Year == mydatastructure[[site]][["recent_year"]], "ntot"]
+      # recent_freq<- sprintf("%.2f%%", (nex/ntot)*100)
+      mydatastructure[[site]][["sum_nex"]]<- sum(mydatastructure[[site]][["histdata"]]$nex)
+      mydatastructure[[site]][["sum_ntot"]]<- sum(mydatastructure[[site]][["histdata"]]$ntot)
+      # sum_freq<- sprintf("%.2f%%", (sum_nex/sum_ntot)*100)
+      # freq_comp<- ifelse((nex/ntot) > (sum_nex/sum_ntot), "greater than",
+      #                      ifelse((nex/ntot) == (sum_nex/sum_ntot), "equal to", "less than"))
+      mydatastructure[[site]][["grammar1"]]<- if(mydatastructure[[site]][["nex"]]==1) {
+        paste("There was", mydatastructure[[site]][["nex"]], "exceedance of the ")
+      } else {
+        paste("There were", mydatastructure[[site]][["nex"]], "exceedances of the ")
+      }
+      mydatastructure[[site]][["grammar2"]]<- if(mydatastructure[[site]][["sum_nex"]]==1) {
+        paste("There has been", mydatastructure[[site]][["sum_nex"]], "exceedance of the ")
+      } else {
+        paste("There have been", mydatastructure[[site]][["sum_nex"]], "exceedances of the ")
+      }
+      
+      ### save as function ###
+      mydatastructure[[site]][["extext"]]<- c(
+        paste0(mydatastructure[[site]][["grammar1"]], mydatastructure[[site]][["Characteristic"]], " water quality threshold among ", mydatastructure[[site]][["ntot"]], " observations at ", mydatastructure[[site]][["Sitename"]], " in ", mydatastructure[[site]][["recent_year"]], ".")
+        ,paste0(mydatastructure[[site]][["grammar2"]], mydatastructure[[site]][["Characteristic"]], " water quality threshold among ", mydatastructure[[site]][["sum_ntot"]], " observations at ", mydatastructure[[site]][["Sitename"]], " since monitoring began in ", mydatastructure[[site]][["oldest_year"]], ".")
+        # ,paste0("<u>", recent_freq, "</u>", " of observations exceeded the water quality threshold in ", recent_year, ", ", freq_comp, " the overall exceedance percentage of ", "<u>", sum_freq, "</u>", ".")
+      )
+      mydatastructure[[site]][["extext_bullets"]]<- paste0("<li>", mydatastructure[[site]][["extext"]], "</li>", collapse = "")
+      
+      HTML(paste0(
+        "<p><b><span style='font-size: 18px;'>Exceedances Summary:</b></p>",
+        "<ul>", mydatastructure[[site]][["extext_bullets"]], "</ul>"
+      ))
+      ### ###
       
     }
       return(mydatastructure)
   })
+
   
-### Multiple DT Output ###
+### Output ###
 
   output$mytabs <- shiny::renderUI({
     req(DataOpts$Park, DataOpts$Site, DataOpts$Param) # execute output$mytabs only if user makes selections
@@ -1474,7 +1531,9 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
     myTabs = lapply(seq_len(nTabs), function(i) { # i is the index (e.g., 1, 2, 3)
       shiny::tabPanel(
         mydatastructure[[i]][['Sitename']] # this is the name displayed on the tab
+        ,shiny::textOutput(paste0("dynamic_text_",i))
         ,DT::dataTableOutput(paste0("datatable_",i))
+        
         )
       })
     do.call(tabsetPanel, myTabs) # make a tabsetPanel containing one tab per site
@@ -1485,11 +1544,15 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
 
       mydatastructure <- exDUM() # get the data, again
       site <- DataOpts$Site[i] # site ID (e.g., 'NCRN_GWMP_TURU')
+      output[[paste0("dynamic_text_",i)]] <- shiny::renderText({paste("Test text for ",mydatastructure[[i]][["Sitename"]])})
       output[[paste0("datatable_",i)]] <- DT::renderDataTable({mydatastructure[[site]][['desc_exdf']]})
+      
 
       }
     )
   )  
+  
+  
   
 ### Exceedances Prep ###
   

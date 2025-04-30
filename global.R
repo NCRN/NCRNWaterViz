@@ -116,6 +116,31 @@ paramChooser<-function(input, output, session, data, park, site, chosen){
   
   return(reactive(input$ParamIn))
 }
+
+paramChooserUI2<-function(id){
+  ns<-NS(id)
+  selectizeInput(inputId=ns("ParamIn2"), label="4. Second Water Parameter:", choices=NULL)
+}
+
+
+paramChooser2<-function(input, output, session, data, park, site, chosen){
+  PChoices<-reactive({
+    req(park())
+    Choice<-getCharInfo(data, parkcode=park(), info="CharName")
+    ChoiceName<-paste0(getCharInfo(data, parkcode=park(), info="DisplayName"), " (",
+                       getCharInfo(data, parkcode=park(), info="Units") %>% 
+                         iconv("","UTF-8"), ")")#%>% iconv("","UTF-8"))
+    if(isTruthy(Choice) & isTruthy(ChoiceName)) { names(Choice)<-ChoiceName }
+    return(Choice)
+   })
+  
+  observe(
+    updateSelectizeInput(session, inputId="ParamIn2",selected=chosen(), 
+                         choices=c("Choose a Parameter"="", as.list(sort(PChoices()))))
+  )
+  
+  return(reactive(input$ParamIn))
+}
   
 
 

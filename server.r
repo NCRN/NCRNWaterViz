@@ -271,6 +271,65 @@ shinyServer(function(input,output,session){
     BoxYears()
     ,DataOpts$Years<-BoxYears()
     )
+  ### Corrplot Controls ###
+  CorrPark<-shiny::callModule(
+    parkChooser
+    ,id="CorrPark"
+    ,data=WaterData
+    ,chosen=reactive(DataOpts$Park)
+    )
+  CorrSite<-shiny::callModule(
+    siteChooser
+    ,id="CorrSite"
+    ,data=WaterData
+    ,park=reactive(DataOpts$Park)
+    ,chosen=reactive(DataOpts$Site)
+    )
+  CorrParam1<-shiny::callModule(
+    paramChooser
+    ,id="CorrParam1"
+    ,data=WaterData
+    ,park=reactive(DataOpts$Park)
+    ,site=reactive(DataOpts$Site)
+    ,chosen=reactive(DataOpts$Param)
+    )
+  CorrParam2<-shiny::callModule(
+    paramChooser2
+    ,id="CorrParam2"
+    ,data=WaterData
+    ,park=reactive(DataOpts$Park)
+    ,site=reactive(DataOpts$Site)
+    ,chosen=reactive(DataOpts$Param)
+    )
+  CorrYears<-shiny::callModule(
+    yearChooser
+    ,id="CorrYears"
+    ,data=DataUseMultiple
+    ,chosen=reactive(DataOpts$Years)
+    )
+  shiny::observeEvent(
+    CorrPark()
+    ,{
+      DataOpts$Park<-CorrPark()
+      ;DataOpts$Site<-NA
+      }
+    )
+  shiny::observeEvent(
+    CorrSite()
+    ,{
+      DataOpts$Site<-CorrSite()
+      }
+    )
+  shiny::observeEvent(
+    CorrParam1()
+    ,{
+      DataOpts$Param<-CorrParam1()
+      }
+    )
+  shiny::observeEvent(
+    CorrYears()
+    ,DataOpts$Years<-CorrYears()
+    )
 
 #### Graphics Modal Control ####
   

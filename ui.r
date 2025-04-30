@@ -185,6 +185,27 @@ shinyUI(
           plotlyOutput("BoxPlotMultiple", width="auto", height="auto"),
         )
       ),
+      tabPanel(h4("Correlations"),
+        column(3, div(style='padding: 5px 10px',class="panel panel-default", 
+
+        h3("Select Site Data"),
+                    
+        radioButtons(inputId="CorrBoxBy", label="Compare by:", choices=c("year", "month", "site"), selected = "year", inline = T),
+           
+        parkChooserUI("CorrPark"),
+        siteChooserUI("CorrSite"),
+        paramChooserUI("CorrParam1"),
+        paramChooserUI2("CorrParam2"),
+        yearChooserUI("CorrYears"),
+
+        HTML('<hr>'),
+        splitLayout(cellWidths=c("50%","50%"),
+          actionButton(inputId="GraphicsModal2", label='Graphics Options', class="btn btn-primary",style="margin-top: 15px")
+          ,actionButton(inputId="AboutComparisons", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px")
+        )
+        )
+        )
+      ),
 
       tabPanel(h4("Map"),
         column(2, div(style='padding: 5px 10px',class="panel panel-default",

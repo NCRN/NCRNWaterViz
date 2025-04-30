@@ -1413,7 +1413,7 @@ WaterSeriesOutMultiple2 <- reactive({
   
   # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L106-L127
 
-  title <- paste0(NCRNWater::getParkInfo(object=WaterData, parkcode=DataOpts$Park, info="ParkLongName"), '\n', xname, ' vs. ',yname, '\nYears: ',DataOpts$Years[1], '-', DataOpts$Years[2],'; Total measurements: ', nrow(df))
+  title <- paste0(NCRNWater::getParkInfo(object=WaterData, parkcode=DataOpts$Park, info="ParkLongName"), '\n', yname, ' ~ ',xname, '\nYears: ',DataOpts$Years[1], '-', DataOpts$Years[2],'; Total measurements: ', nrow(df))
 
   m <- list( # figure margins
     l = 100,
@@ -1436,7 +1436,7 @@ WaterSeriesOutMultiple2 <- reactive({
       ,height = (GraphOpts$FigureVerticalScaling*as.numeric(input$dimension[2]))
       # ,line=list(width=input$LineWidth)
       ,marker=list(
-        size=input$PointSize
+        size=GraphOpts$PointSize
         ,opacity=1
         )
       # ,hovertemplate = paste(

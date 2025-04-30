@@ -2253,6 +2253,16 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
   
 ### Data table output ####
   output$DatasetURL <- renderUI({tagList(DATASET_URL)})
+  DATATABLE_COLNAME_LOOKUP <- c(
+    Organization = 'OrganizationFormalName'
+    ,Site = 'MonitoringLocationName'
+    ,Latitude = 'ActivityLocation.LatitudeMeasure'
+    ,Longitude = 'ActivityLocation.LongitudeMeasure'
+    ,SampleDate = 'Date'
+    ,SampleTime = 'ActivityStartTime.Time'
+    ,Value = 'Value'
+    ,Units = 'ResultMeasure.MeasureUnitCode'
+    )
   output$WaterTable <-DT::renderDataTable(
     expr=datatable(
       DataUseMultiple() %>% dplyr::select(
@@ -2266,6 +2276,8 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
         ,ResultMeasure.MeasureUnitCode
       ) %>% dplyr::arrange(
         desc(Date)
+      ) %>% dplyr::rename(
+        dplyr::all_of(DATATABLE_COLNAME_LOOKUP)
       )
       ,extensions=c(
         "Buttons"

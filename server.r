@@ -69,7 +69,7 @@ shinyServer(function(input,output,session){
                               ThColor="Orange", TrColor="Green", LineWidth=2, ShowHidePoint=F, FigureHorizontalScaling=0.7, FigureVerticalScaling=0.7)
   
   #### Reactive Values for Choosing Data ####
-  DataOpts<-shiny::reactiveValues(Park=NA, Site=NA, Param=NA, Agg=NA, DateRange=NA, Years=NA, USGSload=FALSE, USGSdata=NA)
+  DataOpts<-shiny::reactiveValues(Park=NA, Site=NA, Param=NA, Agg=NA, DateRange=NA, Years=NA, USGSload=FALSE, USGSdata=NA, Param2=NA)
 
   #### UI Controls ####  
   # Have the threshold lines observe each other so they stay in-sync
@@ -299,7 +299,7 @@ shinyServer(function(input,output,session){
     ,data=WaterData
     ,park=reactive(DataOpts$Park)
     ,site=reactive(DataOpts$Site)
-    ,chosen=NA
+    ,chosen=reactive(DataOpts$Param2)
     )
   CorrYears<-shiny::callModule(
     yearChooser
@@ -324,6 +324,12 @@ shinyServer(function(input,output,session){
     CorrParam1()
     ,{
       DataOpts$Param<-CorrParam1()
+      }
+    )
+  shiny::observeEvent(
+    CorrParam2()
+    ,{
+      DataOpts$Param2<-CorrParam2()
       }
     )
   shiny::observeEvent(

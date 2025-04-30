@@ -2252,8 +2252,8 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
   #observeEvent(DataYears(), DataOpts$Years<-DataYears() )
   
 ### Data table output ####
-  output$DatasetURL <- renderUI({tagList(DATASET_URL)})
-  DATATABLE_COLNAME_LOOKUP <- c(
+  output$DatasetURL <- renderUI({tagList(DATASET_URL)}) # a constant stored in global.R
+  DATATABLE_COLNAME_LOOKUP <- c( # a lookup used in output$WaterTable
     Organization = 'OrganizationFormalName'
     ,Site = 'MonitoringLocationName'
     ,Latitude = 'ActivityLocation.LatitudeMeasure'
@@ -2264,6 +2264,21 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     ,Units = 'ResultMeasure.MeasureUnitCode'
     )
   output$WaterTable <-DT::renderDataTable(
+    # Generate a data table for the `Data` tab given user inputs
+    # 
+    # Args:
+    #   DataOpts$Park, chr, required. The character string provided by ExceedancesPark() and parkChooser() in global.R
+    #   DataOpts$Site, chr, required. The character string provided by ExceedancesSite() and siteChooser() in global.R
+    #   DataOpts$Param, chr, required. The character string provided by ExceedancesParam() and paramChooser() in global.R
+    # 
+    # Returns:
+    #   data.frame
+    # 
+    # Example:
+    #   DataOpts$Park<- "GWMP"
+    #   DataOpts$Site<- "NCRN_GWMP_TURU"
+    #   DataOpts$Param<- "TotalP"
+    #   
     expr=datatable(
       DataUseMultiple() %>% dplyr::select(
         OrganizationFormalName
@@ -2275,7 +2290,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
         ,Value
         ,ResultMeasure.MeasureUnitCode
       ) %>% dplyr::arrange(
-        desc(Date)
+        dplyr::desc(Date)
       ) %>% dplyr::rename(
         dplyr::all_of(DATATABLE_COLNAME_LOOKUP)
       )

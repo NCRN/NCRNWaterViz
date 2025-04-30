@@ -1372,8 +1372,40 @@ WaterSeriesOutMultiple2 <- reactive({
   } else {
     yname <- ynames[1]
   }
+  for (site in DataOpts$Site){
+    displayname <- getCharInfo(
+        object=WaterData
+        ,parkcode=DataOpts$Park
+        ,sitecode = site
+        ,charname=DataOpts$Param2
+        , info="DisplayName"
+        )
+      displaynames <- c(displaynames, displayname)
+      unit <- getCharInfo(
+        object=WaterData
+        ,parkcode=DataOpts$Park
+        ,sitecode = site
+        ,charname=DataOpts$Param2
+        ,info="Units"
+        )
+      units <- c(units, unit)
+    xname<-paste0(displayname," (", unit,")")
+    xnames <- c(xname, xnames)
+  }
 
-  xname <- 'Date'
+  units <- units %>% unique
+  displaynames <- displaynames %>% unique
+
+  # resolve conflicts that would happen if the metadata file was messed up
+  # e.g., if one characteristic had multiple units
+  n_xnames <- length(xnames %>% unique)
+  if (n_xnames == 1){
+    xname <- xnames %>% unique
+  } else if (n_xnames == 0){
+    xname <- ''
+  } else {
+    xname <- xnames[1]
+  }
 
   if(assessment){
       for (site in DataOpts$Site){
@@ -1390,7 +1422,7 @@ WaterSeriesOutMultiple2 <- reactive({
 
   n_not_na <- nrow(series_df %>% dplyr::filter(is.na(Value)==F))
   n_na <- nrow(series_df %>% dplyr::filter(is.na(Value)))
-  title <- paste0(NCRNWater::getParkInfo(object=WaterData, parkcode=DataOpts$Park, info="ParkLongName"), ': ', yname, '\nYears: ',DataOpts$Years[1], '-', DataOpts$Years[2],'; Total measurements: ',n_not_na+n_na,' (non-NA: ', n_not_na, ', NA: ', n_na,')')
+  title <- paste0(NCRNWater::getParkInfo(object=WaterData, parkcode=DataOpts$Park, info="ParkLongName"), '\n', xname, ' vs. ',yname, '\nYears: ',DataOpts$Years[1], '-', DataOpts$Years[2],'; Total measurements: ',n_not_na+n_na,' (non-NA: ', n_not_na, ', NA: ', n_na,')')
 
   m <- list( # figure margins
     l = 100,

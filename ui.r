@@ -190,8 +190,6 @@ shinyUI(
 
         h3("Select Site Data"),
                     
-        radioButtons(inputId="CorrBoxBy", label="Compare by:", choices=c("year", "month", "site"), selected = "year", inline = T),
-           
         parkChooserUI("CorrPark"),
         siteChooserUI("CorrSite"),
         paramChooserUI("CorrParam1"),
@@ -204,6 +202,9 @@ shinyUI(
           ,actionButton(inputId="AboutComparisons", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px")
         )
         )
+        )
+        ,column(9,
+          plotlyOutput("SeriesPlotMultiple2", width="auto", height="auto"),
         )
       ),
 

@@ -473,6 +473,44 @@ shinyServer(function(input,output,session){
     return(df)
   })
 
+ DataUseMultipleParam2 <-reactive({
+   # Get data to use in a tab that allows for multiple site selections and reacts to user input.
+   # Args:
+   #  DataOpts$Park, chr, required. The character string provided by parkChooser() in global.R.
+   #  DataOpts$Site, chr or vector if multiple sites selected, required. The character string provided by siteChooser() in global.R.
+   #  DataOpts$Param, chr, required. The character string provided by paramChooser() in global.R.
+   # 
+   # Return:
+   #  df, data.frame. A dataframe that includes water records for multiple sites.
+   #
+   # Examples:
+   #  table <- DataUseMultipleParam2 (
+   #    DataOpts$Park = "ANTI",
+   #    DataOpts$Site = "NCRN_ANTI_ANCR",
+   #    DataOpts$Param2 = "DOmg"
+   #    )
+   #    SummaryParam<-shiny::callModule(paramChooser, id="SummaryParam",data=WaterData, park=reactive(DataOpts$Park), site=reactive(DataOpts$Site), chosen=reactive(DataOpts$Param2))
+   #
+     shiny::validate(
+       need(DataOpts$Park, message="Choose a Park"),
+       need(DataOpts$Site, message="Choose a Site"),
+       need(DataOpts$Param2, message="Choose a Water Quality Parameter")
+     )  
+
+    combined_data <- data.frame()
+    for (site in DataOpts$Site) {
+      site_data <- getWData(WaterData, parkcode=DataOpts$Park, sitecode= site, charname=DataOpts$Param2)
+      combined_data <- dplyr::bind_rows(combined_data, site_data)
+    }
+
+    df <- suppressWarnings(combined_data %>% 
+                             dplyr::mutate(Year = lubridate::year(Date)) %>%
+                             dplyr::mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
+                             group_by(month) %>% dplyr::mutate(num_meas = sum(!is.na(Value))) %>% 
+                             ungroup()) %>% dplyr::mutate(num_mos = length(unique(month)))
+    return(df)
+  })
+
 #### Thresholds ####
   
   Thresholds<-reactive({
@@ -1223,6 +1261,194 @@ WaterSeriesOutMultiple <- reactive({
   })
 
 output$SeriesPlotMultiple<-renderPlotly({   WaterSeriesOutMultiple() })
+
+WaterSeriesOutMultiple2 <- reactive({
+    # A reactive function that a plotly of boxplots based on user selected site(s) and aggregation method (year, month, or site). 
+    # Args:
+    #  DataOpts$Years, c(int), required. The character string provided by yearChooser() in global.R. 
+    #  input$SummaryBoxBy, chr, required. Determines aggregation type and formats accordingly if month or year is selected. 
+    #  input$BoxThreshLine, bool, optional. Default False. If True, looks up the water quality threshold.
+    #  DataOpts$Park, chr, required. A park acronym. E.g., 'ROCR'.
+    #  DataOpts$Site, chr or c(chr), required. A site code. E.g., 'NCRN_ROCR_KLVA'
+    #  DataOpts$Param, chr, required. A characteristic abbreviation. E.g., 'DOper'.
+    #  
+    # Returns:
+    #  Plotly figure
+    # 
+    # Example:
+    #   DataOpts$Years <- c(2010,2024),
+    #   input$SummaryBoxBy <- "year"
+    #   input$BoxThreshLine <- T
+    #   DataOpts$Park <- 'ROCR'
+    #   DataOpts$Site <- c('NCRN_ROCR_KLVA', 'NCRN_ROCR_FEBR')
+    #   DataOpts$Param <- 'DOper'
+    #   
+    #   myfigure <- BoxPlotMutlipleOut(
+    #     DataOpts$Years
+    #     ,input$SummaryBoxBy
+    #     ,input$SeriesThreshLine
+    #     ,DataOpts$Park
+    #     ,DataOpts$Site
+    #     ,DataOpts$Param
+    #   )
+    #
+  req(DataOpts$Park, DataOpts$Site, DataOpts$Param, DataOpts$Param2)
+
+  # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L73
+  series_df <- DataUseMultiple() %>%
+    dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #year filtering
+    dplyr::arrange(MonitoringLocationName, Date)
+
+  testdf <- DataUseMultipleParam2()
+  print(paste0('DataOpts$Param2 = ', DataOpts$Param2))
+  print(head(testdf))
+
+  # initialize variables
+  ynames <- c()
+  xname <- NA
+  labels <- NA
+  assessment <- input$SeriesThreshLine
+  assessments <- c()
+  threshold <- NA
+  units <- c()
+  displaynames <- c()
+
+  # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L75-L98
+  for (site in DataOpts$Site){
+    displayname <- getCharInfo(
+        object=WaterData
+        ,parkcode=DataOpts$Park
+        ,sitecode = site
+        ,charname=DataOpts$Param
+        , info="DisplayName"
+        )
+      displaynames <- c(displaynames, displayname)
+      unit <- getCharInfo(
+        object=WaterData
+        ,parkcode=DataOpts$Park
+        ,sitecode = site
+        ,charname=DataOpts$Param
+        ,info="Units"
+        )
+      units <- c(units, unit)
+    yname<-paste0(displayname," (", unit,")")
+    ynames <- c(yname, ynames)
+  }
+
+  units <- units %>% unique
+  displaynames <- displaynames %>% unique
+
+  # resolve conflicts that would happen if the metadata file was messed up
+  # e.g., if one characteristic had multiple units
+  n_ynames <- length(ynames %>% unique)
+  if (n_ynames == 1){
+    yname <- ynames %>% unique
+  } else if (n_ynames == 0){
+    yname <- ''
+  } else {
+    yname <- ynames[1]
+  }
+
+  xname <- 'Date'
+
+  if(assessment){
+      for (site in DataOpts$Site){
+        tmp<-c(getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="LowerPoint"),
+          getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="UpperPoint")) %>%
+          unlist %>% unique
+        assessments <- c(tmp, assessments)
+    }
+    threshold <- assessments %>% unique
+    threshold <- threshold[!is.na(threshold)] # needed if there is no upper or lower threshold.
+  }
+  
+  # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L106-L127
+
+  n_not_na <- nrow(series_df %>% dplyr::filter(is.na(Value)==F))
+  n_na <- nrow(series_df %>% dplyr::filter(is.na(Value)))
+  title <- paste0(NCRNWater::getParkInfo(object=WaterData, parkcode=DataOpts$Park, info="ParkLongName"), ': ', yname, '\nYears: ',DataOpts$Years[1], '-', DataOpts$Years[2],'; Total measurements: ',n_not_na+n_na,' (non-NA: ', n_not_na, ', NA: ', n_na,')')
+
+  m <- list( # figure margins
+    l = 100,
+    r = 50,
+    b = 100,
+    t = 100,
+    pad = 20
+  )
+  t <- list(
+    size = global_textsize
+    )
+  baseplot <-
+    plotly::plot_ly(
+      series_df
+      ,y= ~Value
+      ,x= ~Date
+      ,color= ~MonitoringLocationName
+      ,symbol= ~MonitoringLocationName
+      ,type='scatter'
+      ,mode='lines'
+      ,connectgaps=TRUE # set to FALSE to create breaks in the line for NAs
+      ,width = (GraphOpts$FigureHorizontalScaling*as.numeric(input$dimension[1])) # to dynamically resize fig
+      ,height = (GraphOpts$FigureVerticalScaling*as.numeric(input$dimension[2]))
+      ,line=list(width=input$LineWidth)
+      ,marker=list(
+        size=input$PointSize
+        ,opacity=as.numeric(input$ShowHidePoint)
+        )
+      ,hovertemplate = paste(
+        "<br>Date :", series_df$Date
+        ,"<br>Site :", series_df$MonitoringLocationName
+        ,"<br>Measurement :", series_df$Value, " ", units
+        # extra is a secondary bit of hovertext that's visible on the right-ide of the main hovertext
+        # https://community.plotly.com/t/disabling-default-tooltip-while-using-a-hovertemplate-in-python/85824/3
+        ,'<extra></extra>'
+        )
+      ,text=NULL
+    ) %>% layout(
+      font=list(size=input$FontSize)
+      ,margin=m
+      ,title = list(text=title ,font=list(size=input$FontSize))
+      ,legend = list(
+        title=list(text='<br>Site<br>')
+        ,font=list(size=input$FontSize)
+        )
+      ,showlegend=T
+      ,yaxis = list(title=list(text=paste0(yname, '<br>'), font=list(size=input$FontSize)), font=list(size=input$FontSize))
+      ,xaxis = list(title=list(text=paste0(xname, '<br>'), font=list(size=input$FontSize)), font=list(size=input$FontSize))
+    )   
+
+  if (assessment==T & identical(threshold, numeric(0))==F) {
+    # a <- list( # commented-out because the annotation doesn't look great
+    #   x = 1,
+    #   y = 0.95*threshold,
+    #   text = paste0(stringr::str_split_1(yname, '[(]')[1], 'threshold: ', threshold, ' ', stringr::str_extract(yname, '(?<=\\()[^\\^\\)]+')),
+    #   xref = "x",
+    #   yref = "y",
+    #   showarrow = F,
+    #   ax = 20,
+    #   ay = -40
+    # )
+    if (length(threshold)==2){
+      baseplot %>% layout(
+      shapes = list(
+        hline(threshold[1])
+        ,hline(threshold[2])
+        )
+      # ,annotations = a # commented-out because the annotation doesn't look great
+    )
+
+    } else if (length(threshold)==1){
+      baseplot %>% layout(
+        shapes = list(hline(threshold))
+      # ,annotations = a # commented-out because the annotation doesn't look great
+      )
+    }
+  } else {
+    baseplot
+  }
+  })
+
+output$SeriesPlotMultiple2<-renderPlotly({   WaterSeriesOutMultiple2() })
 
 #### Time Series Plot ####
   #   WaterSeriesOut<-reactive({

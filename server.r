@@ -1298,14 +1298,38 @@ WaterSeriesOutMultiple2 <- reactive({
   series_df <- DataUseMultiple() %>%
     dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #year filtering
     dplyr::arrange(MonitoringLocationName, Date)
+  
+  # process the dataframe
+  # n will vary depending on which `Param` is chosen (e.g., there will only ever be 1 air temp but there could be >1 water temp for one site visit)
+  # so we need to normalize the data: calculate the mean `Value` per site visit
+  # then we can plot the means against each other
+  colname_lookup <- c(Characteristic_x = 'Characteristic', sitevisit_meanvalue_x = 'sitevisit_meanvalue')
+  df_firstparam <- DataUseMultiple() %>%
+    dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #year filtering
+    dplyr::arrange(MonitoringLocationName, Date) %>%
+    dplyr::group_by(ActivityMediaSubdivisionName, MonitoringLocationName, Characteristic, Date) %>%
+    dplyr::summarize(sitevisit_meanvalue = mean(Value)) %>%
+    dplyr::ungroup() %>%
+    dplyr::rename(all_of(colname_lookup))
 
-  testdf <- DataUseMultipleParam2()
-  print(paste0('DataOpts$Param2 = ', DataOpts$Param2))
-  print(head(testdf))
-
+  print(head(df_firstparam))
+  colname_lookup <- c(Characteristic_y = 'Characteristic', sitevisit_meanvalue_y = 'sitevisit_meanvalue')
+  df_secondparam <- DataUseMultipleParam2() %>%
+    dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #year filtering
+    dplyr::arrange(MonitoringLocationName, Date) %>%
+    dplyr::group_by(ActivityMediaSubdivisionName, MonitoringLocationName, Characteristic, Date) %>%
+    dplyr::summarize(sitevisit_meanvalue = mean(Value)) %>%
+    dplyr::ungroup() %>%
+    dplyr::rename(all_of(colname_lookup))
+  print(head(df_secondparam))
+  
+  print(paste0('Is the row count equal in each dataframe? , ',nrow(df_firstparam) == nrow(df_secondparam)))
+  print(paste0('nrow df_firstparam: ',nrow(df_firstparam)))
+  print(paste0('nrow df_secondparam: ',nrow(df_secondparam)))
+  
   # initialize variables
   ynames <- c()
-  xname <- NA
+  xnames <- c()
   labels <- NA
   assessment <- input$SeriesThreshLine
   assessments <- c()

@@ -2253,10 +2253,39 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
   
 ### Data table output ####
  output$WaterTable <-DT::renderDataTable(
-   expr=datatable(DataUse(), extensions=c("Buttons","KeyTable"),caption=htmltools::tags$caption(htmltools::h3(Title())),
-                  class="stripe hover order-column cell-border",filter="top",
-      rownames=F, options=list(autoWidth=TRUE, dom="Bltirp", buttons=c("copy","csv","excel","pdf","print"), keys=TRUE)
-                  ),server=F
+    expr=datatable(
+      DataUseMultiple() %>% dplyr::select(
+        ProjectName
+        ,OrganizationFormalName
+        ,MonitoringLocationName
+        ,ActivityLocation.LatitudeMeasure
+        ,ActivityLocation.LongitudeMeasure
+        ,Date
+        ,ActivityStartTime.Time
+        ,Value
+        ,ResultMeasure.MeasureUnitCode
+      ) %>% dplyr::arrange(
+        desc(Date)
+      )
+      ,extensions=c(
+        "Buttons"
+        ,"KeyTable"
+        )
+      # ,caption=htmltools::tags$caption(htmltools::h3(Title()))
+      ,class="stripe hover order-column cell-border"
+      ,filter="top"
+      ,rownames=F
+      ,options=list(
+        autoWidth=F
+        ,dom="Bltirp"
+        ,buttons=c(
+          "copy"
+          ,"csv"
+          ,"excel"
+        ),keys=TRUE
+      )
+    )
+    ,server=F
   )
 
 #### Exceedances Controls ####

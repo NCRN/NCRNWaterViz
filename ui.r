@@ -238,7 +238,7 @@ shinyUI(
                leafletOutput("WaterMap",width = "100%", height="900px")
         ) 
       ),
-      tabPanel(h4("Raw Data"),
+      tabPanel(h4("Data"),
                column(3, div(style='padding: 5px 10px',class="panel panel-default", 
                              
                              h3("Select Site Data"),

@@ -1410,23 +1410,10 @@ WaterSeriesOutMultiple2 <- reactive({
   } else {
     xname <- xnames[1]
   }
-
-  if(assessment){
-      for (site in DataOpts$Site){
-        tmp<-c(getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="LowerPoint"),
-          getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="UpperPoint")) %>%
-          unlist %>% unique
-        assessments <- c(tmp, assessments)
-    }
-    threshold <- assessments %>% unique
-    threshold <- threshold[!is.na(threshold)] # needed if there is no upper or lower threshold.
-  }
   
   # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L106-L127
 
-  n_not_na <- nrow(series_df %>% dplyr::filter(is.na(Value)==F))
-  n_na <- nrow(series_df %>% dplyr::filter(is.na(Value)))
-  title <- paste0(NCRNWater::getParkInfo(object=WaterData, parkcode=DataOpts$Park, info="ParkLongName"), '\n', xname, ' vs. ',yname, '\nYears: ',DataOpts$Years[1], '-', DataOpts$Years[2],'; Total measurements: ',n_not_na+n_na,' (non-NA: ', n_not_na, ', NA: ', n_na,')')
+  title <- paste0(NCRNWater::getParkInfo(object=WaterData, parkcode=DataOpts$Park, info="ParkLongName"), '\n', xname, ' vs. ',yname, '\nYears: ',DataOpts$Years[1], '-', DataOpts$Years[2],'; Total measurements: ', nrow(df))
 
   m <- list( # figure margins
     l = 100,
@@ -1435,34 +1422,31 @@ WaterSeriesOutMultiple2 <- reactive({
     t = 100,
     pad = 20
   )
-  t <- list(
-    size = global_textsize
-    )
   baseplot <-
     plotly::plot_ly(
-      series_df
-      ,y= ~Value
-      ,x= ~Date
+      df
+      ,y= ~sitevisit_meanvalue_y
+      ,x= ~sitevisit_meanvalue_x
       ,color= ~MonitoringLocationName
       ,symbol= ~MonitoringLocationName
       ,type='scatter'
-      ,mode='lines'
-      ,connectgaps=TRUE # set to FALSE to create breaks in the line for NAs
+      # ,mode='lines'
+      # ,connectgaps=TRUE # set to FALSE to create breaks in the line for NAs
       ,width = (GraphOpts$FigureHorizontalScaling*as.numeric(input$dimension[1])) # to dynamically resize fig
       ,height = (GraphOpts$FigureVerticalScaling*as.numeric(input$dimension[2]))
-      ,line=list(width=input$LineWidth)
+      # ,line=list(width=input$LineWidth)
       ,marker=list(
         size=input$PointSize
-        ,opacity=as.numeric(input$ShowHidePoint)
+        ,opacity=1
         )
-      ,hovertemplate = paste(
-        "<br>Date :", series_df$Date
-        ,"<br>Site :", series_df$MonitoringLocationName
-        ,"<br>Measurement :", series_df$Value, " ", units
-        # extra is a secondary bit of hovertext that's visible on the right-ide of the main hovertext
-        # https://community.plotly.com/t/disabling-default-tooltip-while-using-a-hovertemplate-in-python/85824/3
-        ,'<extra></extra>'
-        )
+      # ,hovertemplate = paste(
+      #   "<br>Date :", series_df$Date
+      #   ,"<br>Site :", series_df$MonitoringLocationName
+      #   ,"<br>Measurement :", series_df$Value, " ", units
+      #   # extra is a secondary bit of hovertext that's visible on the right-ide of the main hovertext
+      #   # https://community.plotly.com/t/disabling-default-tooltip-while-using-a-hovertemplate-in-python/85824/3
+      #   ,'<extra></extra>'
+      #   )
       ,text=NULL
     ) %>% layout(
       font=list(size=input$FontSize)
@@ -1477,35 +1461,8 @@ WaterSeriesOutMultiple2 <- reactive({
       ,xaxis = list(title=list(text=paste0(xname, '<br>'), font=list(size=input$FontSize)), font=list(size=input$FontSize))
     )   
 
-  if (assessment==T & identical(threshold, numeric(0))==F) {
-    # a <- list( # commented-out because the annotation doesn't look great
-    #   x = 1,
-    #   y = 0.95*threshold,
-    #   text = paste0(stringr::str_split_1(yname, '[(]')[1], 'threshold: ', threshold, ' ', stringr::str_extract(yname, '(?<=\\()[^\\^\\)]+')),
-    #   xref = "x",
-    #   yref = "y",
-    #   showarrow = F,
-    #   ax = 20,
-    #   ay = -40
-    # )
-    if (length(threshold)==2){
-      baseplot %>% layout(
-      shapes = list(
-        hline(threshold[1])
-        ,hline(threshold[2])
-        )
-      # ,annotations = a # commented-out because the annotation doesn't look great
-    )
+    return(baseplot)
 
-    } else if (length(threshold)==1){
-      baseplot %>% layout(
-        shapes = list(hline(threshold))
-      # ,annotations = a # commented-out because the annotation doesn't look great
-      )
-    }
-  } else {
-    baseplot
-  }
   })
 
 output$SeriesPlotMultiple2<-renderPlotly({   WaterSeriesOutMultiple2() })

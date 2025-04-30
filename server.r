@@ -2255,8 +2255,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
  output$WaterTable <-DT::renderDataTable(
     expr=datatable(
       DataUseMultiple() %>% dplyr::select(
-        ProjectName
-        ,OrganizationFormalName
+        OrganizationFormalName
         ,MonitoringLocationName
         ,ActivityLocation.LatitudeMeasure
         ,ActivityLocation.LongitudeMeasure

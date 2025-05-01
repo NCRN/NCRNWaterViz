@@ -1302,7 +1302,7 @@ CorrPlotOutMultiple <- reactive({
   # n will vary depending on which `Param` is chosen (e.g., there will only ever be 1 air temp but there could be >1 water temp for one site visit)
   # so we need to normalize the data: calculate the mean `Value` per site visit
   # then we can plot the means against each other
-  colname_lookup <- c(Characteristic_x = 'Characteristic', sitevisit_meanvalue_x = 'sitevisit_meanvalue')
+  colname_lookup <- c(Characteristic_y = 'Characteristic', sitevisit_meanvalue_y = 'sitevisit_meanvalue')
   df_firstparam <- DataUseMultiple() %>%
     dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #year filtering
     dplyr::arrange(MonitoringLocationName, Date) %>%
@@ -1312,7 +1312,7 @@ CorrPlotOutMultiple <- reactive({
     dplyr::rename(all_of(colname_lookup))
   # print(head(df_firstparam))
 
-  colname_lookup <- c(Characteristic_y = 'Characteristic', sitevisit_meanvalue_y = 'sitevisit_meanvalue')
+  colname_lookup <- c(Characteristic_x = 'Characteristic', sitevisit_meanvalue_x = 'sitevisit_meanvalue')
   df_secondparam <- DataUseMultipleParam2() %>%
     dplyr::filter(Year >= DataOpts$Years[1] & Year <= DataOpts$Years[2]) %>% #year filtering
     dplyr::arrange(MonitoringLocationName, Date) %>%
@@ -1320,7 +1320,7 @@ CorrPlotOutMultiple <- reactive({
     dplyr::summarize(sitevisit_meanvalue = mean(Value)) %>%
     dplyr::ungroup() %>%
     dplyr::rename(all_of(colname_lookup)) %>%
-    dplyr::select(ActivityMediaSubdivisionName, Characteristic_y, sitevisit_meanvalue_y)
+    dplyr::select(ActivityMediaSubdivisionName, Characteristic_x, sitevisit_meanvalue_x)
   # print(head(df_secondparam))
   
   print(paste0('Is the row count equal in each dataframe? , ',nrow(df_firstparam) == nrow(df_secondparam)))
@@ -1375,6 +1375,16 @@ CorrPlotOutMultiple <- reactive({
   } else {
     yname <- ynames[1]
   }
+  n_displaynames <- length(displaynames %>% unique)
+  if (n_displaynames == 1){
+    yvarname <- displaynames %>% unique
+  } else if (n_displaynames == 0){
+    yvarname <- ''
+  } else {
+    yvarname <- displaynames[1]
+  }
+
+  displaynames <- c()
   for (site in DataOpts$Site){
     displayname <- getCharInfo(
         object=WaterData
@@ -1409,10 +1419,20 @@ CorrPlotOutMultiple <- reactive({
   } else {
     xname <- xnames[1]
   }
+  n_displaynames <- length(displaynames %>% unique)
+  if (n_displaynames == 1){
+    xvarname <- displaynames %>% unique
+  } else if (n_displaynames == 0){
+    xvarname <- ''
+  } else {
+    xvarname <- displaynames[1]
+  }
   
   # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L106-L127
-
-  title <- paste0(NCRNWater::getParkInfo(object=WaterData, parkcode=DataOpts$Park, info="ParkLongName"), '\n', yname, ' ~ ',xname, '\nYears: ',DataOpts$Years[1], '-', DataOpts$Years[2],'; Total measurements: ', nrow(df))
+  x_nas <- nrow(df_secondparam %>% dplyr::filter(is.na(sitevisit_meanvalue_x)))
+  y_nas <- nrow(df_firstparam %>% dplyr::filter(is.na(sitevisit_meanvalue_y)))
+  n_measurements <-  nrow(df %>% dplyr::filter(is.na(sitevisit_meanvalue_x)==F & is.na(sitevisit_meanvalue_y)==F))
+  title <- paste0(NCRNWater::getParkInfo(object=WaterData, parkcode=DataOpts$Park, info="ParkLongName"), '\n', yname, ' ~ ',xname, '; Years: ',DataOpts$Years[1], '-', DataOpts$Years[2],'\nTotal measurements: ',n_measurements, ' (NAs: ', yvarname, ': ', y_nas,'; ', xvarname,': ',x_nas, ')')
 
   m <- list( # figure margins
     l = 100,

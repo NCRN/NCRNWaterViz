@@ -1,7 +1,5 @@
 <!DOCTYPE html>
 <html>
-<head>
-</head>
 <body>
 
 <p>Last updated 2025-05-01</p>
@@ -11,7 +9,7 @@
 <p><a href="https://www.nps.gov/aboutus/index.htm#:~:text=Follow%20Us-,Our%20Mission,of%20this%20and%20future%20generations.">The National Park Service preserves unimpaired the natural and cultural resources and values of the National Park System</a>. The National Captial Region Inventory and Monitoring Network (NCRN) is part of the <a href="https://www.nps.gov/im/index.htm">National Park Service Inventory and Monitoring Division</a>, which conducts science in National Parks. <a href="https://www.nps.gov/im/ncrn/index.htm">NCRN conducts science, like water quality monitoring, in the National Park Service's National Capital Region</a>, which includes parts of Virginia, West Virginia, Maryland, and the District of Columbia, USA.</p>
 
 <h1>Methods</h1>
-<p><a href="https://irma.nps.gov/DataStore/Reference/Profile/2172524">NCRN's water quality methods are available here.</a> The citation for NCRN's methods is in the Citations & References tab above.</p>
+<p><a href="https://irma.nps.gov/DataStore/Reference/Profile/2172524">NCRN's water quality methods are available here.</a></p>
 
 <h3>Sampling locations</h3>
 <li>As of January 2025, NCRN monitors water quality at 37 sites in ten National Parks in the National Capital Region</li>
@@ -22,7 +20,7 @@
 <li>From 2005 through 2018, NCRN generally visited each water quality monitoring site once per month</li>
 <li>Since 2018, NCRN has generally visited each water quality monitoring site every-other-month</li>
 
-<h3>Water Quality Parameters (active as of 2024-12-31)</h3>
+<h3>Water Quality Parameters</h3>
 <li>Water temperature</li>
 <li>Air pressure (i.e. barometric pressure)</li>
 <li>Dissolved Oxygen concentration (DO concentration mg/L)</li>
@@ -31,42 +29,47 @@
 <li>Conductivity</li>
 <li>Salinity</li>
 <li>pH</li>
-<li>Air Pressure (i.e., barometric pressure)</li>
 
-<h3>Laboratory Parameters (active as of 2024-12-31)</h3>
+<h3>Laboratory Parameters</h3>
 <li>Acid Neutralizing Capacity (ANC)</li>
 <li>Total Nitrogen concentration (TN)</li>
 <li>Total Phosphorus concentration (TP)</li>
 
-<h3>Water Quantity Parameters (active as of 2024-12-31)</h3>
+<h3>Water Quantity Parameters</h3>
 <li>Discharge</li>
 <li>Wetted width (stream width across stream crossection where discharge was measured)</li>
 <li>Stream Velocity (average water velocity across stream crossection where discharge was measured)</li>
 <li>Depth (average water depth across stream crossection where discharge was measured)</li>
 
-<h3>Water Quality Parameters (inactive as of 2024 and excluded from this webapp)</h3>
-<li>Total Dissolved Nitrogen concentration (retired 2018)</li>
-<li>Total Dissolved Phosphorus concentration (retired 2018)</li>
-
 <h1>Data quality</h1>
 <p>NCRN estimates this dataset to be "<a href="https://www.nps.gov/gis/egim/library/DataQuality_2008_0824_DOI%20Data%20Quality%20Management%20Guide.pdf">High-Quality</a>" because it has passed internal and external review and is subject to an ongoing quality control process.</p>
-1. Completeness
-<li>NCRN's active sites and parameters are included in this website</li>
-<li>Retired monitoring sites were excluded from this website. NCRN retires sites when they stop fitting our protocol, such as when a stream that used to flow year-round becomes seasonally dry.</li>
-<li>Retired monitoring parameters were excluded from this website. NCRN retires parameters as required by operational constraints. For example, NCRN stopped measuring Total Dissolved Nitrogen concentration in 2018 and immediately began collecting Total Nitrogen concentration instead.</li>
-<li>Categorical and text parameters, like descriptions of stream stage and epilithic algae, were excluded from this website</li>
-<li><a href="https://irma.nps.gov/DataStore/Reference/Profile/2309154">NCRN's full water quality dataset, including retired sites and parameters, is available for download from NPS DataStore</a></li>
-2. Accuracy
-<li>NCRN calibrates field instruments (e.g., YSI ProDSS handheld) to manufacturer specifications before each site visit</li>
-<li>A certified, third-party laboratory (UMCES Appalachian Lab) measures NCRN's water chemistry results (ANC, TP, TN)</li>
-3. Consistency and validity
-<li>NCRN's data governance procedures ensure measurements, parameters, units, and location attributes are consistent through time and among-and-within sites</li>
-4. Uniqueness
-<li>NCRN found no duplicated records in the dataset</li>
+<ol>
+  1. Completeness
+  <ul>
+    <li>NCRN's active sites and parameters are included in this website</li>
+    <li>Retired monitoring sites were excluded from this website. NCRN retires sites when they stop fitting our protocol, such as when a stream that used to flow year-round becomes seasonally dry.</li>
+    <li>Retired monitoring parameters were excluded from this website. NCRN retires parameters as required by operational constraints. For example, NCRN stopped measuring Total Dissolved Nitrogen concentration in 2018 and immediately began collecting Total Nitrogen concentration instead.</li>
+    <li>Categorical and text parameters, like descriptions of stream stage and epilithic algae, were excluded from this website</li>
+    <li><a href="https://irma.nps.gov/DataStore/Reference/Profile/2309154">NCRN's full water quality dataset, including retired sites and parameters, is available for download from NPS DataStore</a></li>
+  </ul>
+  2. Accuracy
+  <ul>
+    <li>NCRN calibrates field instruments (e.g., YSI ProDSS handheld) to manufacturer specifications before each site visit</li>
+    <li>A certified, third-party laboratory (UMCES Appalachian Lab) measures NCRN's water chemistry results (ANC, TP, TN)</li>
+  </ul>
+  3. Consistency and validity
+  <ul>
+    <li>NCRN's data governance procedures ensure measurements, parameters, units, and location attributes are consistent through time and among-and-within sites</li>
+  </ul>
+  4. Uniqueness
+  <ul>
+    <li>NCRN found no duplicated records in the dataset</li>
+  </ul>
+</ol>
 
 <h1>Open Source and Open Science</h1>
-<a href="https://github.com/NCRN/NCRNWaterViz/tree/ncrn_refactor">This website's source code is available for download</a>
-<a href="https://irma.nps.gov/DataStore/Reference/Profile/2309154">NCRN's water quality dataset, including retired sites and parameters, is available for download</a>
+<p><a href="https://github.com/NCRN/NCRNWaterViz/tree/ncrn_refactor">Click here to view or download this website's source code</a></p>
+<p><a href="https://irma.nps.gov/DataStore/Reference/Profile/2309154">Click here to download NCRN's water quality dataset, including retired sites and parameters</a></p>
 
 </body>
 </html>

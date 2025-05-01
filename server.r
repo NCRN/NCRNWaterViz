@@ -1501,7 +1501,6 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
         paste("There have been", mydatastructure[[site]][["sum_nex"]], "exceedances of the ")
       }
       
-      ### save as function ###
       mydatastructure[[site]][["extext"]]<- c(
         paste0(mydatastructure[[site]][["grammar1"]], mydatastructure[[site]][["Characteristic"]], " water quality threshold among ", mydatastructure[[site]][["ntot"]], " observations at ", mydatastructure[[site]][["Sitename"]], " in ", mydatastructure[[site]][["recent_year"]], ".")
         ,paste0(mydatastructure[[site]][["grammar2"]], mydatastructure[[site]][["Characteristic"]], " water quality threshold among ", mydatastructure[[site]][["sum_ntot"]], " observations at ", mydatastructure[[site]][["Sitename"]], " since monitoring began in ", mydatastructure[[site]][["oldest_year"]], ".")
@@ -1509,15 +1508,15 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
       )
       mydatastructure[[site]][["extext_bullets"]]<- paste0("<li>", mydatastructure[[site]][["extext"]], "</li>", collapse = "")
       
-      HTML(paste0(
+      mydatastructure[[site]][["html_extext"]]<- paste0(
         "<p><b><span style='font-size: 18px;'>Exceedances Summary:</b></p>",
         "<ul>", mydatastructure[[site]][["extext_bullets"]], "</ul>"
-      ))
-      ### ###
+      )
       
     }
       return(mydatastructure)
   })
+
 
   
 ### Output ###
@@ -1531,7 +1530,7 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
     myTabs = lapply(seq_len(nTabs), function(i) { # i is the index (e.g., 1, 2, 3)
       shiny::tabPanel(
         mydatastructure[[i]][['Sitename']] # this is the name displayed on the tab
-        ,shiny::textOutput(paste0("dynamic_text_",i))
+        ,shiny::uiOutput(paste0("dynamic_text_",i))
         ,DT::dataTableOutput(paste0("datatable_",i))
         
         )
@@ -1544,7 +1543,7 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
 
       mydatastructure <- exDUM() # get the data, again
       site <- DataOpts$Site[i] # site ID (e.g., 'NCRN_GWMP_TURU')
-      output[[paste0("dynamic_text_",i)]] <- shiny::renderText({paste("Test text for ",mydatastructure[[i]][["Sitename"]])})
+      output[[paste0("dynamic_text_",i)]] <- shiny::renderUI({HTML(mydatastructure[[site]][["html_extext"]])})
       output[[paste0("datatable_",i)]] <- DT::renderDataTable({mydatastructure[[site]][['desc_exdf']]})
       
 

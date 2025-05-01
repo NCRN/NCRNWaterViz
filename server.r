@@ -1433,7 +1433,9 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
       mydatastructure[[site]][["Characteristic"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info = "DisplayName")
       mydatastructure[[site]][["Unit"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="Units")
       mydatastructure[[site]][["notification_text"]] <- dplyr::case_when(
-        !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & all(mydatastructure[[site]][["df"]]$Value > mydatastructure[[site]][["LowerPoint"]]) ~ 
+        !is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & all(mydatastructure[[site]][["df"]]$Value > mydatastructure[[site]][["LowerPoint"]]) & all(mydatastructure[[site]][["df"]]$Value < mydatastructure[[site]][["UpperPoint"]]) ~ 
+          paste0("No measurements of ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]], " fall below the lower water quality threshold of ", mydatastructure[[site]][["LowerPoint"]], " ", mydatastructure[[site]][["Unit"]], ", nor exceed the upper water quality threshold of ", mydatastructure[[site]][["UpperPoint"]], " ", mydatastructure[[site]][["Unit"]])
+        ,!is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & all(mydatastructure[[site]][["df"]]$Value > mydatastructure[[site]][["LowerPoint"]]) ~ 
           paste0("No measurements of ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]],
                  "fall below the water quality threshold of ", mydatastructure[[site]][["LowerPoint"]], " ", mydatastructure[[site]][["Unit"]])
         ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & all(mydatastructure[[site]][["df"]]$Value < mydatastructure[[site]][["UpperPoint"]]) ~
@@ -1501,6 +1503,7 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
         paste("There have been", mydatastructure[[site]][["sum_nex"]], "exceedances of the ")
       }
       
+      # Writing text
       mydatastructure[[site]][["extext"]]<- c(
         paste0(mydatastructure[[site]][["grammar1"]], mydatastructure[[site]][["Characteristic"]], " water quality threshold among ", mydatastructure[[site]][["ntot"]], " observations at ", mydatastructure[[site]][["Sitename"]], " in ", mydatastructure[[site]][["recent_year"]], ".")
         ,paste0(mydatastructure[[site]][["grammar2"]], mydatastructure[[site]][["Characteristic"]], " water quality threshold among ", mydatastructure[[site]][["sum_ntot"]], " observations at ", mydatastructure[[site]][["Sitename"]], " since monitoring began in ", mydatastructure[[site]][["oldest_year"]], ".")
@@ -1509,9 +1512,34 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
       mydatastructure[[site]][["extext_bullets"]]<- paste0("<li>", mydatastructure[[site]][["extext"]], "</li>", collapse = "")
       
       mydatastructure[[site]][["html_extext"]]<- paste0(
-        "<p><b><span style='font-size: 18px;'>Exceedances Summary:</b></p>",
+        "<p><b><span style='font-size: 18px;'>Exceedances Report:</b></p>",
         "<ul>", mydatastructure[[site]][["extext_bullets"]], "</ul>"
       )
+      
+      # Histogram
+      mydatastructure[[site]][["ExPoint"]]<- dplyr::case_when(
+        is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE ~ mydatastructure[[site]][["LowerPoint"]]
+        ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE ~ mydatastructure[[site]][["UpperPoint"]]
+        ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & any(mydatastructure[[site]][["exdf"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm=TRUE) & all(mydatastructure[[site]][["exdf"]]$Value < mydatastructure[[site]][["UpperPoint"]], na.rm=TRUE) ~ mydatastructure[[site]][["LowerPoint"]]
+        ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & any(mydatastructure[[site]][["exdf"]]$Value >= mydatastructure[[site]][["UpperPoint"]], na.rm=TRUE) & all(mydatastructure[[site]][["exdf"]]$Value > mydatastructure[[site]][["LowerPoint"]], na.rm=TRUE) ~ mydatastructure[[site]][["UpperPoint"]]
+        # ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & any(mydatastructure[[site]][["exdf"]]$Value >= mydatastructure[[site]][["UpperPoint"]], na.rm=TRUE) & any(mydatastructure[[site]][["exdf"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm=TRUE) ~ paste0(mydatastructure[[site]][["LowerPoint"]], " and ", mydatastructure[[site]][["UpperPoint"]])
+      )
+      
+      mydatastructure[[site]][["p"]]<- ggplot2::ggplot(mydatastructure[[site]][["histdata"]], aes(x = Year, y = percent_ex,
+                                                                                                  text = paste0(mydatastructure[[site]][["histdata"]]$Year, ", ", mydatastructure[[site]][["Characteristic"]], "\n",
+                                                                                                                mydatastructure[[site]][["histdata"]]$ntot, " total observation(s)", "\n",
+                                                                                                                mydatastructure[[site]][["histdata"]]$formatted_percent_ex, " of observations exceeding ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]]))) +
+        geom_bar(stat = "identity", fill = "lightgray") +
+        ylim(0, 100) +
+        labs(
+          title = paste0("Percent of ", mydatastructure[[site]][["Characteristic"]], " observations exceeding the water quality threshold at ", mydatastructure[[site]][["Sitename"]]),
+          x = "Year",
+          y = "% observations") +
+        theme_minimal() +
+        theme(
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank())
+      
       
     }
       return(mydatastructure)
@@ -1520,18 +1548,38 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
 
   
 ### Output ###
-
+  show_plot<- shiny::reactiveVal(FALSE)
+  
   output$mytabs <- shiny::renderUI({
     req(DataOpts$Park, DataOpts$Site, DataOpts$Param) # execute output$mytabs only if user makes selections
 
     mydatastructure <- exDUM() # get the data
+    
+    # if (!is.na(mydatastructure[[site]][["notification_text"]])==TRUE) {shiny::showNotification(
+    #   mydatastructure[[site]][["notification_text"]], type = "error", duration = 10)}
 
+    exceedances_tooltips <- list(
+      "OrganizationFormalName" = "Name of organization conducting monitoring activities"
+      ,"ActivityMediaSubdivisionName" = "Code corresponding to a unique water quality monitoring event at a certain site and date"
+      ,"Date" = "Date of monitoring event"
+      ,"Characteristic" = "Water quality parameter"
+      ,"Value" = "Numeric measurement of a water quality parameter"
+      ,"ResultMeasure.MeasureUnitCode" = "Units of the measured value"
+      ,"UpperThreshold" = "Description of the upper threshold for this site and parameter"
+      ,"LowerThreshold" = "Description of the lower threshold for this site and parameter"
+    )
+    exceedances_tooltips_json <- jsonlite::toJSON(exceedances_tooltips, auto_unbox = TRUE)
+    
     nTabs = length(names(mydatastructure))
     myTabs = lapply(seq_len(nTabs), function(i) { # i is the index (e.g., 1, 2, 3)
       shiny::tabPanel(
         mydatastructure[[i]][['Sitename']] # this is the name displayed on the tab
-        ,shiny::uiOutput(paste0("dynamic_text_",i))
+        ,div(
+          class = "summary-box"
+          ,shiny::uiOutput(paste0("dynamic_text_",i)))
+        ,if (show_plot()) {plotlyOutput(paste0("hist_",i))}
         ,DT::dataTableOutput(paste0("datatable_",i))
+        
         
         )
       })
@@ -1544,12 +1592,50 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
       mydatastructure <- exDUM() # get the data, again
       site <- DataOpts$Site[i] # site ID (e.g., 'NCRN_GWMP_TURU')
       output[[paste0("dynamic_text_",i)]] <- shiny::renderUI({HTML(mydatastructure[[site]][["html_extext"]])})
-      output[[paste0("datatable_",i)]] <- DT::renderDataTable({mydatastructure[[site]][['desc_exdf']]})
+      output[[paste0("hist_",i)]]<- renderPlotly({plotly::ggplotly(mydatastructure[[site]][["p"]], tooltip = "text")})
+      output[[paste0("datatable_",i)]] <- DT::renderDataTable({
+        DT::datatable(mydatastructure[[site]][['desc_exdf']]
+        ,extensions=c("Buttons","KeyTable")
+        # ,caption=htmltools::tags$caption(htmltools::h3(Title()))
+        # ,class="stripe hover order-column cell-border"
+        # ,filter="top"
+        # ,rownames=F
+        ,options=list(
+          autoWidth=TRUE
+          ,dom="Bltirp"
+          ,buttons=c("copy","csv","excel","pdf","print")
+          ,keys=TRUE
+          ,headerCallback = JS("function(thead, data, start, end, display){",
+                               "$(thead).find('th').css('text-align', 'center');",
+                               "$(thead).find('th').filter(function() {
+                                          return $(this).html().trim() === 'Site'; }).css('text-align', 'left');",
+                               "$('th', thead).each(function(index){",
+                               " var tooltips = ",
+                               exceedances_tooltips_json,";",
+                               " var colName = $
+                                          (this).html().trim();",
+                               " if(tooltips[colName]) {",
+                               " $(this).attr('title', tooltips[colName]);",
+                               " }",
+                               "});",
+                               "}"
+          )
+        )
+        )
+        })
+      
+      
       
 
       }
     )
-  )  
+  )
+  
+  shiny::observeEvent(input$hist_button, {
+    show_plot(!show_plot())
+    new_label<- ifelse(show_plot(), "Hide Histogram", "Show Histogram")
+    shiny::updateActionButton(session, "hist_button", label = new_label)
+  })
   
   
   
@@ -1744,9 +1830,9 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
   #                    ,dom="Bltirp"
   #                    ,buttons=c("copy","csv","excel","pdf","print")
   #                    ,keys=TRUE
-  #                    ,headerCallback = JS("function(thead, data, start, end, display){", 
+  #                    ,headerCallback = JS("function(thead, data, start, end, display){",
   #                                         "$(thead).find('th').css('text-align', 'center');",
-  #                                         "$(thead).find('th').filter(function() { 
+  #                                         "$(thead).find('th').filter(function() {
   #                                         return $(this).html().trim() === 'Site'; }).css('text-align', 'left');",
   #                                         "$('th', thead).each(function(index){",
   #                                         " var tooltips = ",
@@ -1762,7 +1848,7 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
   #                  )
   #   )
   #   ,server=F
-  # ) 
+  # )
   
   
 ### SummarizeExceedances() Function ###
@@ -1960,23 +2046,23 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
   
   ### Plot Output###
   
-  show_plot<- shiny::reactiveVal(FALSE)
-  
-  output$exceedances_hist<- shiny::renderUI({
-    if (show_plot()) {
-      plotlyOutput("hist")
-    }
-  })
-  
-  output$hist<- renderPlotly({
-    exceedances_hist_plot()
-  })
-  
-  shiny::observeEvent(input$hist_button, {
-    show_plot(!show_plot())
-    new_label<- ifelse(show_plot(), "Hide Histogram", "Show Histogram")
-    shiny::updateActionButton(session, "hist_button", label = new_label)
-  })
+  # show_plot<- shiny::reactiveVal(FALSE)
+  # 
+  # output$exceedances_hist<- shiny::renderUI({
+  #   if (show_plot()) {
+  #     plotlyOutput("hist")
+  #   }
+  # })
+  # 
+  # output$hist<- renderPlotly({
+  #   exceedances_hist_plot()
+  # })
+  # 
+  # shiny::observeEvent(input$hist_button, {
+  #   show_plot(!show_plot())
+  #   new_label<- ifelse(show_plot(), "Hide Histogram", "Show Histogram")
+  #   shiny::updateActionButton(session, "hist_button", label = new_label)
+  # })
   
 #### Mapping ####
   

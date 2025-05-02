@@ -286,14 +286,14 @@ shinyUI(
                
       ),
       
-      tabPanel(h4("Project Information"),
+      tabPanel(h4("About"),
       
-        includeHTML(paste0(getwd(),"/www/","projectintro.html"))),
+        includeHTML(paste0(getwd(),"/www/","projectintro.html")))
       
-      tabPanel(h4("Citations & References"),
+      # tabPanel(h4("Citations & References"),
       
-        includeHTML(paste0(getwd(),"/www/","citations.html"))
-      )
+      #   includeHTML(paste0(getwd(),"/www/","citations.html"))
+      # )
     )
   )
 )

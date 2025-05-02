@@ -14,9 +14,10 @@ library(openair)
 library(NADA)
 library(plotly)
 
-### Filtering data to active Characteristic Names ####
+### Filtering data to active Characteristics and Sites ####
 
-# NCRN maintains 'active' and 'inactive' characteristics.
+# NCRN maintains 'active' and 'inactive' characteristics and sites.
+
 # Through time, NCRN has monitoried different water quality characteristics.
 # This means that characteristics that are measured in 2025 may not have been measured in other years
 # and characteristics that were measured in 2006 may no longer be measured.
@@ -27,27 +28,35 @@ library(plotly)
 # The full dataset (i.e., inactive and active) will be available in IRMA for
 # anyone interested in deprecated characteristics.
 
-# filter the metadata
+# Through time, NCRN has monitored different sites; some have been retired and others added.
+# Since characteristics also change through time, sites usually have different recordsets (number of rows, unique CharacteristicNames, etc.) depending on which time they came from.
+# For example, Donaldson Run (NCRN_GWMP_DORU) has only two site visits from 2005 and is, therefore, difficult to reconcile with modern records because DORU returns zero rows for most queries.
+# The result is that the Shiny app is unstable if retired sites are left in the dataset.
+# Since the main reason NCRN retires sites is that they do not fit our protocol, we elected to filter-out retired sites instead of
+# building the app to accomodate the numerous edge cases caused by retired sites that are fundamentally apples-and-oranges to active sites.
+
 mname2 <- file.path('Data',Network, metadataname2)
-if (file.exists(mname2)==F){
+dname2 <- file.path('Data',Network, dataname2)
+if (file.exists(mname2)==F | file.exists(dname2)==F){
+  # filter the metadata
   mname <- file.path('Data',Network,metadataname)
   metadata_df <- read.csv(mname)
-  metadata_active_chars <- metadata_df %>%
-    dplyr::filter(IsActiveCharacteristicName == "True") 
-  write.csv(metadata_active_chars, mname2, row.names = FALSE)
-} else {
-  metadata_active_chars <- read.csv(mname2)
-}
-
-# filter the data
-dname2 <- file.path('Data',Network, dataname2)
-if (file.exists(dname2)==F) {
-  active_chars <- metadata_active_chars %>%
+  metadata_active <- metadata_df %>%
+    dplyr::filter(IsActiveCharacteristicName == "True") %>%
+    dplyr::filter(IsActiveSiteCode == "True") 
+  write.csv(metadata_active, mname2, row.names = FALSE)
+  # filter the data
+  active_chars <- metadata_active %>%
     dplyr::pull(DataName) %>% unique
+  active_sites <- metadata_active %>%
+    dplyr::pull(SiteCode) %>% unique
   dname <- file.path('Data',Network,dataname)
   filtered_data <- read.csv(dname) %>%
-    dplyr::filter(CharacteristicName %in% active_chars)
+    dplyr::filter(CharacteristicName %in% active_chars) %>%
+    dplyr::filter(MonitoringLocationIdentifier %in% active_sites)
   write.csv(filtered_data, dname2, row.names = FALSE)
+} else {
+  metadata_active <- read.csv(mname2)
 }
 
 #### Get data ####
@@ -2792,7 +2801,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
   NPSGeoData <- data.frame(ParkCode=getSiteInfo(WaterData, info="ParkCode"), SiteCode=getSiteInfo(WaterData, info="SiteCode"), ParkName=getSiteInfo(WaterData, info = "ParkShortName"), SiteName=getSiteInfo(WaterData, info= "SiteName"), 
                           latitude=getSiteInfo(WaterData, info="lat"), longitude=getSiteInfo(WaterData, info="long"), stringsAsFactors = F)
 
-  active_sites <- metadata_active_chars %>%
+  active_sites <- metadata_active %>%
     dplyr::filter(IsActiveSiteCode == "True") %>%
     dplyr::pull(SiteCode)
   
@@ -3023,11 +3032,11 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
       zoom_level >= 11
     }
 
-    site_data <- if (input$InactiveSites) {
-      NPSGeoData
-    } else{
-      NPSGeoData_filtered
-    }
+    # site_data <- if (input$InactiveSites) {
+    #   NPSGeoData
+    # } else{
+    #   NPSGeoData_filtered
+    # }
 
     filtered_data <- if (is.null(parks) || length(parks) == 0) {
       site_data

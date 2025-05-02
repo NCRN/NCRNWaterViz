@@ -1421,7 +1421,7 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
       
       # Building df
       mydatastructure[[site]][["df"]] <- getWData(WaterData, parkcode=DataOpts$Park, sitecode = site, charname=DataOpts$Param)
-      mydatastructure[[site]][["df"]] <- mydatastructure[[site]][["df"]][, c("OrganizationFormalName", "ActivityMediaSubdivisionName", "Date", "Characteristic", "Value", "ResultMeasure.MeasureUnitCode")]
+      mydatastructure[[site]][["df"]] <- mydatastructure[[site]][["df"]][, c("MonitoringLocationName", "Date", "Characteristic", "Value", "ResultMeasure.MeasureUnitCode")]
       mydatastructure[[site]][["df"]] <- subset(mydatastructure[[site]][["df"]], !is.na(Value))
       
       # Getting characters
@@ -1445,7 +1445,7 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
           paste0("There is no recorded water quality threshold for ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]])
       )
       
-      # Building *exdf
+      # Building exdf
       if(any(mydatastructure[[site]][["df"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm = TRUE)) {
         lower_sd<- mydatastructure[[site]][["df"]][mydatastructure[[site]][["df"]]$Value < mydatastructure[[site]][["LowerPoint"]], ]
         lower_sd$LowerThreshold <- mydatastructure[[site]][["LowerThreshold"]]
@@ -1459,8 +1459,25 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
         upper_sd<- mydatastructure[[site]][["df"]][0, ]
       }
       mydatastructure[[site]][["exdf"]] <- dplyr::bind_rows(lower_sd, upper_sd)
+      
+      ### ...and desc_exdf ###
       mydatastructure[[site]][["desc_exdf"]]<- mydatastructure[[site]][["exdf"]] %>%
-        dplyr::arrange(desc(Date))
+        dplyr::rename("Units" = "ResultMeasure.MeasureUnitCode") %>%
+        dplyr::rename("SiteName" = "MonitoringLocationName") %>%
+        dplyr::mutate("Difference" = case_when(
+          !is.na(mydatastructure[[site]][["UpperPoint"]])==TRUE & is.na(mydatastructure[[site]][["LowerPoint"]])==TRUE ~ 
+            mydatastructure[[site]][["exdf"]]$Value - mydatastructure[[site]][["UpperPoint"]]
+          ,!is.na(mydatastructure[[site]][["LowerPoint"]])==TRUE & is.na(mydatastructure[[site]][["UpperPoint"]])==TRUE ~ 
+            mydatastructure[[site]][["exdf"]]$Value - mydatastructure[[site]][["LowerPoint"]]
+          ,!is.na(mydatastructure[[site]][["UpperPoint"]])==TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]])==TRUE & any(mydatastructure[[site]][["df"]]$Value >= mydatastructure[[site]][["UpperPoint"]], na.rm = TRUE) ~ 
+            mydatastructure[[site]][["exdf"]]$Value - mydatastructure[[site]][["UpperPoint"]]
+          ,!is.na(mydatastructure[[site]][["UpperPoint"]])==TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]])==TRUE & any(mydatastructure[[site]][["df"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm = TRUE) ~ 
+            mydatastructure[[site]][["exdf"]]$Value - mydatastructure[[site]][["LowerPoint"]]
+        )) %>%
+        dplyr::mutate("Difference" = round(Difference, 4)) %>%
+        dplyr::arrange(desc(Date)) %>%
+        dplyr::select("SiteName", "Date", "Characteristic", "Value", "Difference", "Units", any_of(c("UpperThreshold", "LowerThreshold")))
+        
       
       # Data wrangle for text and hist
       mydatastructure[[site]][["histyears"]]<- data.frame(Year = lubridate::year(mydatastructure[[site]][["df"]]$Date))
@@ -1493,14 +1510,14 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
       # freq_comp<- ifelse((nex/ntot) > (sum_nex/sum_ntot), "greater than",
       #                      ifelse((nex/ntot) == (sum_nex/sum_ntot), "equal to", "less than"))
       mydatastructure[[site]][["grammar1"]]<- if(mydatastructure[[site]][["nex"]]==1) {
-        paste("There was", mydatastructure[[site]][["nex"]], "exceedance of the ")
+        paste0("There was ", "<b>", mydatastructure[[site]][["nex"]], "</b>", " exceedance of the ")
       } else {
-        paste("There were", mydatastructure[[site]][["nex"]], "exceedances of the ")
+        paste0("There were ", "<b>", mydatastructure[[site]][["nex"]], "</b>", " exceedances of the ")
       }
       mydatastructure[[site]][["grammar2"]]<- if(mydatastructure[[site]][["sum_nex"]]==1) {
-        paste("There has been", mydatastructure[[site]][["sum_nex"]], "exceedance of the ")
+        paste0("There has been ", "<b>", mydatastructure[[site]][["sum_nex"]], "</b>", " exceedance of the ")
       } else {
-        paste("There have been", mydatastructure[[site]][["sum_nex"]], "exceedances of the ")
+        paste0("There have been ", "<b>", mydatastructure[[site]][["sum_nex"]], "</b>", " exceedances of the ")
       }
       
       # Writing text
@@ -1545,7 +1562,18 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
       return(mydatastructure)
   })
 
-
+### Table Hover Text ###
+  exceedances_tooltips <- list(
+    "SiteName" = "Site name of monitoring event"
+    ,"Date" = "Date of monitoring event"
+    ,"Characteristic" = "Water quality parameter"
+    ,"Value" = "Numeric measurement of a water quality parameter"
+    ,"Difference" = "Magnitude of the exceedance (Value - Threshold)"
+    ,"Units" = "Units of the measured value"
+    ,"UpperThreshold" = "Description of the upper threshold for this site and parameter"
+    ,"LowerThreshold" = "Description of the lower threshold for this site and parameter"
+  )
+  exceedances_tooltips_json <- jsonlite::toJSON(exceedances_tooltips, auto_unbox = TRUE)
   
 ### Output ###
   show_plot<- shiny::reactiveVal(FALSE)
@@ -1558,17 +1586,6 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
     # if (!is.na(mydatastructure[[site]][["notification_text"]])==TRUE) {shiny::showNotification(
     #   mydatastructure[[site]][["notification_text"]], type = "error", duration = 10)}
 
-    exceedances_tooltips <- list(
-      "OrganizationFormalName" = "Name of organization conducting monitoring activities"
-      ,"ActivityMediaSubdivisionName" = "Code corresponding to a unique water quality monitoring event at a certain site and date"
-      ,"Date" = "Date of monitoring event"
-      ,"Characteristic" = "Water quality parameter"
-      ,"Value" = "Numeric measurement of a water quality parameter"
-      ,"ResultMeasure.MeasureUnitCode" = "Units of the measured value"
-      ,"UpperThreshold" = "Description of the upper threshold for this site and parameter"
-      ,"LowerThreshold" = "Description of the lower threshold for this site and parameter"
-    )
-    exceedances_tooltips_json <- jsonlite::toJSON(exceedances_tooltips, auto_unbox = TRUE)
     
     nTabs = length(names(mydatastructure))
     myTabs = lapply(seq_len(nTabs), function(i) { # i is the index (e.g., 1, 2, 3)
@@ -1584,6 +1601,9 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
         )
       })
     do.call(tabsetPanel, myTabs) # make a tabsetPanel containing one tab per site
+    
+    
+    
     })
 
   shiny::observe(
@@ -1597,9 +1617,9 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
         DT::datatable(mydatastructure[[site]][['desc_exdf']]
         ,extensions=c("Buttons","KeyTable")
         # ,caption=htmltools::tags$caption(htmltools::h3(Title()))
-        # ,class="stripe hover order-column cell-border"
+        ,class="stripe hover order-column cell-border"
         # ,filter="top"
-        # ,rownames=F
+        ,rownames=F
         ,options=list(
           autoWidth=TRUE
           ,dom="Bltirp"
@@ -1633,7 +1653,7 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
   
   shiny::observeEvent(input$hist_button, {
     show_plot(!show_plot())
-    new_label<- ifelse(show_plot(), "Hide Histogram", "Show Histogram")
+    new_label<- ifelse(show_plot(), "Hide Graph", "Show Graph")
     shiny::updateActionButton(session, "hist_button", label = new_label)
   })
   
@@ -1806,18 +1826,18 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
   
 ### Exceedances Data Table Output ###
   
-  exceedances_tooltips <- list(
-    "OrganizationFormalName" = "Name of organization conducting monitoring activities"
-    ,"ActivityMediaSubdivisionName" = "Code corresponding to a unique water quality monitoring event at a certain site and date"
-    ,"Date" = "Date of monitoring event"
-    ,"Characteristic" = "Water quality parameter"
-    ,"Value" = "Numeric measurement of a water quality parameter"
-    ,"ResultMeasure.MeasureUnitCode" = "Units of the measured value"
-    ,"UpperThreshold" = "Description of the upper threshold for this site and parameter"
-    ,"LowerThreshold" = "Description of the lower threshold for this site and parameter"
-  )
-  exceedances_tooltips_json <- jsonlite::toJSON(exceedances_tooltips, auto_unbox = TRUE)
-  
+  # exceedances_tooltips <- list(
+  #   "OrganizationFormalName" = "Name of organization conducting monitoring activities"
+  #   ,"ActivityMediaSubdivisionName" = "Code corresponding to a unique water quality monitoring event at a certain site and date"
+  #   ,"Date" = "Date of monitoring event"
+  #   ,"Characteristic" = "Water quality parameter"
+  #   ,"Value" = "Numeric measurement of a water quality parameter"
+  #   ,"ResultMeasure.MeasureUnitCode" = "Units of the measured value"
+  #   ,"UpperThreshold" = "Description of the upper threshold for this site and parameter"
+  #   ,"LowerThreshold" = "Description of the lower threshold for this site and parameter"
+  # )
+  # exceedances_tooltips_json <- jsonlite::toJSON(exceedances_tooltips, auto_unbox = TRUE)
+  # 
   # output$ExceedancesTable <-DT::renderDataTable(
   #   expr=datatable(ExceedancesDataUse()
   #                  ,extensions=c("Buttons","KeyTable")

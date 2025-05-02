@@ -3032,6 +3032,8 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
       zoom_level >= 11
     }
 
+    site_data <- NPSGeoData
+
     # site_data <- if (input$InactiveSites) {
     #   NPSGeoData
     # } else{

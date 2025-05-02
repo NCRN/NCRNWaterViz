@@ -217,7 +217,7 @@ shinyUI(
           uiOutput("MapChars"),
 
          div(style = "display: block", 
-             checkboxInput(inputId="InactiveSites", label="Display inactive sites", value=F), 
+            #  checkboxInput(inputId="InactiveSites", label="Display inactive sites", value=F), 
              checkboxGroupInput(inputId="MapIn",label="Select Parks:" , choices=NULL, inline = FALSE),
              actionButton("refreshParks", "Reset park selections", class = "btn btn-primary", style = "margin-top: 10px;")),
               

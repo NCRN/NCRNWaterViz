@@ -391,8 +391,47 @@ shinyServer(function(input,output,session){
       # ;DataOpts$Years<-c(1900,2100)
       }
     )
-
-
+  # Photo controls
+  PhotoPark<-shiny::callModule(
+    parkChooser
+    ,id="PhotoPark"
+    ,data=WaterData
+    ,chosen=reactive(DataOpts$Park)
+    )
+  PhotoSite<-shiny::callModule(
+    siteChooser
+    ,id="PhotoSite"
+    ,data=WaterData
+    ,park=reactive(DataOpts$Park)
+    ,chosen=reactive(DataOpts$Site)
+    )
+  PhotoYears<-shiny::callModule(
+    yearChooser
+    ,id="PhotoYears"
+    ,data=DataUseMultiple
+    ,chosen=reactive(DataOpts$Years)
+    )
+    shiny::observeEvent(
+    PhotoPark()
+    ,{
+      DataOpts$Park<-PhotoPark()
+      ;DataOpts$Site<-NA
+      # ;DataOpts$Param<-NA
+      # ;DataOpts$Years<-c(1900,2100)
+      }
+    )
+  shiny::observeEvent(
+    PhotoSite()
+    ,{
+      DataOpts$Site<-PhotoSite()
+      # ;DataOpts$Param<-NA
+      # ;DataOpts$Years<-c(1900,2100)
+      }
+    )
+  shiny::observeEvent(
+    PhotoYears()
+    ,DataOpts$Years<-PhotoYears()
+    )
 #### Graphics Modal Control ####
   
   observeEvent(eventExpr = c( input$GraphicsModal,input$GraphicsModal2), ignoreInit = TRUE,

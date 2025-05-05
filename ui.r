@@ -266,8 +266,11 @@ shinyUI(
             # ,column(width=3, siteChooserUI("PhotoSite"))
             ,column(width=4, yearChooserUI("PhotoYears"))
           )
+          # ,fluidRow(
+          #   column(width=4, siteVisitChooserUI("PhotoSiteVisit"))
+          # )
         )
-        ,DT::dataTableOutput("WaterTable")
+        ,htmlOutput("PhotoSiteVisits")
       ),
       tabPanel(h4("Exceedances"),
                column(3, div(style='padding: 5px 10px',class="panel panel-default", 

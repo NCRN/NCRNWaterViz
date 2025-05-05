@@ -74,7 +74,7 @@ for (f in list.files(dir)){
       
     # step 1: break the filename into pieces
 
-    if (base::startsWith(f, 'WATER')){
+    if (base::startsWith(f, 'WATER')){ # 1. "WATER_ANTI_SHCK_20240201 (1).JPG"
       tmp <- base::strsplit(f, '_')
       # park and site
       park <- tmp[[1]][2]
@@ -84,7 +84,7 @@ for (f in list.files(dir)){
       dt <- tmp[[1]][1]
       idx <- base::sub('.JPG', '', tmp[[1]][2])
       idx <- base::sub('.*\\((.*)\\).*', '\\1', idx)
-    } else if(base::startsWith(f, 'dwq') | base::startsWith(f, 'cwq')){
+    } else if(base::startsWith(f, 'dwq') | base::startsWith(f, 'cwq')){ # 2. "dwq_NCRN_MONO_BUCK_2024-06-04_20240604-084406.jpg"
       tmp <- base::strsplit(f, '_')
       # park and site
       park <- tmp[[1]][3]
@@ -93,7 +93,7 @@ for (f in list.files(dir)){
       tmp <- base::strsplit(tmp[[1]][6], '-')
       dt <- tmp[[1]][1]
       idx <- base::sub('.jpg', '', tmp[[1]][2])
-    } else {
+    } else { # 3. "ANTI_SHCK_20181210 (8).JPG"
       tmp <- base::strsplit(f, '_')
       # park and site
       park <- tmp[[1]][1]
@@ -3387,6 +3387,53 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     }
   })
 
+
+  PhotoSiteVisits<-reactive({    
+    # Make a vector of site visits to be displayed in a picklist in the photos tab 
+    # Args:
+    #  DataOpts$Park, chr, required. A park acronym. E.g., 'ROCR'.
+    #  DataOpts$Site, chr or c(chr), required. A site code. E.g., 'NCRN_ROCR_KLVA'
+    #  DataOpts$Years, c(int), required. Vector of integers from the app's year slider.
+    #  
+    # Returns:
+    #  vector
+    # 
+    # Example:
+    #   DataOpts$Park <- 'ROCR'
+    #   DataOpts$Site <- c('NCRN_ROCR_KLVA', 'NCRN_ROCR_FEBR')
+    #   DataOpts$Years <- c(2010,2020)
+    #   
+    #   sitevisits <- 
+    #     PhotoSiteVisits(
+    #       ,DataOpts$Park
+    #       ,DataOpts$Site
+    #       ,DataOpts$Years
+    #   )
+    #
+    req(DataOpts$Park, DataOpts$Site, DataOpts$Years)
+    print(DataOpts$Park)
+    print(DataOpts$Site)
+    print(DataOpts$Years)
+
+    sitevisits <- c()
+    if (DataOpts$Park %in% names(imgs)){
+      for (s in DataOpts$Site){
+        if (s %in% names(imgs[[DataOpts$Park]])){
+          for (n in names(imgs[[DataOpts$Park]][[s]])){
+            if (as.numeric(n) >= as.numeric(DataOpts$Years[1]) & as.numeric(n) <= as.numeric(DataOpts$Years[2])){
+              for (x in names(imgs[[DataOpts$Park]][[s]][[n]])){
+                sitevisits <- c(sitevisits, x)
+              }
+            }
+          }
+        }
+      }
+    }
+    print(sitevisits)
+    sitevisits <- paste(sitevisits, collapse=',')
+  })
+  
+  output$PhotoSiteVisits<-renderUI(PhotoSiteVisits())
 
 }) #End of Shiny Server function
     

@@ -3417,11 +3417,11 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
 
     sitevisits <- c()
     if (DataOpts$Park %in% names(imgs)){
-      for (s in DataOpts$Site){
-        if (s %in% names(imgs[[DataOpts$Park]])){
-          for (n in names(imgs[[DataOpts$Park]][[s]])){
-            if (as.numeric(n) >= as.numeric(DataOpts$Years[1]) & as.numeric(n) <= as.numeric(DataOpts$Years[2])){
-              for (x in names(imgs[[DataOpts$Park]][[s]][[n]])){
+      for (site in DataOpts$Site){
+        if (site %in% names(imgs[[DataOpts$Park]])){
+          for (yr in names(imgs[[DataOpts$Park]][[site]])){
+            if (as.numeric(yr) >= as.numeric(DataOpts$Years[1]) & as.numeric(yr) <= as.numeric(DataOpts$Years[2])){
+              for (x in names(imgs[[DataOpts$Park]][[site]][[yr]])){
                 sitevisits <- c(sitevisits, x)
               }
             }

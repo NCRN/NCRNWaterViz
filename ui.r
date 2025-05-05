@@ -91,7 +91,7 @@ shinyUI(
            ")))
         ),
       ),
-      tabPanel(h4("Time Series Plot"),
+      tabPanel(h4("Time Series"),
         column(3, div(style='padding: 5px 10px',class="panel panel-default", 
           
           #textOutput("Test"),  # For debugging purposes

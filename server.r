@@ -2356,7 +2356,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
         dplyr::all_of(DATATABLE_COLNAME_LOOKUP)
       ) %>% dplyr::mutate(
         Park = NCRNWater::getParkInfo(object=WaterData, parkcode=DataOpts$Park, info="ParkLongName")
-        ,Parameter = NCRNWater::getCharInfo(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="DisplayName")
+        ,Parameter = NCRNWater::getCharInfo(WaterData, parkcode=DataOpts$Park, sitecode=if(length(DataOpts$Site)>1) DataOpts$Site[1] else DataOpts$Site, charname=DataOpts$Param, info="DisplayName")
       ) %>% dplyr::select(
         Park
         ,Site

@@ -2283,8 +2283,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
 ### Data table output ####
   output$DatasetURL <- renderUI({tagList(DATASET_URL)}) # a constant stored in global.R
   DATATABLE_COLNAME_LOOKUP <- c( # a lookup used in output$WaterTable
-    Organization = 'OrganizationFormalName'
-    ,Site = 'MonitoringLocationName'
+    Site = 'MonitoringLocationName'
     ,Latitude = 'ActivityLocation.LatitudeMeasure'
     ,Longitude = 'ActivityLocation.LongitudeMeasure'
     ,SampleDate = 'Date'
@@ -2292,6 +2291,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     ,Value = 'Value'
     ,Units = 'ResultMeasure.MeasureUnitCode'
     )
+
   output$WaterTable <-DT::renderDataTable(
     # Generate a data table for the `Data` tab given user inputs
     # 
@@ -2309,9 +2309,8 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     #   DataOpts$Param<- "TotalP"
     #   
     expr=datatable(
-      DataUseMultiple() %>% dplyr::select(
-        OrganizationFormalName
-        ,MonitoringLocationName
+        DataUseMultiple() %>% dplyr::select(
+        MonitoringLocationName
         ,ActivityLocation.LatitudeMeasure
         ,ActivityLocation.LongitudeMeasure
         ,Date
@@ -2322,6 +2321,19 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
         dplyr::desc(Date)
       ) %>% dplyr::rename(
         dplyr::all_of(DATATABLE_COLNAME_LOOKUP)
+      ) %>% dplyr::mutate(
+        Park = NCRNWater::getParkInfo(object=WaterData, parkcode=DataOpts$Park, info="ParkLongName")
+        ,Parameter = NCRNWater::getCharInfo(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param, info="DisplayName")
+      ) %>% dplyr::select(
+        Park
+        ,Site
+        ,Latitude
+        ,Longitude
+        ,SampleDate
+        ,SampleTime
+        ,Parameter
+        ,Value
+        ,Units
       )
       ,extensions=c(
         "Buttons"

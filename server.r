@@ -59,6 +59,11 @@ if (file.exists(mname2)==F | file.exists(dname2)==F){
   metadata_active <- read.csv(mname2)
 }
 
+#### Get data ####
+WaterData<-suppressWarnings(importNCRNWater(paste0("./Data/", Network), Data=dataname2, MetaData = metadataname2, wqx=wqx_bool))
+
+#### Get photos ####
+
 dir <- file.path('Data',Network,'img')
 imgs <- list()
 for (f in list.files(dir)){
@@ -109,7 +114,7 @@ for (f in list.files(dir)){
     yr <- base::substr(dt, 1,4)
     mo <- base::substr(dt, 5,6)
     day <- base::substr(dt, 7,8)
-    dt <- paste0(yr, '-', mo, '-', day)
+    sitevisit <- paste0(NCRNWater::getSiteInfo(WaterData, parkcode=park, sitecode=site, info="SiteName"), ' ', yr, '-', mo, '-', day)
 
     # step 2: build the data structure
 
@@ -126,22 +131,19 @@ for (f in list.files(dir)){
       imgs[[park]][[site]][[yr]] <- list()
     }
     # add the date if it does not exist
-    if (dt %in% names(imgs[[park]][[site]][[yr]])==F) {
-      imgs[[park]][[site]][[yr]][[dt]] <- list()
+    if (sitevisit %in% names(imgs[[park]][[site]][[yr]])==F) {
+      imgs[[park]][[site]][[yr]][[sitevisit]] <- list()
     }
     # add the filename if it does not exist
-    if (f %in% names(imgs[[park]][[site]][[yr]][[dt]])==F) {
-      imgs[[park]][[site]][[yr]][[dt]][[f]] <- list()
+    if (f %in% names(imgs[[park]][[site]][[yr]][[sitevisit]])==F) {
+      imgs[[park]][[site]][[yr]][[sitevisit]][[f]] <- list()
     }
 
-    imgs[[park]][[site]][[yr]][[dt]][[f]]$rel_fpath <- file.path(dir, f)
-    imgs[[park]][[site]][[yr]][[dt]][[f]]$sortorder <- idx
+    imgs[[park]][[site]][[yr]][[sitevisit]][[f]]$rel_fpath <- file.path(dir, f)
+    imgs[[park]][[site]][[yr]][[sitevisit]][[f]]$sortorder <- idx
 
   }
 }
-
-#### Get data ####
-WaterData<-suppressWarnings(importNCRNWater(paste0("./Data/", Network), Data=dataname2, MetaData = metadataname2, wqx=wqx_bool))
 
 ####getThresholdText Function
 getTresholdText<-function(object, parkcode,sitecode,charname){    
@@ -3436,9 +3438,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
         if (site %in% names(imgs[[DataOpts$Park]])){
           for (yr in names(imgs[[DataOpts$Park]][[site]])){
             if (as.numeric(yr) >= as.numeric(DataOpts$Years[1]) & as.numeric(yr) <= as.numeric(DataOpts$Years[2])){
-              for (x in names(imgs[[DataOpts$Park]][[site]][[yr]])){
-                sitename <- NCRNWater::getSiteInfo(WaterData, parkcode=DataOpts$Park, sitecode=site, info="SiteName")
-                sitevisit <- paste(sitename, x)
+              for (sitevisit in names(imgs[[DataOpts$Park]][[site]][[yr]])){
                 sitevisits <- c(sitevisits, sitevisit)
               }
             }

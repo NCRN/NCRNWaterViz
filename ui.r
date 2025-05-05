@@ -243,7 +243,7 @@ shinyUI(
                              parkChooserUI("DataParkExceedances"),
                              siteChooserUI("DataSiteExceedances"),
                              paramChooserUI("DataParamExceedances"),
-                             actionButton("hist_button", "Show Graph")
+                             actionButton("hist_button", "Show Figure")
                              # ,numericInput("nTabs", 'No. of Tabs', 5)
                )),
                column(9,              

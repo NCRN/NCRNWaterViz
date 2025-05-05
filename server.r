@@ -1463,7 +1463,9 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
       ### ...and desc_exdf ###
       mydatastructure[[site]][["desc_exdf"]]<- mydatastructure[[site]][["exdf"]] %>%
         dplyr::rename("Units" = "ResultMeasure.MeasureUnitCode") %>%
-        dplyr::rename("SiteName" = "MonitoringLocationName") %>%
+        dplyr::rename("Site" = "MonitoringLocationName") %>%
+        dplyr::rename("Parameter" = "Characteristic") %>%
+        dplyr::rename("SampleDate" = "Date") %>%
         dplyr::mutate("Difference" = case_when(
           !is.na(mydatastructure[[site]][["UpperPoint"]])==TRUE & is.na(mydatastructure[[site]][["LowerPoint"]])==TRUE ~ 
             mydatastructure[[site]][["exdf"]]$Value - mydatastructure[[site]][["UpperPoint"]]
@@ -1475,8 +1477,8 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
             mydatastructure[[site]][["exdf"]]$Value - mydatastructure[[site]][["LowerPoint"]]
         )) %>%
         dplyr::mutate("Difference" = round(Difference, 4)) %>%
-        dplyr::arrange(desc(Date)) %>%
-        dplyr::select("SiteName", "Date", "Characteristic", "Value", "Difference", "Units", any_of(c("UpperThreshold", "LowerThreshold")))
+        dplyr::arrange(desc(SampleDate)) %>%
+        dplyr::select("Site", "SampleDate", "Parameter", "Value", "Difference", "Units", any_of(c("UpperThreshold", "LowerThreshold")))
         
       
       # Data wrangle for text and hist
@@ -1557,6 +1559,49 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
           panel.grid.major = element_blank(),
           panel.grid.minor = element_blank())
       
+      # Hist Alt Text
+      alt_text <- c()
+      for (i in seq_len(nrow(mydatastructure[[site]][["histdata"]]))) {
+        if(mydatastructure[[site]][["histdata"]]$nex[i] != 0) {
+          alt_text <- c(alt_text, paste0("<b>", mydatastructure[[site]][["histdata"]]$Year[i], "</b>: ", mydatastructure[[site]][["histdata"]]$ntot[i], " total observation(s), ", mydatastructure[[site]][["histdata"]]$formatted_percent_ex[i], " of observations exceeding ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]]))
+        }
+      }
+      mydatastructure[[site]][["alt_raw"]] <- alt_text
+      mydatastructure[[site]][["alt_bullets"]] <- paste0("<li>", mydatastructure[[site]][["alt_raw"]], "</li>", collapse = "")
+      mydatastructure[[site]][["alt_bullets2"]] <- paste0("<ul>", mydatastructure[[site]][["alt_bullets"]], "</ul>")
+      
+      mydatastructure[[site]][["recent_ex"]] <- max(mydatastructure[[site]][["histdata"]]$Year[mydatastructure[[site]][["histdata"]]$nex != 0])
+      mydatastructure[[site]][["oldest_ex"]] <- min(mydatastructure[[site]][["histdata"]]$Year[mydatastructure[[site]][["histdata"]]$nex != 0])
+      mydatastructure[[site]][["highest_ex_rate"]] <- mydatastructure[[site]][["histdata"]]$formatted_percent_ex[which.max(mydatastructure[[site]][["histdata"]]$percent_ex)]
+      mydatastructure[[site]][["hry_vec"]] <- mydatastructure[[site]][["histdata"]]$Year[mydatastructure[[site]][["histdata"]]$percent_ex == max(mydatastructure[[site]][["histdata"]]$percent_ex)]
+      vec_format <- function(vec) {
+        n <- length(vec)
+        if (n == 1) return(as.character(vec[1]))
+        if (n == 2) return(paste(vec, collapse = " and "))
+        paste(paste(vec[-n], collapse = ", "), "and", vec[n])
+      }
+      mydatastructure[[site]][["highest_rate_year"]] <- vec_format(mydatastructure[[site]][["hry_vec"]])
+      
+      mydatastructure[[site]][["n_ex_year"]] <- sum(mydatastructure[[site]][["histdata"]]$nex != 0)
+      if (mydatastructure[[site]][["n_ex_year"]] == 1) {
+        mydatastructure[[site]][["alt_text_line2"]] <- paste0("Exceedances of the water quality threshold of ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]], " were measured in only ", mydatastructure[[site]][["recent_ex"]], ".")
+      } else {
+        mydatastructure[[site]][["alt_text_line2"]] <- paste0("Exceedances of the water quality threshold of ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]], " were measured first in ", mydatastructure[[site]][["oldest_ex"]], ", and most recently in ", mydatastructure[[site]][["recent_ex"]], ".")
+      }
+      
+      if (mydatastructure[[site]][["n_ex_year"]] != 0) {
+        mydatastructure[[site]][["alt_text"]] <- paste0(
+          "<b>Figure Description:</b> Acceptable water quality measurements for ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]], " have occurred between ", mydatastructure[[site]][["oldest_year"]], " and ", mydatastructure[[site]][["recent_year"]], ". ",
+          mydatastructure[[site]][["alt_text_line2"]],
+          " The highest proportion of threshold exceedances per measurements taken in a single year was ", mydatastructure[[site]][["highest_ex_rate"]], " in ", mydatastructure[[site]][["highest_rate_year"]], ".",
+          " See exceedances profiles per year below:",
+          mydatastructure[[site]][["alt_bullets2"]])
+      } else {
+        mydatastructure[[site]][["alt_text"]] <- paste0(
+          "<b>Figure Description:</b> Acceptable water quality measurements for ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]], " have occurred between ", mydatastructure[[site]][["oldest_year"]], " and ", mydatastructure[[site]][["recent_year"]], ". ",
+          "There are no exceedances data to describe."
+        )
+      }
       
     }
       return(mydatastructure)
@@ -1564,9 +1609,9 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
 
 ### Table Hover Text ###
   exceedances_tooltips <- list(
-    "SiteName" = "Site name of monitoring event"
-    ,"Date" = "Date of monitoring event"
-    ,"Characteristic" = "Water quality parameter"
+    "Site" = "Site name of monitoring event"
+    ,"SampleDate" = "Date of monitoring event"
+    ,"Parameter" = "Water quality parameter"
     ,"Value" = "Numeric measurement of a water quality parameter"
     ,"Difference" = "Magnitude of the exceedance (Value - Threshold)"
     ,"Units" = "Units of the measured value"
@@ -1595,6 +1640,7 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
           class = "summary-box"
           ,shiny::uiOutput(paste0("dynamic_text_",i)))
         ,if (show_plot()) {plotlyOutput(paste0("hist_",i))}
+        ,if (show_plot()) {uiOutput(paste0("alt_text_",i))}
         ,DT::dataTableOutput(paste0("datatable_",i))
         
         
@@ -1613,6 +1659,7 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
       site <- DataOpts$Site[i] # site ID (e.g., 'NCRN_GWMP_TURU')
       output[[paste0("dynamic_text_",i)]] <- shiny::renderUI({HTML(mydatastructure[[site]][["html_extext"]])})
       output[[paste0("hist_",i)]]<- renderPlotly({plotly::ggplotly(mydatastructure[[site]][["p"]], tooltip = "text")})
+      output[[paste0("alt_text_",i)]] <- shiny::renderUI({HTML(mydatastructure[[site]][["alt_text"]])})
       output[[paste0("datatable_",i)]] <- DT::renderDataTable({
         DT::datatable(mydatastructure[[site]][['desc_exdf']]
         ,extensions=c("Buttons","KeyTable")
@@ -1653,7 +1700,7 @@ output$BoxRefSummaryMultiple<-renderUI(HTML(BoxRefSummaryMultiple()))
   
   shiny::observeEvent(input$hist_button, {
     show_plot(!show_plot())
-    new_label<- ifelse(show_plot(), "Hide Graph", "Show Graph")
+    new_label<- ifelse(show_plot(), "Hide Figure", "Show Figure")
     shiny::updateActionButton(session, "hist_button", label = new_label)
   })
   

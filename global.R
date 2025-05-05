@@ -17,7 +17,7 @@ DATASET_URL <- a("Click here to export the dataset from NPS DataStore\n", href="
 #### Years Module ####
 yearChooserUI<-function(id){
   ns<-NS(id)
-  sliderInput(inputId=ns("YearsShow"), label= "4. Years to Display:", min=1900, max=2100, step=1, value=c(1900,2100),sep="",ticks=F)
+  sliderInput(inputId=ns("YearsShow"), label= "4. Years to Display:", min=2005, max=2024, step=1, value=c(2005,2024),sep="",ticks=F)
 }
 
 

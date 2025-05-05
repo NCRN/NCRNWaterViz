@@ -345,6 +345,53 @@ shinyServer(function(input,output,session){
     CorrYears()
     ,DataOpts$Years<-CorrYears()
     )
+  # Data controls
+  DataPark<-shiny::callModule(
+    parkChooser
+    ,id="DataPark"
+    ,data=WaterData
+    ,chosen=reactive(DataOpts$Park)
+    )
+  DataSite<-shiny::callModule(
+    siteChooser
+    ,id="DataSite"
+    ,data=WaterData
+    ,park=reactive(DataOpts$Park)
+    ,chosen=reactive(DataOpts$Site)
+    )
+  DataParam<-shiny::callModule(
+    paramChooser
+    ,id="DataParam"
+    ,data=WaterData
+    ,park=reactive(DataOpts$Park)
+    ,site=reactive(DataOpts$Site)
+    ,chosen=reactive(DataOpts$Param)
+    )
+  shiny::observeEvent(
+    DataPark()
+    ,{
+      DataOpts$Park<-DataPark()
+      ;DataOpts$Site<-NA
+      # ;DataOpts$Param<-NA
+      # ;DataOpts$Years<-c(1900,2100)
+      }
+    )
+  shiny::observeEvent(
+    DataSite()
+    ,{
+      DataOpts$Site<-DataSite()
+      # ;DataOpts$Param<-NA
+      # ;DataOpts$Years<-c(1900,2100)
+      }
+    )
+  shiny::observeEvent(
+    DataParam()
+    ,{
+      DataOpts$Param<-DataParam()
+      # ;DataOpts$Years<-c(1900,2100)
+      }
+    )
+
 
 #### Graphics Modal Control ####
   
@@ -2265,21 +2312,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
       dev.off()
     }
   )
-  
-  
-#### Data table controls #### 
-  DataPark<-callModule(parkChooser, id="DataPark", data=WaterData, chosen=reactive(DataOpts$Park))
-  DataSite<-callModule(siteChooser, id="DataSite", data=WaterData, park=reactive(DataOpts$Park), chosen=reactive(DataOpts$Site))
-  DataParam<-callModule(paramChooser, id="DataParam",data=WaterData, park=reactive(DataOpts$Park), site=reactive(DataOpts$Site), 
-                       chosen=reactive(DataOpts$Param))
-  #DataYears<-callModule(yearChooser, id="DataYears", data=DataUse, chosen=reactive(DataOpts$Years) )
-  
-  
-  observeEvent(DataPark(), DataOpts$Park<-DataPark() )
-  observeEvent(DataSite(), DataOpts$Site<-DataSite() )
-  observeEvent(DataParam(), DataOpts$Param<-DataParam() )
-  #observeEvent(DataYears(), DataOpts$Years<-DataYears() )
-  
+    
 ### Data table output ####
   output$DatasetURL <- renderUI({tagList(DATASET_URL)}) # a constant stored in global.R
   DATATABLE_COLNAME_LOOKUP <- c( # a lookup used in output$WaterTable

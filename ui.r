@@ -266,9 +266,9 @@ shinyUI(
             # ,column(width=3, siteChooserUI("PhotoSite"))
             ,column(width=4, yearChooserUI("PhotoYears"))
           )
-          # ,fluidRow(
-          #   column(width=4, siteVisitChooserUI("PhotoSiteVisit"))
-          # )
+          ,fluidRow(
+            column(width=4, siteVisitChooserUI("PhotoSiteVisit"))
+          )
         )
         ,htmlOutput("PhotoSiteVisits")
       ),

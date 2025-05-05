@@ -159,7 +159,7 @@ shinyServer(function(input,output,session){
                               ThColor="Orange", TrColor="Green", LineWidth=2, ShowHidePoint=F, FigureHorizontalScaling=0.7, FigureVerticalScaling=0.7)
   
   #### Reactive Values for Choosing Data ####
-  DataOpts<-shiny::reactiveValues(Park=NA, Site=NA, Param=NA, Agg=NA, DateRange=NA, Years=NA, USGSload=FALSE, USGSdata=NA, Param2=NA)
+  DataOpts<-shiny::reactiveValues(Park=NA, Site=NA, Param=NA, Agg=NA, DateRange=NA, Years=NA, USGSload=FALSE, USGSdata=NA, Param2=NA, SiteVisit=NA)
 
   #### UI Controls ####  
   # Have the threshold lines observe each other so they stay in-sync
@@ -492,7 +492,15 @@ shinyServer(function(input,output,session){
     ,data=DataUseMultiple
     ,chosen=reactive(DataOpts$Years)
     )
-    shiny::observeEvent(
+  PhotoSiteVisit<-shiny::callModule(
+    siteVisitChooser
+    ,id="PhotoSiteVisit"
+    ,data=WaterData
+    ,park=reactive(DataOpts$Park)
+    ,site=reactive(DataOpts$Site)
+    ,chosen=reactive(DataOpts$SiteVisit)
+    )
+  shiny::observeEvent(
     PhotoPark()
     ,{
       DataOpts$Park<-PhotoPark()
@@ -512,6 +520,13 @@ shinyServer(function(input,output,session){
   shiny::observeEvent(
     PhotoYears()
     ,DataOpts$Years<-PhotoYears()
+    )
+  shiny::observeEvent(
+    PhotoSiteVisit()
+    ,{
+      DataOpts$SiteVisit<-PhotoSiteVisit()
+      # ;DataOpts$Years<-c(1900,2100)
+      }
     )
 #### Graphics Modal Control ####
   
@@ -3431,7 +3446,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
         }
       }
     }
-    sitevisits <- sort(sitevisits)
+    sitevisits <- base::sort(sitevisits, decreasing=T)
     sitevisits <- paste(sitevisits, collapse=', ')
   })
   

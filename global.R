@@ -143,7 +143,32 @@ paramChooser2<-function(input, output, session, data, park, site, chosen){
   return(reactive(input$ParamIn2))
 }
   
+### Site Visit Module ####
 
+siteVisitChooserUI<-function(id){
+  ns<-NS(id)
+  selectizeInput(inputId=ns("siteVisitIn"), label="Site visit:", choices=NULL)
+}
+
+
+siteVisitChooser<-function(input, output, session, data, park, site, chosen){
+  PChoices<-reactive({
+    req(park())
+    Choice<-getCharInfo(data, parkcode=park(), info="CharName")
+    ChoiceName<-paste0(getCharInfo(data, parkcode=park(), info="DisplayName"), " (",
+                       getCharInfo(data, parkcode=park(), info="Units") %>% 
+                         iconv("","UTF-8"), ")")#%>% iconv("","UTF-8"))
+    if(isTruthy(Choice) & isTruthy(ChoiceName)) { names(Choice)<-ChoiceName }
+    return(Choice)
+   })
+  
+  observe(
+    updateSelectizeInput(session, inputId="siteVisitIn",selected=chosen(), 
+                         choices=c("Choose a site visit"="", as.list(sort(PChoices()))))
+  )
+  
+  return(reactive(input$siteVisitIn))
+}
 
 #-------------------------
 # Global figure specs

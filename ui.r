@@ -270,7 +270,7 @@ shinyUI(
             column(width=4, siteVisitChooserUI("PhotoSiteVisit"))
           )
         )
-        ,htmlOutput("PhotoSiteVisits")
+        ,htmlOutput("Photos")
       ),
       tabPanel(h4("Exceedances"),
                column(3, div(style='padding: 5px 10px',class="panel panel-default", 

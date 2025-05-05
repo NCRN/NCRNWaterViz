@@ -173,7 +173,6 @@ siteVisitChooser<-function(input, output, session, data, park, site, years, imgs
         }
       }
     }
-    print(sitevisits)
 
     return(sitevisits)
    })

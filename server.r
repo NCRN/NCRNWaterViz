@@ -3451,5 +3451,52 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
   
   output$PhotoSiteVisits<-renderUI(PhotoSiteVisits())
 
+  Photos<-reactive({    
+    # Make a vector of site visits to be displayed in a picklist in the photos tab 
+    # Args:
+    #  DataOpts$Park, chr, required. A park acronym. E.g., 'ROCR'.
+    #  DataOpts$Site, chr or c(chr), required. A site code. E.g., 'NCRN_ROCR_KLVA'
+    #  DataOpts$Years, c(int), required. Vector of integers from the app's year slider.
+    #  
+    # Returns:
+    #  vector
+    # 
+    # Example:
+    #   DataOpts$Park <- 'ROCR'
+    #   DataOpts$Site <- c('NCRN_ROCR_KLVA', 'NCRN_ROCR_FEBR')
+    #   DataOpts$Years <- c(2010,2020)
+    #   
+    #   sitevisits <- 
+    #     PhotoSiteVisits(
+    #       ,DataOpts$Park
+    #       ,DataOpts$Site
+    #       ,DataOpts$Years
+    #   )
+    #
+    req(DataOpts$Park, DataOpts$Site, DataOpts$Years)
+
+    filenames <- c()
+    if (DataOpts$Park %in% names(imgs)){
+      for (site in DataOpts$Site){
+        if (site %in% names(imgs[[DataOpts$Park]])){
+          for (yr in names(imgs[[DataOpts$Park]][[site]])){
+            if (as.numeric(yr) >= as.numeric(DataOpts$Years[1]) & as.numeric(yr) <= as.numeric(DataOpts$Years[2])){
+              for (sitevisit in names(imgs[[DataOpts$Park]][[site]][[yr]])){
+                for (f in names(imgs[[DataOpts$Park]][[site]][[yr]][[sitevisit]])){
+                  fname <- imgs[[DataOpts$Park]][[site]][[yr]][[sitevisit]][[f]]$rel_fpath
+                  print(fname)
+                  filenames <- c(filenames, fname)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    filenames <- paste(filenames, collapse=', ')
+  })
+  
+  output$Photos<-renderUI(Photos())
+
 }) #End of Shiny Server function
     

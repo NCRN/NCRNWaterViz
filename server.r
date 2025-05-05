@@ -59,6 +59,87 @@ if (file.exists(mname2)==F | file.exists(dname2)==F){
   metadata_active <- read.csv(mname2)
 }
 
+dir <- file.path('Data',Network,'img')
+imgs <- list()
+for (f in list.files(dir)){
+  # we need the park, site, and date given a filename
+
+  # we have three naming conventions to deal with
+  # 1. "WATER_ANTI_SHCK_20240201 (1).JPG"
+  # 2. "dwq_NCRN_MONO_BUCK_2024-06-04_20240604-084406.jpg"
+  # 3. "ANTI_SHCK_20181210 (8).JPG"
+
+  # to start with, we'll use what the string starts with
+  if (base::endsWith(base::tolower(f), 'jpg')){
+      
+    # step 1: break the filename into pieces
+
+    if (base::startsWith(f, 'WATER')){
+      tmp <- base::strsplit(f, '_')
+      # park and site
+      park <- tmp[[1]][2]
+      site <- tmp[[1]][3]
+      # date and index
+      tmp <- base::strsplit(tmp[[1]][4], ' ')
+      dt <- tmp[[1]][1]
+      idx <- base::sub('.JPG', '', tmp[[1]][2])
+      idx <- base::sub('.*\\((.*)\\).*', '\\1', idx)
+    } else if(base::startsWith(f, 'dwq') | base::startsWith(f, 'cwq')){
+      tmp <- base::strsplit(f, '_')
+      # park and site
+      park <- tmp[[1]][3]
+      site <- tmp[[1]][4]
+      # date and index
+      tmp <- base::strsplit(tmp[[1]][6], '-')
+      dt <- tmp[[1]][1]
+      idx <- base::sub('.jpg', '', tmp[[1]][2])
+    } else {
+      tmp <- base::strsplit(f, '_')
+      # park and site
+      park <- tmp[[1]][1]
+      site <- tmp[[1]][2]
+      # date and index
+      tmp <- base::strsplit(tmp[[1]][3], ' ')
+      dt <- tmp[[1]][1]
+      idx <- base::sub('.JPG', '', tmp[[1]][2])
+      idx <- base::sub('.*\\((.*)\\).*', '\\1', idx)
+    }
+
+    site <- paste0('NCRN_',park,'_',site)
+    yr <- base::substr(dt, 1,4)
+    mo <- base::substr(dt, 5,6)
+    day <- base::substr(dt, 7,8)
+    dt <- paste0(yr, '-', mo, '-', day)
+
+    # step 2: build the data structure
+
+    # add the park if it does not exist
+    if (park %in% names(imgs)==F){
+      imgs[[park]] <- list()
+    }
+    # add the site if it does not exist
+    if (site %in% names(imgs[[park]])==F) {
+      imgs[[park]][[site]] <- list()
+    }
+    # add the year if it does not exist
+    if (yr %in% names(imgs[[park]][[site]])==F) {
+      imgs[[park]][[site]][[yr]] <- list()
+    }
+    # add the date if it does not exist
+    if (dt %in% names(imgs[[park]][[site]][[yr]])==F) {
+      imgs[[park]][[site]][[yr]][[dt]] <- list()
+    }
+    # add the filename if it does not exist
+    if (f %in% names(imgs[[park]][[site]][[yr]][[dt]])==F) {
+      imgs[[park]][[site]][[yr]][[dt]][[f]] <- list()
+    }
+
+    imgs[[park]][[site]][[yr]][[dt]][[f]]$rel_fpath <- file.path(dir, f)
+    imgs[[park]][[site]][[yr]][[dt]][[f]]$sortorder <- idx
+
+  }
+}
+
 #### Get data ####
 WaterData<-suppressWarnings(importNCRNWater(paste0("./Data/", Network), Data=dataname2, MetaData = metadataname2, wqx=wqx_bool))
 

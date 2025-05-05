@@ -3422,15 +3422,17 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
           for (yr in names(imgs[[DataOpts$Park]][[site]])){
             if (as.numeric(yr) >= as.numeric(DataOpts$Years[1]) & as.numeric(yr) <= as.numeric(DataOpts$Years[2])){
               for (x in names(imgs[[DataOpts$Park]][[site]][[yr]])){
-                sitevisits <- c(sitevisits, x)
+                sitename <- NCRNWater::getSiteInfo(WaterData, parkcode=DataOpts$Park, sitecode=site, info="SiteName")
+                sitevisit <- paste(sitename, x)
+                sitevisits <- c(sitevisits, sitevisit)
               }
             }
           }
         }
       }
     }
-    print(sitevisits)
-    sitevisits <- paste(sitevisits, collapse=',')
+    sitevisits <- sort(sitevisits)
+    sitevisits <- paste(sitevisits, collapse=', ')
   })
   
   output$PhotoSiteVisits<-renderUI(PhotoSiteVisits())

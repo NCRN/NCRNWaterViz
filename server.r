@@ -2352,6 +2352,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
         ,ResultMeasure.MeasureUnitCode
       ) %>% dplyr::arrange(
         dplyr::desc(Date)
+        ,MonitoringLocationName
       ) %>% dplyr::rename(
         dplyr::all_of(DATATABLE_COLNAME_LOOKUP)
       ) %>% dplyr::mutate(

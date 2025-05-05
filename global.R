@@ -151,20 +151,36 @@ siteVisitChooserUI<-function(id){
 }
 
 
-siteVisitChooser<-function(input, output, session, data, park, site, chosen){
+siteVisitChooser<-function(input, output, session, data, park, site, years, imgs, chosen){
   PChoices<-reactive({
-    req(park())
-    Choice<-getCharInfo(data, parkcode=park(), info="CharName")
-    ChoiceName<-paste0(getCharInfo(data, parkcode=park(), info="DisplayName"), " (",
-                       getCharInfo(data, parkcode=park(), info="Units") %>% 
-                         iconv("","UTF-8"), ")")#%>% iconv("","UTF-8"))
-    if(isTruthy(Choice) & isTruthy(ChoiceName)) { names(Choice)<-ChoiceName }
-    return(Choice)
+    req(park(), site(), years())
+    park <- park()
+    sites <- site()
+    years <- years()
+    imgs <- imgs()
+
+    sitevisits <- c()
+    if (park %in% names(imgs)){
+      for (site in sites){
+        if (site %in% names(imgs[[park]])){
+          for (yr in names(imgs[[park]][[site]])){
+            if (as.numeric(yr) >= as.numeric(years[1]) & as.numeric(yr) <= as.numeric(years[2])){
+              for (sitevisit in names(imgs[[park]][[site]][[yr]])){
+                sitevisits <- c(sitevisits, sitevisit)
+              }
+            }
+          }
+        }
+      }
+    }
+    print(sitevisits)
+
+    return(sitevisits)
    })
   
   observe(
     updateSelectizeInput(session, inputId="siteVisitIn",selected=chosen(), 
-                         choices=c("Choose a site visit"="", as.list(sort(PChoices()))))
+                         choices=c("Choose a site visit"="", as.list(sort(PChoices(), decreasing=T))))
   )
   
   return(reactive(input$siteVisitIn))

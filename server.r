@@ -64,86 +64,86 @@ WaterData<-suppressWarnings(importNCRNWater(paste0("./Data/", Network), Data=dat
 
 #### Get photos ####
 
-dir <- file.path('Data',Network,'img')
-imgs <- list()
-for (f in list.files(dir)){
-  # we need the park, site, and date given a filename
+  dir <- file.path('Data',Network,'img')
+  imgs <- list()
+  for (f in list.files(dir)){
+    # we need the park, site, and date given a filename
 
-  # we have three naming conventions to deal with
-  # 1. "WATER_ANTI_SHCK_20240201 (1).JPG"
-  # 2. "dwq_NCRN_MONO_BUCK_2024-06-04_20240604-084406.jpg"
-  # 3. "ANTI_SHCK_20181210 (8).JPG"
+    # we have three naming conventions to deal with
+    # 1. "WATER_ANTI_SHCK_20240201 (1).JPG"
+    # 2. "dwq_NCRN_MONO_BUCK_2024-06-04_20240604-084406.jpg"
+    # 3. "ANTI_SHCK_20181210 (8).JPG"
 
-  # to start with, we'll use what the string starts with
-  if (base::endsWith(base::tolower(f), 'jpg')){
-      
-    # step 1: break the filename into pieces
+    # to start with, we'll use what the string starts with
+    if (base::endsWith(base::tolower(f), 'jpg')){
+        
+      # step 1: break the filename into pieces
 
-    if (base::startsWith(f, 'WATER')){ # 1. "WATER_ANTI_SHCK_20240201 (1).JPG"
-      tmp <- base::strsplit(f, '_')
-      # park and site
-      park <- tmp[[1]][2]
-      site <- tmp[[1]][3]
-      # date and index
-      tmp <- base::strsplit(tmp[[1]][4], ' ')
-      dt <- tmp[[1]][1]
-      idx <- base::sub('.JPG', '', tmp[[1]][2])
-      idx <- base::sub('.*\\((.*)\\).*', '\\1', idx)
-    } else if(base::startsWith(f, 'dwq') | base::startsWith(f, 'cwq')){ # 2. "dwq_NCRN_MONO_BUCK_2024-06-04_20240604-084406.jpg"
-      tmp <- base::strsplit(f, '_')
-      # park and site
-      park <- tmp[[1]][3]
-      site <- tmp[[1]][4]
-      # date and index
-      tmp <- base::strsplit(tmp[[1]][6], '-')
-      dt <- tmp[[1]][1]
-      idx <- base::sub('.jpg', '', tmp[[1]][2])
-    } else { # 3. "ANTI_SHCK_20181210 (8).JPG"
-      tmp <- base::strsplit(f, '_')
-      # park and site
-      park <- tmp[[1]][1]
-      site <- tmp[[1]][2]
-      # date and index
-      tmp <- base::strsplit(tmp[[1]][3], ' ')
-      dt <- tmp[[1]][1]
-      idx <- base::sub('.JPG', '', tmp[[1]][2])
-      idx <- base::sub('.*\\((.*)\\).*', '\\1', idx)
+      if (base::startsWith(f, 'WATER')){ # 1. "WATER_ANTI_SHCK_20240201 (1).JPG"
+        tmp <- base::strsplit(f, '_')
+        # park and site
+        park <- tmp[[1]][2]
+        site <- tmp[[1]][3]
+        # date and index
+        tmp <- base::strsplit(tmp[[1]][4], ' ')
+        dt <- tmp[[1]][1]
+        idx <- base::sub('.JPG', '', tmp[[1]][2])
+        idx <- base::sub('.*\\((.*)\\).*', '\\1', idx)
+      } else if(base::startsWith(f, 'dwq') | base::startsWith(f, 'cwq')){ # 2. "dwq_NCRN_MONO_BUCK_2024-06-04_20240604-084406.jpg"
+        tmp <- base::strsplit(f, '_')
+        # park and site
+        park <- tmp[[1]][3]
+        site <- tmp[[1]][4]
+        # date and index
+        tmp <- base::strsplit(tmp[[1]][6], '-')
+        dt <- tmp[[1]][1]
+        idx <- base::sub('.jpg', '', tmp[[1]][2])
+      } else { # 3. "ANTI_SHCK_20181210 (8).JPG"
+        tmp <- base::strsplit(f, '_')
+        # park and site
+        park <- tmp[[1]][1]
+        site <- tmp[[1]][2]
+        # date and index
+        tmp <- base::strsplit(tmp[[1]][3], ' ')
+        dt <- tmp[[1]][1]
+        idx <- base::sub('.JPG', '', tmp[[1]][2])
+        idx <- base::sub('.*\\((.*)\\).*', '\\1', idx)
+      }
+
+      site <- paste0('NCRN_',park,'_',site)
+      yr <- base::substr(dt, 1,4)
+      mo <- base::substr(dt, 5,6)
+      day <- base::substr(dt, 7,8)
+      sitevisit <- paste0(NCRNWater::getSiteInfo(WaterData, parkcode=park, sitecode=site, info="SiteName"), ' ', yr, '-', mo, '-', day)
+
+      # step 2: build the data structure
+
+      # add the park if it does not exist
+      if (park %in% names(imgs)==F){
+        imgs[[park]] <- list()
+      }
+      # add the site if it does not exist
+      if (site %in% names(imgs[[park]])==F) {
+        imgs[[park]][[site]] <- list()
+      }
+      # add the year if it does not exist
+      if (yr %in% names(imgs[[park]][[site]])==F) {
+        imgs[[park]][[site]][[yr]] <- list()
+      }
+      # add the date if it does not exist
+      if (sitevisit %in% names(imgs[[park]][[site]][[yr]])==F) {
+        imgs[[park]][[site]][[yr]][[sitevisit]] <- list()
+      }
+      # add the filename if it does not exist
+      if (f %in% names(imgs[[park]][[site]][[yr]][[sitevisit]])==F) {
+        imgs[[park]][[site]][[yr]][[sitevisit]][[f]] <- list()
+      }
+
+      imgs[[park]][[site]][[yr]][[sitevisit]][[f]]$rel_fpath <- file.path(dir, f)
+      imgs[[park]][[site]][[yr]][[sitevisit]][[f]]$sortorder <- idx
+
     }
-
-    site <- paste0('NCRN_',park,'_',site)
-    yr <- base::substr(dt, 1,4)
-    mo <- base::substr(dt, 5,6)
-    day <- base::substr(dt, 7,8)
-    sitevisit <- paste0(NCRNWater::getSiteInfo(WaterData, parkcode=park, sitecode=site, info="SiteName"), ' ', yr, '-', mo, '-', day)
-
-    # step 2: build the data structure
-
-    # add the park if it does not exist
-    if (park %in% names(imgs)==F){
-      imgs[[park]] <- list()
-    }
-    # add the site if it does not exist
-    if (site %in% names(imgs[[park]])==F) {
-      imgs[[park]][[site]] <- list()
-    }
-    # add the year if it does not exist
-    if (yr %in% names(imgs[[park]][[site]])==F) {
-      imgs[[park]][[site]][[yr]] <- list()
-    }
-    # add the date if it does not exist
-    if (sitevisit %in% names(imgs[[park]][[site]][[yr]])==F) {
-      imgs[[park]][[site]][[yr]][[sitevisit]] <- list()
-    }
-    # add the filename if it does not exist
-    if (f %in% names(imgs[[park]][[site]][[yr]][[sitevisit]])==F) {
-      imgs[[park]][[site]][[yr]][[sitevisit]][[f]] <- list()
-    }
-
-    imgs[[park]][[site]][[yr]][[sitevisit]][[f]]$rel_fpath <- file.path(dir, f)
-    imgs[[park]][[site]][[yr]][[sitevisit]][[f]]$sortorder <- idx
-
   }
-}
 
 ####getThresholdText Function
 getTresholdText<-function(object, parkcode,sitecode,charname){    
@@ -500,6 +500,8 @@ shinyServer(function(input,output,session){
     ,data=WaterData
     ,park=reactive(DataOpts$Park)
     ,site=reactive(DataOpts$Site)
+    ,years=reactive(DataOpts$Years)
+    ,imgs=reactive(imgs)
     ,chosen=reactive(DataOpts$SiteVisit)
     )
   shiny::observeEvent(
@@ -3428,9 +3430,6 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     #   )
     #
     req(DataOpts$Park, DataOpts$Site, DataOpts$Years)
-    print(DataOpts$Park)
-    print(DataOpts$Site)
-    print(DataOpts$Years)
 
     sitevisits <- c()
     if (DataOpts$Park %in% names(imgs)){

@@ -46,57 +46,8 @@ shinyUI(
   
  #mainPanel(
   tabsetPanel(  
-    tabPanel(h4("Summary"),
-      column(3, div(style='padding: 5px 10px',class="panel panel-default", 
-                             
-        h3("Select Site Data"),
-                    
-        radioButtons(inputId="SummaryBoxBy", label="Compare by:", choices=c("year", "month", "site"), selected = "year", inline = T),
-                    
-                            parkChooserUI("SummaryPark"),
-                            siteChooserUI("SummarySite"),
-                            paramChooserUI("SummaryParam"),
-                            yearChooserUI("SummaryYears"),
-      splitLayout(cellWidths="100%",
-                  # h3("About:"),
-                  actionButton(inputId="AboutSummary", label="About this Table...", class="btn btn-primary",style="margin-top: 15px")
-      ))),
-      
-      column(9,
-           # div(class = "summary-box",
-              uiOutput("summary_box_ui")
-           #  DT::dataTableOutput("SummaryTable")
-
-       ,tags$head(
-        tags$style(HTML("
-          .summary-box {
-          background-color: #f5f3e5;
-          padding: 10px;
-          border-radius: 5px;
-          margin-bottom: 15px;
-          }
-          .dt-buttons {
-          float: right !important;
-          }
-          .shiny-notification {
-          background-color: #D0342C;
-          color: white;
-          font-size: 18px;
-          border-radius: 10px;
-          padding: 15px;
-          }
-          .shiny-notification-close {
-           color: white;
-           } 
-           ")))
-        ),
-      ),
       tabPanel(h4("Time Series"),
         column(3, div(style='padding: 5px 10px',class="panel panel-default", 
-          
-          #textOutput("Test"),  # For debugging purposes
-          
-          h3("Select Site Data"),
           
           parkChooserUI("TimePark"),
           siteChooserUI("TimeSite"),
@@ -145,15 +96,12 @@ shinyUI(
       
       tabPanel(h4("Boxplot"),
         column(3, div(style='padding: 5px 10px',class="panel panel-default", 
-
-        h3("Select Site Data"),
-                    
-        radioButtons(inputId="BoxBy", label="Compare by:", choices=c("year", "month", "site"), selected = "year", inline = T),
            
           parkChooserUI("BoxPark"),
           siteChooserUI("BoxSite"),
           paramChooserUI("BoxParam"),
           yearChooserUI("BoxYears"),
+          radioButtons(inputId="BoxBy", label="Compare by:", choices=c("year", "month", "site"), selected = "year", inline = T),
           
           checkboxInput("BoxThreshLine","Show Water Quality Threshold Line", TRUE),
           
@@ -187,8 +135,6 @@ shinyUI(
       ),
       tabPanel(h4("Correlations"),
         column(3, div(style='padding: 5px 10px',class="panel panel-default", 
-
-        h3("Select Site Data"),
                     
         parkChooserUI("CorrPark"),
         siteChooserUI("CorrSite"),
@@ -210,15 +156,11 @@ shinyUI(
 
       tabPanel(h4("Map"),
         column(2, div(style='padding: 5px 10px',class="panel panel-default",
-          h3("Data to Map"),
-          br(),
-          strong("National Park Service Monitoring"),
-         # checkboxInput(inputId="MapNPS", label="Map NPS Water Monitoring", value=T),
           uiOutput("MapChars"),
 
          div(style = "display: block", 
             #  checkboxInput(inputId="InactiveSites", label="Display inactive sites", value=F), 
-             checkboxGroupInput(inputId="MapIn",label="Select Parks:" , choices=NULL, inline = FALSE),
+             checkboxGroupInput(inputId="MapIn",label="Park(s)" , choices=NULL, inline = FALSE),
              actionButton("refreshParks", "Reset park selections", class = "btn btn-primary", style = "margin-top: 10px;")),
               
           # to hide the "US Geological Survey Stream Gages" checkbox, we'll make it only conditionally-visible
@@ -238,12 +180,53 @@ shinyUI(
                leafletOutput("WaterMap",width = "100%", height="900px")
         ) 
       ),
+      tabPanel(h4("Summary"),
+      column(3, div(style='padding: 5px 10px',class="panel panel-default", 
+                    
+                            parkChooserUI("SummaryPark"),
+                            siteChooserUI("SummarySite"),
+                            paramChooserUI("SummaryParam"),
+                            yearChooserUI("SummaryYears"),
+                            radioButtons(inputId="SummaryBoxBy", label="Compare by:", choices=c("year", "month", "site"), selected = "year", inline = T),
+      splitLayout(cellWidths="100%",
+                  # h3("About:"),
+                  actionButton(inputId="AboutSummary", label="About this Table...", class="btn btn-primary",style="margin-top: 15px")
+      ))),
+      
+      column(9,
+           # div(class = "summary-box",
+              uiOutput("summary_box_ui")
+           #  DT::dataTableOutput("SummaryTable")
+
+       ,tags$head(
+        tags$style(HTML("
+          .summary-box {
+          background-color: #f5f3e5;
+          padding: 10px;
+          border-radius: 5px;
+          margin-bottom: 15px;
+          }
+          .dt-buttons {
+          float: right !important;
+          }
+          .shiny-notification {
+          background-color: #D0342C;
+          color: white;
+          font-size: 18px;
+          border-radius: 10px;
+          padding: 15px;
+          }
+          .shiny-notification-close {
+           color: white;
+           } 
+           ")))
+        ),
+      ),
       tabPanel(
         h4("Data")
         ,div(
           style='padding: 5px 10px'
           ,class="panel panel-default"
-          ,h3("Select Site Data")
           ,uiOutput('DatasetURL')
           ,fluidRow(
             column(width=4, parkChooserUI("DataPark"))
@@ -253,7 +236,24 @@ shinyUI(
         )
         ,DT::dataTableOutput("WaterTable")
       ),
-      tabPanel(
+      
+  tabPanel(
+    h4("Exceedances")
+    ,div(
+          style='padding: 5px 10px'
+          ,class="panel panel-default"
+          ,fluidRow(
+            column(width=4, parkChooserUI("DataParkExceedances"))
+            ,column(width=4, siteChooserUI("DataSiteExceedances"))
+            ,column(width=4, paramChooserUI("DataParamExceedances"))
+          ),fluidRow(
+            column(width=4, actionButton("hist_button", "Show Figure"))
+          )
+        )
+    ,uiOutput("mytabs")
+     
+        ),
+        tabPanel(
         h4("Photos")
         ,tabsetPanel(
           tabPanel(
@@ -292,23 +292,6 @@ shinyUI(
           )
       )
       ),
-  tabPanel(
-    h4("Exceedances")
-    ,div(
-          style='padding: 5px 10px'
-          ,class="panel panel-default"
-          ,h3("Select Site Data")
-          ,fluidRow(
-            column(width=4, parkChooserUI("DataParkExceedances"))
-            ,column(width=4, siteChooserUI("DataSiteExceedances"))
-            ,column(width=4, paramChooserUI("DataParamExceedances"))
-          ),fluidRow(
-            column(width=4, actionButton("hist_button", "Show Figure"))
-          )
-        )
-    ,uiOutput("mytabs")
-     
-        ),
       
       tabPanel(h4("About"),
       

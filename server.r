@@ -3036,7 +3036,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
   CharIndex<-{getCharInfo(WaterData,info="LowerPoint") %>% is.na %>% not} | {getCharInfo(WaterData,info="UpperPoint") %>% is.na %>% not} 
   NPSchars<-getCharInfo(WaterData, info="CharName")[CharIndex] %>% unique
   names(NPSchars)<-getCharInfo(WaterData, info="DisplayName")[CharIndex] %>% unique
-  output$MapChars<-renderUI( selectizeInput(inputId="MapChar",label="Charactersitic to Map", choices=NPSchars[order(names(NPSchars))] ))
+  output$MapChars<-renderUI( selectizeInput(inputId="MapChar",label="Parameter", choices=NPSchars[order(names(NPSchars))] ))
   
   #coloring
   MapColors<- colorBin(

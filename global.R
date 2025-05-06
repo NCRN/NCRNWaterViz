@@ -17,7 +17,7 @@ DATASET_URL <- a("Click here to export the dataset from NPS DataStore\n", href="
 #### Years Module ####
 yearChooserUI<-function(id){
   ns<-NS(id)
-  sliderInput(inputId=ns("YearsShow"), label= "Years to Display:", min=2005, max=2024, step=1, value=c(2005,2024),sep="",ticks=F)
+  sliderInput(inputId=ns("YearsShow"), label= "Years", min=2005, max=2024, step=1, value=c(2005,2024),sep="",ticks=F)
 }
 
 
@@ -37,7 +37,7 @@ yearChooser<-function(input,output,session,data,chosen)  {
 
 yearChooserUI2<-function(id){
   ns<-NS(id)
-  sliderInput(inputId=ns("YearsShow2"), label= "Years to Display:", min=2005, max=2024, step=1, value=c(2005,2024),sep="",ticks=F)
+  sliderInput(inputId=ns("YearsShow2"), label= "Years", min=2005, max=2024, step=1, value=c(2005,2024),sep="",ticks=F)
 }
 
 
@@ -76,7 +76,7 @@ yearChooser2<-function(input,output,session,data,chosen)  {
 
 parkChooserUI<-function(id){
   ns<-NS(id)
-  selectizeInput(inputId=ns("ParkIn"),label="Park:" , choices=NULL)
+  selectizeInput(inputId=ns("ParkIn"),label="Park" , choices=NULL)
 }
 
 parkChooser<-function(input,output,session, data, chosen){
@@ -88,7 +88,7 @@ parkChooser<-function(input,output,session, data, chosen){
 
 parkChooserUI2<-function(id){
   ns<-NS(id)
-  selectizeInput(inputId=ns("ParkIn2"),label="Park:" , choices=NULL)
+  selectizeInput(inputId=ns("ParkIn2"),label="Park" , choices=NULL)
 }
 
 parkChooser2<-function(input,output,session, data, chosen){
@@ -103,7 +103,7 @@ parkChooser2<-function(input,output,session, data, chosen){
 
 siteChooserUI<-function(id){
   ns<-NS(id)
-  selectizeInput(inputId = ns("SiteIn"), label="Site:", choices=NULL, multiple = TRUE)
+  selectizeInput(inputId = ns("SiteIn"), label="Site", choices=NULL, multiple = TRUE)
 }
 
 siteChooser<-function(input, output, session, data, park, chosen){
@@ -125,7 +125,7 @@ siteChooser<-function(input, output, session, data, park, chosen){
 
 siteChooserUI2<-function(id){
   ns<-NS(id)
-  selectizeInput(inputId = ns("SiteIn2"), label="Site:", choices=NULL, multiple = TRUE)
+  selectizeInput(inputId = ns("SiteIn2"), label="Site", choices=NULL, multiple = TRUE)
 }
 
 siteChooser2<-function(input, output, session, data, park, chosen){
@@ -149,7 +149,7 @@ siteChooser2<-function(input, output, session, data, park, chosen){
 
 paramChooserUI<-function(id){
   ns<-NS(id)
-  selectizeInput(inputId=ns("ParamIn"), label="Water Parameter:", choices=NULL)
+  selectizeInput(inputId=ns("ParamIn"), label="Parameter", choices=NULL)
 }
 
 
@@ -174,7 +174,7 @@ paramChooser<-function(input, output, session, data, park, site, chosen){
 
 paramChooserUI2<-function(id){
   ns<-NS(id)
-  selectizeInput(inputId=ns("ParamIn2"), label="Second Water Parameter:", choices=NULL)
+  selectizeInput(inputId=ns("ParamIn2"), label="Second Parameter", choices=NULL)
 }
 
 
@@ -201,7 +201,7 @@ paramChooser2<-function(input, output, session, data, park, site, chosen){
 
 siteVisitChooserUI<-function(id){
   ns<-NS(id)
-  selectizeInput(inputId=ns("siteVisitIn"), label="Site visit:", choices=NULL)
+  selectizeInput(inputId=ns("siteVisitIn"), label="Site visit", choices=NULL)
 }
 
 
@@ -241,7 +241,7 @@ siteVisitChooser<-function(input, output, session, data, park, site, years, imgs
 
 siteVisitChooserUI2<-function(id){
   ns<-NS(id)
-  selectizeInput(inputId=ns("siteVisitIn2"), label="Site visit:", choices=NULL)
+  selectizeInput(inputId=ns("siteVisitIn2"), label="Site visit", choices=NULL)
 }
 
 
@@ -282,7 +282,7 @@ siteVisitChooser2<-function(input, output, session, data, park, site, years, img
 #### Photo module
 photoChooserUI<-function(id){
   ns<-NS(id)
-  sliderInput(inputId = ns("PhotoPhoto"), label = "Photo:", min = 1, max = 8, value = 1, ticks=F)
+  sliderInput(inputId = ns("PhotoPhoto"), label = "Photo", min = 1, max = 8, value = 1, ticks=F)
 }
 
 photoChooser<-function(input, output, session, data, park, site, years, imgs, sitevisit){
@@ -326,7 +326,7 @@ photoChooser<-function(input, output, session, data, park, site, years, imgs, si
 
 photoChooserUI2<-function(id){
   ns<-NS(id)
-  sliderInput(inputId = ns("PhotoPhoto2"), label = "Photo:", min = 1, max = 8, value = 1, ticks=F)
+  sliderInput(inputId = ns("PhotoPhoto2"), label = "Photo", min = 1, max = 8, value = 1, ticks=F)
 }
 
 photoChooser2<-function(input, output, session, data, park, site, years, imgs, sitevisit){

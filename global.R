@@ -17,7 +17,7 @@ DATASET_URL <- a("Click here to export the dataset from NPS DataStore\n", href="
 #### Years Module ####
 yearChooserUI<-function(id){
   ns<-NS(id)
-  sliderInput(inputId=ns("YearsShow"), label= "4. Years to Display:", min=2005, max=2024, step=1, value=c(2005,2024),sep="",ticks=F)
+  sliderInput(inputId=ns("YearsShow"), label= "Years to Display:", min=2005, max=2024, step=1, value=c(2005,2024),sep="",ticks=F)
 }
 
 
@@ -56,7 +56,7 @@ yearChooser<-function(input,output,session,data,chosen)  {
 
 parkChooserUI<-function(id){
   ns<-NS(id)
-  selectizeInput(inputId=ns("ParkIn"),label="1. Park:" , choices=NULL)
+  selectizeInput(inputId=ns("ParkIn"),label="Park:" , choices=NULL)
 }
 
 parkChooser<-function(input,output,session, data, chosen){
@@ -71,7 +71,7 @@ parkChooser<-function(input,output,session, data, chosen){
 
 siteChooserUI<-function(id){
   ns<-NS(id)
-  selectizeInput(inputId = ns("SiteIn"), label="2. Site:", choices=NULL, multiple = TRUE)
+  selectizeInput(inputId = ns("SiteIn"), label="Site:", choices=NULL, multiple = TRUE)
 }
 
 siteChooser<-function(input, output, session, data, park, chosen){
@@ -95,7 +95,7 @@ siteChooser<-function(input, output, session, data, park, chosen){
 
 paramChooserUI<-function(id){
   ns<-NS(id)
-  selectizeInput(inputId=ns("ParamIn"), label="3. Water Parameter:", choices=NULL)
+  selectizeInput(inputId=ns("ParamIn"), label="Water Parameter:", choices=NULL)
 }
 
 
@@ -120,7 +120,7 @@ paramChooser<-function(input, output, session, data, park, site, chosen){
 
 paramChooserUI2<-function(id){
   ns<-NS(id)
-  selectizeInput(inputId=ns("ParamIn2"), label="4. Second Water Parameter:", choices=NULL)
+  selectizeInput(inputId=ns("ParamIn2"), label="Second Water Parameter:", choices=NULL)
 }
 
 

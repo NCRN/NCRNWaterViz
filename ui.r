@@ -255,10 +255,12 @@ shinyUI(
       ),
       tabPanel(
         h4("Photos")
-        ,div(
+        ,tabsetPanel(
+          tabPanel(
+          h4("First Photo Parameters")
+          ,div(
           style='padding: 5px 10px'
           ,class="panel panel-default"
-          ,h3("Select Site Data")
           # ,uiOutput('DatasetURL')
           ,fluidRow(
             column(width=4, parkChooserUI("PhotoPark"))
@@ -267,14 +269,40 @@ shinyUI(
           )
           ,fluidRow(
             column(width=4, siteVisitChooserUI("PhotoSiteVisit"))
+            ,tags$style(type = "text/css", ".irs-grid-pol.small {height: 0px;}")
             ,column(width=4, sliderInput(inputId = "photoSlider", label = "Photo", min = 1, max = 8, value = 1))
           )
+        )        
+          )
+          ,tabPanel(
+          h4("Second Photo Parameters")
+          ,div(
+          style='padding: 5px 10px'
+          ,class="panel panel-default"
+          # ,uiOutput('DatasetURL')
+          ,fluidRow(
+            column(width=4, parkChooserUI("PhotoPark"))
+            ,column(width=4, siteChooserUI("PhotoSite"))
+            ,column(width=4, yearChooserUI("PhotoYears"))
+          )
+          ,fluidRow(
+            column(width=4, siteVisitChooserUI("PhotoSiteVisit"))
+            ,tags$style(type = "text/css", ".irs-grid-pol.small {height: 0px;}")
+            ,column(width=4, sliderInput(inputId = "photoSlider", label = "Photo", min = 1, max = 8, value = 1))
+          )
+        )        
+          )
         )
-        # ,htmlOutput("Photos")
-        # ,selectInput("image_select", "Select Image:",
-        #         list.files("Data/NCRN/img", pattern = "\\.(jpg|JPG)$", full.names = FALSE))
-        
-        ,imageOutput("image_plot")
+        ,tabsetPanel(
+          tabPanel(
+            h4('First Photo')
+            ,imageOutput("image_plot")
+          )
+          ,tabPanel(
+            h4('Second Photo')
+            ,imageOutput("image_plot")
+          )
+        )
       ),
       tabPanel(h4("Exceedances"),
                column(3, div(style='padding: 5px 10px',class="panel panel-default", 

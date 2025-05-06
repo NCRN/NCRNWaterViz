@@ -509,6 +509,7 @@ shinyServer(function(input,output,session){
     ,{
       DataOpts$Park<-PhotoPark()
       ;DataOpts$Site<-NA
+      ;DataOpts$SiteVisit<-NA
       # ;DataOpts$Param<-NA
       # ;DataOpts$Years<-c(1900,2100)
       }
@@ -517,7 +518,7 @@ shinyServer(function(input,output,session){
     PhotoSite()
     ,{
       DataOpts$Site<-PhotoSite()
-      # ;DataOpts$Param<-NA
+      ;DataOpts$SiteVisit<-NA
       # ;DataOpts$Years<-c(1900,2100)
       }
     )
@@ -3502,6 +3503,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
 
   output$image_plot <- renderImage({
     req(DataOpts$Park, DataOpts$Site, DataOpts$Years, DataOpts$SiteVisit)
+    # https://cran.r-project.org/web/packages/slickR/vignettes/shiny.html possible 2.0 version?
 
     filenames <- c()
     if (DataOpts$Park %in% names(imgs)){

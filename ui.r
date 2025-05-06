@@ -2,8 +2,6 @@ library(shiny)
 library(leaflet)
 library(plotly)
 
-ColorNames<-GraphColors$DisplayColor
-
 shinyUI(
   fluidPage(
     theme="https://www.nps.gov/lib/bootstrap/3.3.2/css/nps-bootstrap.min.css"
@@ -218,11 +216,11 @@ shinyUI(
         )
     ,uiOutput("mytabs")
      
-        ),
+    ),
+    tabPanel(
+      h4("Photos")
+      ,tabsetPanel(
         tabPanel(
-        h4("Photos")
-        ,tabsetPanel(
-          tabPanel(
           h4("First Photo")
           ,div(
           style='padding: 5px 10px'
@@ -237,9 +235,10 @@ shinyUI(
             ,column(width=4, photoChooserUI("PhotoPhoto"))
             ,column(width=4, uiOutput('NoPhotos'))
           )
-        )  ,imageOutput("image_plot")      
-          )
-          ,tabPanel(
+        )
+        ,imageOutput("image_plot")      
+        )
+        ,tabPanel(
           h4("Second Photo")
           ,div(
           style='padding: 5px 10px'
@@ -255,18 +254,14 @@ shinyUI(
             ,column(width=4, uiOutput('NoPhotos2'))
           )
         )  ,imageOutput("image_plot2")      
-          )
       )
-      ),
-      
-      tabPanel(h4("About"),
-      
-        includeHTML(paste0(getwd(),"/www/","projectintro.html")))
-      
-      # tabPanel(h4("Citations & References"),
-      
-      #   includeHTML(paste0(getwd(),"/www/","citations.html"))
-      # )
+    )
+    ),
+    
+    tabPanel(
+      h4("About")
+      ,includeHTML("www/projectintro.html")
+      )
     )
   )
 )

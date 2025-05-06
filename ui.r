@@ -73,45 +73,33 @@ shinyUI(
         )
       ),  
 
-      tabPanel(h4("Boxplot"),
-        column(3, div(style='padding: 5px 10px',class="panel panel-default", 
-           
-          parkChooserUI("BoxPark"),
-          siteChooserUI("BoxSite"),
-          paramChooserUI("BoxParam"),
-          yearChooserUI("BoxYears"),
-          radioButtons(inputId="BoxBy", label="Compare by:", choices=c("year", "month", "site"), selected = "year", inline = T),
-          
-          checkboxInput("BoxThreshLine","Show Water Quality Threshold Line", TRUE),
-          
-          HTML('<hr>'),
-          
-          # splitLayout(cellWidths=c("25%","25%", "25%", "25%"),
-          splitLayout(cellWidths=c("50%","50%"),
-            # downloadButton("BoxPlot.PNG","Save Plot (.png)", class="btn btn-primary", style="margin-top: 15px")
-            # ,downloadButton("BoxPlot.JPG","Save Plot (.jpg)", class="btn btn-primary", style="margin-top: 15px")
-            actionButton(inputId="GraphicsModal2", label='Graphics Options', class="btn btn-primary",style="margin-top: 15px")
-            ,actionButton(inputId="AboutComparisons", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px")
-          ),
-          br(),
-          htmlOutput("BoxThresholdSummaryMultiple"),
-          # br(),
-          htmlOutput("BoxRefSummaryMultiple")
-          # ,splitLayout( cellWidths="50%",
-          #   # h3("Options:"),
-          #   actionButton(inputId="GraphicsModal2", label='Graphics Options', class="btn btn-primary",style="margin-top: 15px")
-          # )
-          # ,splitLayout(cellWidths="50%",
-          #   # h3("About:"),
-          #   actionButton(inputId="AboutComparisons", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px")
-          # )
+      tabPanel(
+        h4("Boxplot")
+        ,div(
+          style='padding: 5px 10px'
+          ,class="panel panel-default"
+          ,fluidRow(
+            column(width=4, parkChooserUI("BoxPark"))
+            ,column(width=4, siteChooserUI("BoxSite"))
+            ,column(width=4, paramChooserUI("BoxParam"))
+          )
+          ,fluidRow(
+            column(width=4, yearChooserUI("BoxYears"))
+            ,column(width=2, radioButtons(inputId="BoxBy", label="Compare by:", choices=c("year", "month", "site"), selected = "year", inline = F))
+            ,column(width=2, checkboxInput("BoxThreshLine","Show Water Quality Threshold Line", TRUE))
+            ,column(width=2, actionButton(inputId="GraphicsModal2", label='Graphics Options', class="btn btn-primary",style="margin-top: 15px"))
+            ,column(width=2, actionButton(inputId="AboutComparisons", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px"))
+          )
+          ,fluidRow(
+            column(width=6, htmlOutput("BoxThresholdSummaryMultiple"))
+            ,column(width=6, htmlOutput("BoxRefSummaryMultiple"))
+          )
         )
-        ),
-        
-        column(9,
-          plotlyOutput("BoxPlotMultiple", width="auto", height="auto"),
+        ,fluidRow(
+          column(width=12, plotlyOutput("BoxPlotMultiple"))
         )
-      ),
+      ),  
+
       tabPanel(h4("Correlations"),
         column(3, div(style='padding: 5px 10px',class="panel panel-default", 
                     

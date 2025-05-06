@@ -188,7 +188,7 @@ siteVisitChooser<-function(input, output, session, data, park, site, years, imgs
 #### Photo module
 photoChooserUI<-function(id){
   ns<-NS(id)
-  sliderInput(inputId = ns("PhotoPhoto"), label = "Photo", min = 1, max = 8, value = 1, ticks=F)
+  sliderInput(inputId = ns("PhotoPhoto"), label = "Photo:", min = 1, max = 8, value = 1, ticks=F)
 }
 
 photoChooser<-function(input, output, session, data, park, site, years, imgs, sitevisit){

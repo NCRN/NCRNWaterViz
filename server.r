@@ -3469,8 +3469,8 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
   
   output$PhotoSiteVisits<-renderUI(PhotoSiteVisits())
 
-  Photos<-reactive({    
-    # Make a vector of site visits to be displayed in a picklist in the photos tab 
+  NoPhotos<-reactive({    
+    # Make a html message telling the user if the parameters they chose have no photos
     # Args:
     #  DataOpts$Park, chr, required. A park acronym. E.g., 'ROCR'.
     #  DataOpts$Site, chr or c(chr), required. A site code. E.g., 'NCRN_ROCR_KLVA'
@@ -3491,32 +3491,29 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     #       ,DataOpts$Years
     #   )
     #
-    req(DataOpts$Park, DataOpts$Site, DataOpts$Years, DataOpts$SiteVisit)
+    req(DataOpts$Park, DataOpts$Site, DataOpts$Years)
 
-    filenames <- c()
+    sitevisits <- c()
     if (DataOpts$Park %in% names(imgs)){
       for (site in DataOpts$Site){
         if (site %in% names(imgs[[DataOpts$Park]])){
           for (yr in names(imgs[[DataOpts$Park]][[site]])){
             if (as.numeric(yr) >= as.numeric(DataOpts$Years[1]) & as.numeric(yr) <= as.numeric(DataOpts$Years[2])){
               for (sitevisit in names(imgs[[DataOpts$Park]][[site]][[yr]])){
-                if (sitevisit == DataOpts$SiteVisit){
-                  for (f in names(imgs[[DataOpts$Park]][[site]][[yr]][[sitevisit]])){
-                    fname <- imgs[[DataOpts$Park]][[site]][[yr]][[sitevisit]][[f]]$rel_fpath
-                    # print(fname)
-                    filenames <- c(filenames, fname)
-                  }
-                }
+                sitevisits <- c(sitevisit, sitevisits)
               }
             }
           }
         }
       }
     }
-    filenames <- paste(filenames, collapse=', ')
+    msg <- NULL
+    if (length(sitevisits)==0){
+      msg <- 'There are no photos for this combination of park, site, and year.\nPlease try again.'
+    }
   })
   
-  output$Photos<-renderUI(Photos())
+  output$NoPhotos<-renderUI(NoPhotos())
 
   output$image_plot <- renderImage({
     req(DataOpts$Park, DataOpts$Site, DataOpts$Years, DataOpts$SiteVisit, DataOpts$Photo)

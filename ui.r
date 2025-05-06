@@ -292,39 +292,22 @@ shinyUI(
           )
       )
       ),
-  tabPanel(h4("Exceedances"),
-                column(3, div(style='padding: 5px 10px',class="panel panel-default", 
-                              
-                              h3("Select Site Data"),
-                              parkChooserUI("DataParkExceedances"),
-                              siteChooserUI("DataSiteExceedances"),
-                              paramChooserUI("DataParamExceedances"),
-                              actionButton("hist_button", "Show Figure")
-                              # ,numericInput("nTabs", 'No. of Tabs', 5)
-                )),
-                column(9,              
-                        # uiOutput("exceedances_summary"),
-                        # uiOutput("exceedances_hist"),
-                        uiOutput("mytabs"),
-                        # DT::dataTableOutput("ExceedancesTable"),
-                        
-                        tags$style(HTML("
-      .shiny-notification {
-        background-color: #D0342C;
-        color: white;
-        font-size: 18px;
-        border-radius: 10px;
-        padding: 15px;
-      }
-      .shiny-notification-close {
-        color: white;
-      }
-      "))
-                        
-                        ),
-                        
-      
-                
+  tabPanel(
+    h4("Exceedances")
+    ,div(
+          style='padding: 5px 10px'
+          ,class="panel panel-default"
+          ,h3("Select Site Data")
+          ,fluidRow(
+            column(width=4, parkChooserUI("DataParkExceedances"))
+            ,column(width=4, siteChooserUI("DataSiteExceedances"))
+            ,column(width=4, paramChooserUI("DataParamExceedances"))
+          ),fluidRow(
+            column(width=4, actionButton("hist_button", "Show Figure"))
+          )
+        )
+    ,uiOutput("mytabs")
+     
         ),
       
       tabPanel(h4("About"),

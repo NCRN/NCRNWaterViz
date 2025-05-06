@@ -730,8 +730,14 @@ shinyServer(function(input,output,session){
   ))
   
   observeEvent(input$AboutComparisons, showModal(
-    modalDialog(title="About Comparison Graphs", footer=tagAppendAttributes( modalButton(tags$div("Close")), class="btn btn-primary"),
+    modalDialog(title="About Boxplot Graphs", footer=tagAppendAttributes( modalButton(tags$div("Close")), class="btn btn-primary"),
                 includeHTML("./www/AboutComparisons.html")                  
+    )
+  ))
+  
+  observeEvent(input$AboutCorrelations, showModal(
+    modalDialog(title="About Correlation Graphs", footer=tagAppendAttributes( modalButton(tags$div("Close")), class="btn btn-primary"),
+                includeHTML("./www/AboutCorrelations.html")                  
     )
   ))
   
@@ -744,6 +750,12 @@ shinyServer(function(input,output,session){
   observeEvent(input$AboutSummary, showModal(
     modalDialog(title="About the Table", footer=tagAppendAttributes( modalButton(tags$div("Close")), class="btn btn-primary"),
                 includeHTML("./www/AboutSummary.Rhtml")                  
+    )
+  ))
+  
+  observeEvent(input$AboutExceedances, showModal(
+    modalDialog(title="About Exceedances", footer=tagAppendAttributes( modalButton(tags$div("Close")), class="btn btn-primary"),
+                includeHTML("./www/AboutExceedances.Rhtml")                  
     )
   ))
   

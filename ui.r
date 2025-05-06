@@ -220,7 +220,7 @@ shinyUI(
             column(width=4, yearChooserUI("TimeYears"))
             ,column(width=4, checkboxInput("SeriesThreshLine","Show Water Quality Threshold Line", TRUE))
             ,column(width=2, actionButton(inputId="GraphicsModal2", label='Graphics Options', class="btn btn-primary",style="margin-top: 15px"))
-            ,column(width=2, actionButton(inputId="AboutComparisons", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px"))
+            ,column(width=2, actionButton(inputId="AboutTimeSeries", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px"))
           )
           ,fluidRow(
             column(width=6, htmlOutput("SeriesThresholdSummaryMultiple"))
@@ -273,7 +273,7 @@ shinyUI(
             column(width=4, paramChooserUI("CorrParam1"))
             ,column(width=4, paramChooserUI2("CorrParam2"))
             ,column(width=2, actionButton(inputId="GraphicsModal2", label='Graphics Options', class="btn btn-primary",style="margin-top: 15px"))
-            ,column(width=2, actionButton(inputId="AboutComparisons", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px"))
+            ,column(width=2, actionButton(inputId="AboutCorrelations", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px"))
           )
         )
         ,fluidRow(
@@ -372,7 +372,8 @@ shinyUI(
             ,column(width=4, siteChooserUI("DataSiteExceedances"))
             ,column(width=4, paramChooserUI("DataParamExceedances"))
           ),fluidRow(
-            column(width=4, actionButton("hist_button", "Show Figure"))
+            column(width=8, actionButton("hist_button", "Show Figure"))
+            ,column(width=4, actionButton(inputId="AboutExceedances", label="About Exceedances...", class="btn btn-primary"))
           )
         )
     ,uiOutput("mytabs")

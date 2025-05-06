@@ -3530,7 +3530,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     }
     msg <- NULL
     if (length(sitevisits)==0){
-      msg <- 'There are no photos for this combination of park, site, and year.\nPlease try again.'
+      msg <- 'There are no photos for this combination of park, site, and year.'
     }
   })
   
@@ -3576,7 +3576,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     }
     msg <- NULL
     if (length(sitevisits)==0){
-      msg <- 'There are no photos for this combination of park, site, and year.\nPlease try again.'
+      msg <- 'There are no photos for this combination of park, site, and year.'
     }
   })
   

@@ -45,55 +45,34 @@ shinyUI(
     
   
  #mainPanel(
-  tabsetPanel(  
-      tabPanel(h4("Time Series"),
-        column(3, div(style='padding: 5px 10px',class="panel panel-default", 
-          
-          parkChooserUI("TimePark"),
-          siteChooserUI("TimeSite"),
-          paramChooserUI("TimeParam"),
-          yearChooserUI("TimeYears"), 
-          
-          HTML('<hr >'),
-             
-          h3(id="ThreshHeader","Thresholds"),
-          
-          checkboxInput("SeriesThreshLine","Show Water Quality Threshold Line", TRUE),
-          # checkboxInput("ThreshPoint","Indicate Points with Poor Water Quality",FALSE),
-          HTML('<hr>'),
-          
-          
-          # to hide the "Trends" checkbox, we'll make it only conditionally-visible
-          # this approach leaves all of the downstream code intact to avoid breaking dependencies
-          # take the contents out of the conditionalPanel and reload the app to restore functionality
-          conditionalPanel( 
-            condition = "1===2", # a condition that only ever evaluates to FALSE
-            # then we move everything that should be conditionally-visible into the body of the panel
-            h3(id="TrendHeader","Trends and Seasonal Patterns")
-            ,checkboxInput("Trends","Show Seasonal Patterns and Trends",FALSE)
-            ,checkboxInput("Outliers","Indicate Outliers Not Used in Analysis",FALSE)
-            ,HTML('<hr>')
-            ),
-          
-          # splitLayout(cellWidths=c("33%","33%", "33%"),
-          splitLayout(cellWidths=c("50%","50%"),
-            # downloadButton("BoxPlot.PNG","Save Plot (.png)", class="btn btn-primary", style="margin-top: 15px")
-            # ,downloadButton("BoxPlot.JPG","Save Plot (.jpg)", class="btn btn-primary", style="margin-top: 15px")
-            actionButton(inputId="GraphicsModal2", label='Graphics Options', class="btn btn-primary",style="margin-top: 15px")
-            ,actionButton(inputId="AboutComparisons", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px")
-          ),
-          br(),
-          htmlOutput("SeriesThresholdSummaryMultiple"),
-          # br(),
-          htmlOutput("SeriesRefSummaryMultiple")
-          ) #end controls div
-        ),         
-        
-        column(9, 
-          plotlyOutput("SeriesPlotMultiple")
+  tabsetPanel(
+
+      tabPanel(
+        h4("Time Series")
+        ,div(
+          style='padding: 5px 10px'
+          ,class="panel panel-default"
+          ,fluidRow(
+            column(width=4, parkChooserUI("TimePark"))
+            ,column(width=4, siteChooserUI("TimeSite"))
+            ,column(width=4, paramChooserUI("TimeParam"))
+          )
+          ,fluidRow(
+            column(width=4, yearChooserUI("TimeYears"))
+            ,column(width=4, checkboxInput("SeriesThreshLine","Show Water Quality Threshold Line", TRUE))
+            ,column(width=2, actionButton(inputId="GraphicsModal2", label='Graphics Options', class="btn btn-primary",style="margin-top: 15px"))
+            ,column(width=2, actionButton(inputId="AboutComparisons", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px"))
+          )
+          ,fluidRow(
+            column(width=6, htmlOutput("SeriesThresholdSummaryMultiple"))
+            ,column(width=6, htmlOutput("SeriesRefSummaryMultiple"))
+          )
         )
-      ),
-      
+        ,fluidRow(
+          column(width=12, plotlyOutput("SeriesPlotMultiple"))
+        )
+      ),  
+
       tabPanel(h4("Boxplot"),
         column(3, div(style='padding: 5px 10px',class="panel panel-default", 
            

@@ -158,7 +158,7 @@ shinyServer(function(input,output,session){
 
   #### Reactive Values for Graphics Options with Defaults ####
   GraphOpts<-shiny::reactiveValues(Legend=TRUE, FontSize=20, GoodColor="Blue", BadColor="Orange",OutColor="Vermillion",PointSize=10,
-                              ThColor="Orange", TrColor="Green", LineWidth=2, ShowHidePoint=F, FigureHorizontalScaling=0.7, FigureVerticalScaling=0.7)
+                              ThColor="Orange", TrColor="Green", LineWidth=2, ShowHidePoint=F, FigureHorizontalScaling=0.9, FigureVerticalScaling=0.7)
   
   #### Reactive Values for Choosing Data ####
   DataOpts<-shiny::reactiveValues(Park=NA, Site=NA, Param=NA, Agg=NA, DateRange=NA, Years=NA, USGSload=FALSE, USGSdata=NA, Param2=NA, SiteVisit=NA, Photo=NA, Park2=NA, Site2=NA, Years2=NA, SiteVisit2=NA, Photo2=NA)
@@ -670,8 +670,8 @@ shinyServer(function(input,output,session){
       column(12,hr()),
       column(12,h4("Figure size:"),
         # column(3,checkboxInput("Legend","Show Legend",GraphOpts$Legend)),
-        column(6,sliderInput("FigureHorizontalScaling", "Figure Horizontal Scaling", min=0.1, max=1,value=GraphOpts$FigureHorizontalScaling, step=0.1))
-        ,column(6,sliderInput("FigureVerticalScaling", "Figure Vertical Scaling", min=0.1, max=1,value=GraphOpts$FigureVerticalScaling, step=0.1))
+        column(6,sliderInput("FigureHorizontalScaling", "Figure Horizontal Scaling", min=0.1, max=2,value=GraphOpts$FigureHorizontalScaling, step=0.1))
+        ,column(6,sliderInput("FigureVerticalScaling", "Figure Vertical Scaling", min=0.1, max=2,value=GraphOpts$FigureVerticalScaling, step=0.1))
       ),
       # column(12,hr()),
       column(12,h4("Figure Text:"),
@@ -2397,9 +2397,9 @@ output$BoxPlotMultiple<-renderPlotly({   BoxPlotMultipleOut() })
     }
 
     if (length(sitethresh)>0){
-      paste(h4("Threshold:"),"\n",sitethresh)
+      paste("Threshold: ",sitethresh)
     } else {
-      paste(h4("This parameter has no water quality threshold."),"\n")
+      paste("This parameter has no water quality threshold.")
     }
   })
   
@@ -2446,9 +2446,9 @@ output$BoxPlotMultiple<-renderPlotly({   BoxPlotMultipleOut() })
     }
 
     if (length(sitethresh)>0){
-      paste(h4("Threshold:"),"\n",sitethresh)
+      paste("Threshold: ",sitethresh)
     } else {
-      paste(h4("This parameter has no water quality threshold."),"\n")
+      paste("This parameter has no water quality threshold.")
     }
   })
   
@@ -2502,7 +2502,7 @@ output$BoxPlotMultiple<-renderPlotly({   BoxPlotMultipleOut() })
       sitethresh <- sitethresh[!is.na(sitethresh)] # needed if there is no upper or lower sitethresh.
       
       if (length(sitethresh)>0){
-        paste(h4("Threshold Reference:"),"\n",sitethresh)
+        paste("Reference: ",sitethresh)
       }
     }
   })
@@ -2549,7 +2549,7 @@ SeriesRefSummaryMultiple<-reactive({
     sitethresh <- sitethresh[!is.na(sitethresh)] # needed if there is no upper or lower sitethresh.
     
     if (length(sitethresh)>0){
-      paste(h4("Threshold Reference:"),"\n",sitethresh)
+      paste("Reference: ",sitethresh)
     }
   }
 })

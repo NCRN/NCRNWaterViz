@@ -779,11 +779,7 @@ shinyServer(function(input,output,session){
    #    )
    #    SummaryParam<-shiny::callModule(paramChooser, id="SummaryParam",data=WaterData, park=reactive(DataOpts$Park), site=reactive(DataOpts$Site), chosen=reactive(DataOpts$Param))
    #
-     shiny::validate(
-       need(DataOpts$Park, message="Choose a Park"),
-       need(DataOpts$Site, message="Choose a Site"),
-       need(DataOpts$Param, message="Choose a Water Quality Parameter")
-     )  
+    req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
 
     combined_data <- data.frame()
     for (site in DataOpts$Site) {
@@ -817,11 +813,7 @@ shinyServer(function(input,output,session){
    #    )
    #    SummaryParam<-shiny::callModule(paramChooser, id="SummaryParam",data=WaterData, park=reactive(DataOpts$Park), site=reactive(DataOpts$Site), chosen=reactive(DataOpts$Param2))
    #
-     shiny::validate(
-       need(DataOpts$Park, message="Choose a Park"),
-       need(DataOpts$Site, message="Choose a Site"),
-       need(DataOpts$Param2, message="Choose a Water Quality Parameter")
-     )  
+     req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
 
     combined_data <- data.frame()
     for (site in DataOpts$Site) {

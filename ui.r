@@ -263,16 +263,17 @@ shinyUI(
           ,fluidRow(
             column(width=4, parkChooserUI("PhotoPark"))
             ,column(width=4, siteChooserUI("PhotoSite"))
-            # ,column(width=3, siteChooserUI("PhotoSite"))
             ,column(width=4, yearChooserUI("PhotoYears"))
           )
           ,fluidRow(
             column(width=4, siteVisitChooserUI("PhotoSiteVisit"))
+            ,column(width=4, sliderInput(inputId = "photoSlider", label = "Photo", min = 1, max = 8, value = 1))
           )
         )
-        ,htmlOutput("Photos")
-        ,selectInput("image_select", "Select Image:",
-                list.files("Data/NCRN/img", pattern = "\\.(jpg|JPG)$", full.names = FALSE))
+        # ,htmlOutput("Photos")
+        # ,selectInput("image_select", "Select Image:",
+        #         list.files("Data/NCRN/img", pattern = "\\.(jpg|JPG)$", full.names = FALSE))
+        
         ,imageOutput("image_plot")
       ),
       tabPanel(h4("Exceedances"),

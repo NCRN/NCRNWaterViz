@@ -3473,7 +3473,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     #       ,DataOpts$Years
     #   )
     #
-    req(DataOpts$Park, DataOpts$Site, DataOpts$Years)
+    req(DataOpts$Park, DataOpts$Site, DataOpts$Years, DataOpts$SiteVisit)
 
     filenames <- c()
     if (DataOpts$Park %in% names(imgs)){
@@ -3482,10 +3482,12 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
           for (yr in names(imgs[[DataOpts$Park]][[site]])){
             if (as.numeric(yr) >= as.numeric(DataOpts$Years[1]) & as.numeric(yr) <= as.numeric(DataOpts$Years[2])){
               for (sitevisit in names(imgs[[DataOpts$Park]][[site]][[yr]])){
-                for (f in names(imgs[[DataOpts$Park]][[site]][[yr]][[sitevisit]])){
-                  fname <- imgs[[DataOpts$Park]][[site]][[yr]][[sitevisit]][[f]]$rel_fpath
-                  # print(fname)
-                  filenames <- c(filenames, fname)
+                if (sitevisit == DataOpts$SiteVisit){
+                  for (f in names(imgs[[DataOpts$Park]][[site]][[yr]][[sitevisit]])){
+                    fname <- imgs[[DataOpts$Park]][[site]][[yr]][[sitevisit]][[f]]$rel_fpath
+                    # print(fname)
+                    filenames <- c(filenames, fname)
+                  }
                 }
               }
             }
@@ -3498,27 +3500,53 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
   
   output$Photos<-renderUI(Photos())
 
-  # output$image_plot <- renderPlotly({
-  #       req(input$image_select)
-  #       image_path <- file.path("Data",Network,'img', input$image_select)
-  #       print(image_path)
-  #       image <- magick::image_read(image_path)
-        
-  #       plot_ly() %>%
-  #           add_trace(type = "image", source = image_path) %>%
-  #           layout(xaxis = list(showgrid = FALSE, zeroline = FALSE),
-  #                  yaxis = list(showgrid = FALSE, zeroline = FALSE))
-  #   })
   output$image_plot <- renderImage({
-        req(input$image_select)
-        image_path <- file.path("Data",Network,'img', input$image_select)
+    req(DataOpts$Park, DataOpts$Site, DataOpts$Years, DataOpts$SiteVisit)
 
-        list(src = image_path,
-        #  contentType = 'image/png',
-         alt = "This is alternate text")
+    filenames <- c()
+    if (DataOpts$Park %in% names(imgs)){
+      for (site in DataOpts$Site){
+        if (site %in% names(imgs[[DataOpts$Park]])){
+          for (yr in names(imgs[[DataOpts$Park]][[site]])){
+            if (as.numeric(yr) >= as.numeric(DataOpts$Years[1]) & as.numeric(yr) <= as.numeric(DataOpts$Years[2])){
+              for (sitevisit in names(imgs[[DataOpts$Park]][[site]][[yr]])){
+                if (sitevisit == DataOpts$SiteVisit){
+                  for (f in names(imgs[[DataOpts$Park]][[site]][[yr]][[sitevisit]])){
+                    fname <- imgs[[DataOpts$Park]][[site]][[yr]][[sitevisit]][[f]]$rel_fpath
+                    # print(fname)
+                    filenames <- c(filenames, fname)
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    # filenames <- paste(filenames, collapse=', ')
+
+    # Get the current slider value
+    current_image_index <- input$photoSlider
+    # Get the path to the corresponding image
+    image_path <- filenames[current_image_index]
+    # Return the image as a list
+    list(src = image_path,
+         contentType = "image/jpeg", # Or appropriate image type
+         width = "100%" # Or desired width
+    )
         
     },
     deleteFile=F)
+  # output$image_plot <- renderImage({
+  #       req(input$image_select)
+  #       image_path <- file.path("Data",Network,'img', input$image_select)
+
+  #       list(src = image_path,
+  #       #  contentType = 'image/png',
+  #        alt = "This is alternate text")
+        
+  #   },
+  #   deleteFile=F)
 
 }) #End of Shiny Server function
     

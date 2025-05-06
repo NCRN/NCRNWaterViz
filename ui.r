@@ -261,7 +261,6 @@ shinyUI(
           ,div(
           style='padding: 5px 10px'
           ,class="panel panel-default"
-          # ,uiOutput('DatasetURL')
           ,fluidRow(
             column(width=4, parkChooserUI("PhotoPark"))
             ,column(width=4, siteChooserUI("PhotoSite"))
@@ -274,7 +273,25 @@ shinyUI(
           )
         )  ,imageOutput("image_plot")      
           )
-      )),
+          ,tabPanel(
+          h4("Second Photo")
+          ,div(
+          style='padding: 5px 10px'
+          ,class="panel panel-default"
+          ,fluidRow(
+            column(width=4, parkChooserUI2("PhotoPark2"))
+            ,column(width=4, siteChooserUI2("PhotoSite2"))
+            ,column(width=4, yearChooserUI2("PhotoYears2"))
+          )
+          ,fluidRow(
+            column(width=4, siteVisitChooserUI2("PhotoSiteVisit2"))
+            ,column(width=4, photoChooserUI2("PhotoPhoto2"))
+            ,column(width=4, uiOutput('NoPhotos2'))
+          )
+        )  ,imageOutput("image_plot2")      
+          )
+      )
+      ),
       tabPanel(h4("Exceedances"),
                column(3, div(style='padding: 5px 10px',class="panel panel-default", 
                              

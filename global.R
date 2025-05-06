@@ -35,6 +35,26 @@ yearChooser<-function(input,output,session,data,chosen)  {
   return(reactive(input$YearsShow))
 }
 
+yearChooserUI2<-function(id){
+  ns<-NS(id)
+  sliderInput(inputId=ns("YearsShow2"), label= "Years to Display:", min=2005, max=2024, step=1, value=c(2005,2024),sep="",ticks=F)
+}
+
+
+yearChooser2<-function(input,output,session,data,chosen)  {
+  
+  observe({
+    req( data() )
+    if(class(data()$Date)=="Date"){
+      YrMax<-reactive(max(year(data()$Date), na.rm=T))
+      YrMin<-reactive(min(year(data()$Date), na.rm=T))
+      updateSliderInput(session, inputId="YearsShow2", min=YrMin(),max=YrMax(),val=chosen())
+    }
+  })
+
+  return(reactive(input$YearsShow2))
+}
+
 #### Date Module ####
 # daterangeChooserUI <-function(id){
 #   ns<-NS(id)
@@ -66,6 +86,18 @@ parkChooser<-function(input,output,session, data, chosen){
   return(reactive(input$ParkIn))
 }
 
+parkChooserUI2<-function(id){
+  ns<-NS(id)
+  selectizeInput(inputId=ns("ParkIn2"),label="Park:" , choices=NULL)
+}
+
+parkChooser2<-function(input,output,session, data, chosen){
+  observe({updateSelectizeInput(session, "ParkIn2", selected=chosen(),
+    choices=c("Choose a Park"="", c(`names<-`(getParkInfo(data, info="ParkCode"), getParkInfo(data, info="ParkShortName"))))
+  )})
+  return(reactive(input$ParkIn2))
+}
+
 
 #### Site Module ####
 
@@ -87,6 +119,28 @@ siteChooser<-function(input, output, session, data, park, chosen){
       getSiteInfo(data, parkcode = park(), info = "SiteCode")
     } else {
       input$SiteIn
+    }
+    }))
+}
+
+siteChooserUI2<-function(id){
+  ns<-NS(id)
+  selectizeInput(inputId = ns("SiteIn2"), label="Site:", choices=NULL, multiple = TRUE)
+}
+
+siteChooser2<-function(input, output, session, data, park, chosen){
+   observe({
+     updateSelectizeInput(session, inputId = "SiteIn2", selected=chosen(), 
+       choices=c("Choose a Site"="",
+       c("Select All" = "ALL", setNames(getSiteInfo(data, parkcode=park(), info="SiteCode"), 
+         getSiteInfo(data, parkcode=park(), info="SiteName") )))
+     )
+   })
+  return(reactive({
+    if ("ALL" %in% input$SiteIn2){
+      getSiteInfo(data, parkcode = park(), info = "SiteCode")
+    } else {
+      input$SiteIn2
     }
     }))
 }
@@ -185,6 +239,46 @@ siteVisitChooser<-function(input, output, session, data, park, site, years, imgs
   return(reactive(input$siteVisitIn))
 }
 
+siteVisitChooserUI2<-function(id){
+  ns<-NS(id)
+  selectizeInput(inputId=ns("siteVisitIn2"), label="Site visit:", choices=NULL)
+}
+
+
+siteVisitChooser2<-function(input, output, session, data, park, site, years, imgs, chosen){
+  PChoices<-reactive({
+    req(park(), site(), years())
+    park <- park()
+    sites <- site()
+    years <- years()
+    imgs <- imgs()
+
+    sitevisits <- c()
+    if (park %in% names(imgs)){
+      for (site in sites){
+        if (site %in% names(imgs[[park]])){
+          for (yr in names(imgs[[park]][[site]])){
+            if (as.numeric(yr) >= as.numeric(years[1]) & as.numeric(yr) <= as.numeric(years[2])){
+              for (sitevisit in names(imgs[[park]][[site]][[yr]])){
+                sitevisits <- c(sitevisits, sitevisit)
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return(sitevisits)
+   })
+  
+  observe(
+    updateSelectizeInput(session, inputId="siteVisitIn2",selected=chosen(), 
+                         choices=c("Choose a site visit"="", as.list(sort(PChoices(), decreasing=T))))
+  )
+  
+  return(reactive(input$siteVisitIn2))
+}
+
 #### Photo module
 photoChooserUI<-function(id){
   ns<-NS(id)
@@ -228,6 +322,50 @@ photoChooser<-function(input, output, session, data, park, site, years, imgs, si
   )
   
   return(reactive(input$PhotoPhoto))
+}
+
+photoChooserUI2<-function(id){
+  ns<-NS(id)
+  sliderInput(inputId = ns("PhotoPhoto2"), label = "Photo:", min = 1, max = 8, value = 1, ticks=F)
+}
+
+photoChooser2<-function(input, output, session, data, park, site, years, imgs, sitevisit){
+  PhotoChoices<-reactive({
+    req(park(), site(), years(), imgs(), sitevisit())
+    park <- park()
+    sites <- site()
+    years <- years()
+    imgs <- imgs()
+    sitevisit <- sitevisit()
+
+    filenames <- c()
+    if (park %in% names(imgs)){
+      for (site in sites){
+        if (site %in% names(imgs[[park]])){
+          for (yr in names(imgs[[park]][[site]])){
+            if (as.numeric(yr) >= as.numeric(years[1]) & as.numeric(yr) <= as.numeric(years[2])){
+              for (visit in names(imgs[[park]][[site]][[yr]])){
+                if (visit == sitevisit){
+                  for (f in names(imgs[[park]][[site]][[yr]][[sitevisit]])){
+                    fname <- imgs[[park]][[site]][[yr]][[sitevisit]][[f]]$rel_fpath
+                    filenames <- c(filenames, fname)
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return(filenames)
+   })
+  
+  observe(
+    updateSliderInput(session, inputId="PhotoPhoto2", min=1,max=length(PhotoChoices()))
+  )
+  
+  return(reactive(input$PhotoPhoto2))
 }
 
 #-------------------------

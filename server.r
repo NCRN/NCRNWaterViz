@@ -161,7 +161,7 @@ shinyServer(function(input,output,session){
                               ThColor="Orange", TrColor="Green", LineWidth=2, ShowHidePoint=F, FigureHorizontalScaling=0.7, FigureVerticalScaling=0.7)
   
   #### Reactive Values for Choosing Data ####
-  DataOpts<-shiny::reactiveValues(Park=NA, Site=NA, Param=NA, Agg=NA, DateRange=NA, Years=NA, USGSload=FALSE, USGSdata=NA, Param2=NA, SiteVisit=NA, Photo=NA)
+  DataOpts<-shiny::reactiveValues(Park=NA, Site=NA, Param=NA, Agg=NA, DateRange=NA, Years=NA, USGSload=FALSE, USGSdata=NA, Param2=NA, SiteVisit=NA, Photo=NA, Park2=NA, Site2=NA, Years2=NA, SiteVisit2=NA, Photo2=NA)
 
   #### UI Controls ####  
   # Have the threshold lines observe each other so they stay in-sync
@@ -547,6 +547,82 @@ shinyServer(function(input,output,session){
     PhotoPhoto()
     ,{
       DataOpts$Photo<-PhotoPhoto()
+      # ;DataOpts$Years<-c(1900,2100)
+      }
+    )
+  # Photo controls
+  PhotoPark2<-shiny::callModule(
+    parkChooser2
+    ,id="PhotoPark2"
+    ,data=WaterData
+    ,chosen=reactive(DataOpts$Park2)
+    )
+  PhotoSite2<-shiny::callModule(
+    siteChooser2
+    ,id="PhotoSite2"
+    ,data=WaterData
+    ,park=reactive(DataOpts$Park2)
+    ,chosen=reactive(DataOpts$Site2)
+    )
+  PhotoYears2<-shiny::callModule(
+    yearChooser2
+    ,id="PhotoYears2"
+    ,data=DataUseMultiple
+    ,chosen=reactive(DataOpts$Years2)
+    )
+  PhotoSiteVisit2<-shiny::callModule(
+    siteVisitChooser2
+    ,id="PhotoSiteVisit2"
+    ,data=WaterData
+    ,park=reactive(DataOpts$Park2)
+    ,site=reactive(DataOpts$Site2)
+    ,years=reactive(DataOpts$Years2)
+    ,imgs=reactive(imgs)
+    ,chosen=reactive(DataOpts$SiteVisit2)
+    )
+  PhotoPhoto2<-shiny::callModule(
+    photoChooser2
+    ,id="PhotoPhoto2"
+    ,data=WaterData
+    ,park=reactive(DataOpts$Park2)
+    ,site=reactive(DataOpts$Site2)
+    ,years=reactive(DataOpts$Years2)
+    ,imgs=reactive(imgs)
+    ,sitevisit=reactive(DataOpts$SiteVisit2)
+    )
+  shiny::observeEvent(
+    PhotoPark2()
+    ,{
+      DataOpts$Park2<-PhotoPark2()
+      ;DataOpts$Site2<-NA
+      ;DataOpts$SiteVisit2<-NA
+      # ;DataOpts$Param<-NA
+      # ;DataOpts$Years<-c(1900,2100)
+      }
+    )
+  shiny::observeEvent(
+    PhotoSite2()
+    ,{
+      DataOpts$Site2<-PhotoSite2()
+      ;DataOpts$SiteVisit2<-NA
+      # ;DataOpts$Years<-c(1900,2100)
+      }
+    )
+  shiny::observeEvent(
+    PhotoYears2()
+    ,DataOpts$Years2<-PhotoYears2()
+    )
+  shiny::observeEvent(
+    PhotoSiteVisit2()
+    ,{
+      DataOpts$SiteVisit2<-PhotoSiteVisit2()
+      # ;DataOpts$Years<-c(1900,2100)
+      }
+    )
+  shiny::observeEvent(
+    PhotoPhoto2()
+    ,{
+      DataOpts$Photo2<-PhotoPhoto2()
       # ;DataOpts$Years<-c(1900,2100)
       }
     )
@@ -3515,6 +3591,52 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
   
   output$NoPhotos<-renderUI(NoPhotos())
 
+  NoPhotos2<-reactive({    
+    # Make a html message telling the user if the parameters they chose have no photos
+    # Args:
+    #  DataOpts$Park, chr, required. A park acronym. E.g., 'ROCR'.
+    #  DataOpts$Site, chr or c(chr), required. A site code. E.g., 'NCRN_ROCR_KLVA'
+    #  DataOpts$Years, c(int), required. Vector of integers from the app's year slider.
+    #  
+    # Returns:
+    #  vector
+    # 
+    # Example:
+    #   DataOpts$Park <- 'ROCR'
+    #   DataOpts$Site <- c('NCRN_ROCR_KLVA', 'NCRN_ROCR_FEBR')
+    #   DataOpts$Years <- c(2010,2020)
+    #   
+    #   sitevisits <- 
+    #     PhotoSiteVisits(
+    #       ,DataOpts$Park
+    #       ,DataOpts$Site
+    #       ,DataOpts$Years
+    #   )
+    #
+    req(DataOpts$Park2, DataOpts$Site2, DataOpts$Years2)
+
+    sitevisits <- c()
+    if (DataOpts$Park2 %in% names(imgs)){
+      for (site in DataOpts$Site2){
+        if (site %in% names(imgs[[DataOpts$Park2]])){
+          for (yr in names(imgs[[DataOpts$Park2]][[site]])){
+            if (as.numeric(yr) >= as.numeric(DataOpts$Years2[1]) & as.numeric(yr) <= as.numeric(DataOpts$Years2[2])){
+              for (sitevisit in names(imgs[[DataOpts$Park2]][[site]][[yr]])){
+                sitevisits <- c(sitevisit, sitevisits)
+              }
+            }
+          }
+        }
+      }
+    }
+    msg <- NULL
+    if (length(sitevisits)==0){
+      msg <- 'There are no photos for this combination of park, site, and year.\nPlease try again.'
+    }
+  })
+  
+  output$NoPhotos2<-renderUI(NoPhotos2())
+
   output$image_plot <- renderImage({
     req(DataOpts$Park, DataOpts$Site, DataOpts$Years, DataOpts$SiteVisit, DataOpts$Photo)
     # https://cran.r-project.org/web/packages/slickR/vignettes/shiny.html possible 2.0 version?
@@ -3542,6 +3664,44 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
 
     # Get the current slider value
     current_image_index <- DataOpts$Photo
+    # Get the path to the corresponding image
+    image_path <- filenames[current_image_index]
+    # Return the image as a list
+    list(src = image_path,
+         contentType = "image/jpeg", # Or appropriate image type
+         width = "100%" # Or desired width
+    )
+        
+    },
+    deleteFile=F)
+  
+  output$image_plot2 <- renderImage({
+    req(DataOpts$Park2, DataOpts$Site2, DataOpts$Years2, DataOpts$SiteVisit2, DataOpts$Photo2)
+    # https://cran.r-project.org/web/packages/slickR/vignettes/shiny.html possible 2.0 version?
+
+    filenames <- c()
+    if (DataOpts$Park2 %in% names(imgs)){
+      for (site in DataOpts$Site2){
+        if (site %in% names(imgs[[DataOpts$Park2]])){
+          for (yr in names(imgs[[DataOpts$Park2]][[site]])){
+            if (as.numeric(yr) >= as.numeric(DataOpts$Years2[1]) & as.numeric(yr) <= as.numeric(DataOpts$Years2[2])){
+              for (sitevisit in names(imgs[[DataOpts$Park2]][[site]][[yr]])){
+                if (sitevisit == DataOpts$SiteVisit2){
+                  for (f in names(imgs[[DataOpts$Park2]][[site]][[yr]][[sitevisit]])){
+                    fname <- imgs[[DataOpts$Park2]][[site]][[yr]][[sitevisit]][[f]]$rel_fpath
+                    filenames <- c(filenames, fname)
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    # filenames <- paste(filenames, collapse=', ')
+
+    # Get the current slider value
+    current_image_index <- DataOpts$Photo2
     # Get the path to the corresponding image
     image_path <- filenames[current_image_index]
     # Return the image as a list

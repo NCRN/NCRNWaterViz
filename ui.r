@@ -180,25 +180,38 @@ shinyUI(
                leafletOutput("WaterMap",width = "100%", height="900px")
         ) 
       ),
-      tabPanel(h4("Summary"),
-      column(3, div(style='padding: 5px 10px',class="panel panel-default", 
-                    
-                            parkChooserUI("SummaryPark"),
-                            siteChooserUI("SummarySite"),
-                            paramChooserUI("SummaryParam"),
-                            yearChooserUI("SummaryYears"),
-                            radioButtons(inputId="SummaryBoxBy", label="Compare by:", choices=c("year", "month", "site"), selected = "year", inline = T),
-      splitLayout(cellWidths="100%",
-                  # h3("About:"),
-                  actionButton(inputId="AboutSummary", label="About this Table...", class="btn btn-primary",style="margin-top: 15px")
-      ))),
-      
-      column(9,
-           # div(class = "summary-box",
-              uiOutput("summary_box_ui")
-           #  DT::dataTableOutput("SummaryTable")
-
-       ,tags$head(
+      tabPanel(
+        h4("Data")
+        ,div(
+          style='padding: 5px 10px'
+          ,class="panel panel-default"
+          ,uiOutput('DatasetURL')
+          ,fluidRow(
+            column(width=4, parkChooserUI("DataPark"))
+            ,column(width=4, siteChooserUI("DataSite"))
+            ,column(width=4, paramChooserUI("DataParam"))
+          )
+        )
+        ,DT::dataTableOutput("WaterTable")
+      ),
+      tabPanel(
+        h4("Summary")
+        ,div(
+          style='padding: 5px 10px'
+          ,class="panel panel-default"
+          ,fluidRow(
+            column(width=4, parkChooserUI("SummaryPark"))
+            ,column(width=4, siteChooserUI("SummarySite"))
+            ,column(width=4, paramChooserUI("SummaryParam"))
+          )
+          ,fluidRow(
+            column(width=4, yearChooserUI("SummaryYears"))
+            ,column(width=4, radioButtons(inputId="SummaryBoxBy", label="Compare by:", choices=c("year", "month", "site"), selected = "year", inline = T))
+            ,column(width=4, actionButton(inputId="AboutSummary", label="About this Table...", class="btn btn-primary",style="margin-top: 15px"))
+          )
+        )
+        ,uiOutput("summary_box_ui")
+        ,tags$head(
         tags$style(HTML("
           .summary-box {
           background-color: #f5f3e5;
@@ -220,21 +233,6 @@ shinyUI(
            color: white;
            } 
            ")))
-        ),
-      ),
-      tabPanel(
-        h4("Data")
-        ,div(
-          style='padding: 5px 10px'
-          ,class="panel panel-default"
-          ,uiOutput('DatasetURL')
-          ,fluidRow(
-            column(width=4, parkChooserUI("DataPark"))
-            ,column(width=4, siteChooserUI("DataSite"))
-            ,column(width=4, paramChooserUI("DataParam"))
-          )
-        )
-        ,DT::dataTableOutput("WaterTable")
       ),
       
   tabPanel(

@@ -271,6 +271,9 @@ shinyUI(
           )
         )
         ,htmlOutput("Photos")
+        ,selectInput("image_select", "Select Image:",
+                list.files("Data/NCRN/img", pattern = "\\.(jpg|JPG)$", full.names = FALSE))
+        ,imageOutput("image_plot")
       ),
       tabPanel(h4("Exceedances"),
                column(3, div(style='padding: 5px 10px',class="panel panel-default", 

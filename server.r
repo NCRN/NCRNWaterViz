@@ -3484,7 +3484,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
               for (sitevisit in names(imgs[[DataOpts$Park]][[site]][[yr]])){
                 for (f in names(imgs[[DataOpts$Park]][[site]][[yr]][[sitevisit]])){
                   fname <- imgs[[DataOpts$Park]][[site]][[yr]][[sitevisit]][[f]]$rel_fpath
-                  print(fname)
+                  # print(fname)
                   filenames <- c(filenames, fname)
                 }
               }
@@ -3497,6 +3497,28 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
   })
   
   output$Photos<-renderUI(Photos())
+
+  # output$image_plot <- renderPlotly({
+  #       req(input$image_select)
+  #       image_path <- file.path("Data",Network,'img', input$image_select)
+  #       print(image_path)
+  #       image <- magick::image_read(image_path)
+        
+  #       plot_ly() %>%
+  #           add_trace(type = "image", source = image_path) %>%
+  #           layout(xaxis = list(showgrid = FALSE, zeroline = FALSE),
+  #                  yaxis = list(showgrid = FALSE, zeroline = FALSE))
+  #   })
+  output$image_plot <- renderImage({
+        req(input$image_select)
+        image_path <- file.path("Data",Network,'img', input$image_select)
+
+        list(src = image_path,
+        #  contentType = 'image/png',
+         alt = "This is alternate text")
+        
+    },
+    deleteFile=F)
 
 }) #End of Shiny Server function
     

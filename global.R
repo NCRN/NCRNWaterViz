@@ -185,6 +185,51 @@ siteVisitChooser<-function(input, output, session, data, park, site, years, imgs
   return(reactive(input$siteVisitIn))
 }
 
+#### Photo module
+photoChooserUI<-function(id){
+  ns<-NS(id)
+  sliderInput(inputId = ns("PhotoPhoto"), label = "Photo", min = 1, max = 8, value = 1, ticks=F)
+}
+
+photoChooser<-function(input, output, session, data, park, site, years, imgs, sitevisit){
+  PhotoChoices<-reactive({
+    req(park(), site(), years(), imgs(), sitevisit())
+    park <- park()
+    sites <- site()
+    years <- years()
+    imgs <- imgs()
+    sitevisit <- sitevisit()
+
+    filenames <- c()
+    if (park %in% names(imgs)){
+      for (site in sites){
+        if (site %in% names(imgs[[park]])){
+          for (yr in names(imgs[[park]][[site]])){
+            if (as.numeric(yr) >= as.numeric(years[1]) & as.numeric(yr) <= as.numeric(years[2])){
+              for (visit in names(imgs[[park]][[site]][[yr]])){
+                if (visit == sitevisit){
+                  for (f in names(imgs[[park]][[site]][[yr]][[sitevisit]])){
+                    fname <- imgs[[park]][[site]][[yr]][[sitevisit]][[f]]$rel_fpath
+                    filenames <- c(filenames, fname)
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return(filenames)
+   })
+  
+  observe(
+    updateSliderInput(session, inputId="PhotoPhoto", min=1,max=length(PhotoChoices()))
+  )
+  
+  return(reactive(input$PhotoPhoto))
+}
+
 #-------------------------
 # Global figure specs
 #-------------------------

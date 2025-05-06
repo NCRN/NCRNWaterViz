@@ -161,7 +161,7 @@ shinyServer(function(input,output,session){
                               ThColor="Orange", TrColor="Green", LineWidth=2, ShowHidePoint=F, FigureHorizontalScaling=0.7, FigureVerticalScaling=0.7)
   
   #### Reactive Values for Choosing Data ####
-  DataOpts<-shiny::reactiveValues(Park=NA, Site=NA, Param=NA, Agg=NA, DateRange=NA, Years=NA, USGSload=FALSE, USGSdata=NA, Param2=NA, SiteVisit=NA)
+  DataOpts<-shiny::reactiveValues(Park=NA, Site=NA, Param=NA, Agg=NA, DateRange=NA, Years=NA, USGSload=FALSE, USGSdata=NA, Param2=NA, SiteVisit=NA, Photo=NA)
 
   #### UI Controls ####  
   # Have the threshold lines observe each other so they stay in-sync
@@ -504,6 +504,16 @@ shinyServer(function(input,output,session){
     ,imgs=reactive(imgs)
     ,chosen=reactive(DataOpts$SiteVisit)
     )
+  PhotoPhoto<-shiny::callModule(
+    photoChooser
+    ,id="PhotoPhoto"
+    ,data=WaterData
+    ,park=reactive(DataOpts$Park)
+    ,site=reactive(DataOpts$Site)
+    ,years=reactive(DataOpts$Years)
+    ,imgs=reactive(imgs)
+    ,sitevisit=reactive(DataOpts$SiteVisit)
+    )
   shiny::observeEvent(
     PhotoPark()
     ,{
@@ -530,6 +540,13 @@ shinyServer(function(input,output,session){
     PhotoSiteVisit()
     ,{
       DataOpts$SiteVisit<-PhotoSiteVisit()
+      # ;DataOpts$Years<-c(1900,2100)
+      }
+    )
+  shiny::observeEvent(
+    PhotoPhoto()
+    ,{
+      DataOpts$Photo<-PhotoPhoto()
       # ;DataOpts$Years<-c(1900,2100)
       }
     )
@@ -3502,7 +3519,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
   output$Photos<-renderUI(Photos())
 
   output$image_plot <- renderImage({
-    req(DataOpts$Park, DataOpts$Site, DataOpts$Years, DataOpts$SiteVisit)
+    req(DataOpts$Park, DataOpts$Site, DataOpts$Years, DataOpts$SiteVisit, DataOpts$Photo)
     # https://cran.r-project.org/web/packages/slickR/vignettes/shiny.html possible 2.0 version?
 
     filenames <- c()
@@ -3515,7 +3532,6 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
                 if (sitevisit == DataOpts$SiteVisit){
                   for (f in names(imgs[[DataOpts$Park]][[site]][[yr]][[sitevisit]])){
                     fname <- imgs[[DataOpts$Park]][[site]][[yr]][[sitevisit]][[f]]$rel_fpath
-                    # print(fname)
                     filenames <- c(filenames, fname)
                   }
                 }
@@ -3528,7 +3544,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     # filenames <- paste(filenames, collapse=', ')
 
     # Get the current slider value
-    current_image_index <- input$photoSlider
+    current_image_index <- DataOpts$Photo
     # Get the path to the corresponding image
     image_path <- filenames[current_image_index]
     # Return the image as a list
@@ -3539,16 +3555,6 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
         
     },
     deleteFile=F)
-  # output$image_plot <- renderImage({
-  #       req(input$image_select)
-  #       image_path <- file.path("Data",Network,'img', input$image_select)
-
-  #       list(src = image_path,
-  #       #  contentType = 'image/png',
-  #        alt = "This is alternate text")
-        
-  #   },
-  #   deleteFile=F)
 
 }) #End of Shiny Server function
     

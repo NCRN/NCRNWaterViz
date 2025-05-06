@@ -269,8 +269,9 @@ shinyUI(
           )
           ,fluidRow(
             column(width=4, siteVisitChooserUI("PhotoSiteVisit"))
-            ,tags$style(type = "text/css", ".irs-grid-pol.small {height: 0px;}")
-            ,column(width=4, sliderInput(inputId = "photoSlider", label = "Photo", min = 1, max = 8, value = 1))
+            # ,tags$style(type = "text/css", ".irs-grid-pol.small {height: 0px;}")
+            # ,column(width=4, sliderInput(inputId = "photoSlider", label = "Photo", min = 1, max = 8, value = 1))
+            ,column(width=4, photoChooserUI("PhotoPhoto"))
           )
         )  ,imageOutput("image_plot")      
           )

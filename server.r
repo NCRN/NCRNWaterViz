@@ -626,6 +626,43 @@ shinyServer(function(input,output,session){
       # ;DataOpts$Years<-c(1900,2100)
       }
     )
+  #### Exceedances Controls ####
+  ExceedancesPark<-shiny::callModule(
+    parkChooser
+    ,id="DataParkExceedances"
+    ,data=WaterData
+    ,chosen=reactive(DataOpts$Park)
+    )
+  ExceedancesSite<-shiny::callModule(
+    siteChooser
+    ,id="DataSiteExceedances"
+    ,data=WaterData
+    ,park=reactive(DataOpts$Park)
+    ,chosen=reactive(DataOpts$Site)
+    )
+  ExceedancesParam<-shiny::callModule(
+    paramChooser
+    ,id="DataParamExceedances"
+    ,data=WaterData
+    ,park=reactive(DataOpts$Park)
+    ,site=reactive(DataOpts$Site)
+    ,chosen=reactive(DataOpts$Param)
+    )
+  shiny::observeEvent(
+    ExceedancesPark()
+    ,{
+      DataOpts$Park<-ExceedancesPark()
+      ;DataOpts$Site<-NA
+    }
+    )
+  shiny::observeEvent(
+    ExceedancesSite()
+    ,DataOpts$Site<-ExceedancesSite()
+    )
+  shiny::observeEvent(
+    ExceedancesParam()
+    ,DataOpts$Param<-ExceedancesParam()
+    )
 #### Graphics Modal Control ####
   
   observeEvent(eventExpr = c( input$GraphicsModal,input$GraphicsModal2), ignoreInit = TRUE,
@@ -2622,403 +2659,319 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     )
     ,server=F
   )
-
-#### Exceedances Controls ####
   
-  ExceedancesPark<-shiny::callModule(parkChooser, id="DataParkExceedances", data=WaterData, chosen=reactive(DataOpts$Park))
-  ExceedancesSite<-shiny::callModule(siteChooser, id="DataSiteExceedances", data=WaterData, park=reactive(DataOpts$Park), chosen=reactive(DataOpts$Site))
-  ExceedancesParam<-shiny::callModule(paramChooser, id="DataParamExceedances",data=WaterData, park=reactive(DataOpts$Park), site=reactive(DataOpts$Site), 
-                       chosen=reactive(DataOpts$Param))
-  
-  shiny::observeEvent(ExceedancesPark(), DataOpts$Park<-ExceedancesPark() )
-  shiny::observeEvent(ExceedancesSite(), DataOpts$Site<-ExceedancesSite() )
-  shiny::observeEvent(ExceedancesParam(), DataOpts$Param<-ExceedancesParam() )
-  
-### Exceedances Prep ###
-  
-  ExceedancesPrep<- function(Park, Site, Param, WaterData){
-    # A data prep function that returns data.frame and character outputs about threshold exceedances at user selected inputs (park, site, & param)
+### Exceedances Data Use Multiple ###
+  exDUM <-shiny::reactive({
+    # Get threshold exceedance data to use in a tab that allows for multiple site selections and reacts to user input.
     # Args:
-    #   Park, chr, required. The character string provided by ExceedancesPark() and parkChooser() in global.R
-    #   Site, chr, required. The character string provided by ExceedancesSite() and siteChooser() in global.R
-    #   Param, chr, required. The character string provided by ExceedancesParam() and paramChooser() in global.R
-    #   WaterData, list, required. The list of NCRN water quality data assembled from /wqp_ncrnwater_metadata.csv and /wqp.csv
-    # Returns:
-    #   tmp, list. Temporary package containing:
-    #     exdf, data.frame. Water quality site observations exceeding water quality thresholds and threshold information, containing:
-    #       OrganizationFormalName, chr, NPS program name
-    #       ActivityMediaSubdivisionName, chr, unique site and date code for an observation event
-    #       Date, Date, date of observation
-    #       Characteristic, chr, water quality parameter display name
-    #       Value, num, numeric value of a water quality parameter observation
-    #       ResultMeasure.MeasureUnitCode, chr, unit of a water quality parameter value
-    #       LowerThreshold, chr, description of the lower water quality threshold, if applicable
-    #       UpperThreshold, chr, description of the upper water quality threshold, if applicable
-    #     df, data.frame. All water quality site observations at user selected inputs, containing:
-    #       OrganizationFormalName, chr, NPS program name
-    #       ActivityMediaSubdivisionName, chr, unique site and date code for an observation event
-    #       Date, Date, date of observation
-    #       Characteristic, chr, water quality parameter display name
-    #       Value, num, numeric value of a water quality parameter observation
-    #       ResultMeasure.MeasureUnitCode, chr, unit of a water quality parameter value
-    #     lowerthreshold, chr, description of the lower water quality threshold, if applicable
-    #     upperthreshold, chr, description of the upper water quality threshold, if applicable
-    #     lowerpoint, chr, value of the lower water quality threshold, if applicable
-    #     upperpoint, chr, value of the upper water quality threshold, if applicable
-    #     unit, chr, unit of a water quality parameter value
-    #     sitename, chr, site display name
-    #     characteristic, chr, water quality parameter display name
-    # Example:
-    #   DataOpts$Park<- "GWMP"
-    #   DataOpts$Site<- "NCRN_GWMP_TURU"
-    #   DataOpts$Param<- "TotalP"
-    #   WaterData<- NCRN::getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
-    #   tmp <- ExceedancesPrep(DataOpts$Park, DataOpts$Site, DataOpts$Param, WaterData)
-    #   exdf<- tmp$exdf
-    df2 <- getWData(WaterData, parkcode=Park, sitecode=Site, charname=Param)
-    df1 <- suppressWarnings(df2 %>% 
-                              dplyr::mutate(year.dec = julian(Date)/365, month = as.factor(months(Date))) %>% 
-                              dplyr::group_by(month) %>%
-                              dplyr::mutate(num_meas = sum(!is.na(Value))) %>% 
-                              dplyr::ungroup()) %>% dplyr::mutate(num_mos = length(unique(month)))
-    df <- df1[, c("OrganizationFormalName", "ActivityMediaSubdivisionName", "Date", "Characteristic", "Value", "ResultMeasure.MeasureUnitCode")]
-    df <- subset(df, !is.na(Value))
-    
-    LowerThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info="LowerDescription")
-    UpperThreshold<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info="UpperDescription")
-    LowerPoint<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info="LowerPoint")
-    UpperPoint<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info="UpperPoint")
-    Unit<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info="Units")
-    Sitename<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info = "SiteName")
-    Characteristic<- NCRNWater::getCharInfo(WaterData, parkcode = Park, sitecode = Site, charname = Param, info = "DisplayName")
-    
-    if(any(df$Value <= LowerPoint, na.rm = TRUE)) {
-      lowerdf<- df[df$Value < LowerPoint, ]
-      lowerdf$LowerThreshold <- LowerThreshold
-    } else{
-      lowerdf<- df[0, ]
-    }
-    
-    if(any(df$Value >= UpperPoint, na.rm = TRUE)) {
-      upperdf<- df[df$Value > UpperPoint, ]
-      upperdf$UpperThreshold <- UpperThreshold
-    } else {
-      upperdf<- df[0, ]
-    }
-    
-    exdf<- dplyr::bind_rows(lowerdf, upperdf)
-    
-    tmp <- list(
-      'exdf'=exdf
-      ,'df'=df
-      ,'lowerthreshold'=LowerThreshold
-      ,'upperthreshold'=UpperThreshold
-      ,'lowerpoint'=LowerPoint
-      ,'upperpoint'=UpperPoint
-      ,'unit'=Unit
-      ,'characteristic'=Characteristic
-      ,'sitename'=Sitename
-      )
-    return(tmp)
-  }
-    
-### Exceedances Data Use Function ###
-  
-  ExceedancesDataUse<- shiny::reactive({
-    # A reactive function that returns a data.frame output to the Exceedances tab and that establishes the conditions to display warning messages
-    # Args:
-    #   DataOpts$Park, chr, required. The character string provided by parkChooser() in global.R
-    #   DataOpts$Site, chr, required. The character string provided by siteChooser() in global.R
-    #   DataOpts$Site, chr, required. The character string provided by paramChooser() in global.R
-    #   WaterData, list, required. The list of NCRN water quality data assembled from /wqp_ncrnwater_metadata.csv and /wqp.csv
-    # Returns:
-    #   exdf, data.frame. Water quality site observations exceeding water quality thresholds and threshold information in reverse chronological order, containing:
-    #     OrganizationFormalName, chr, NPS program name
-    #     ActivityMediaSubdivisionName, chr, unique site and date code for an observation event
-    #     Date, Date, date of observation
-    #     Characteristic, chr, water quality parameter display name
-    #     Value, num, numeric value of a water quality parameter observation
-    #     ResultMeasure.MeasureUnitCode, chr, unit of a water quality parameter value
-    #     LowerThreshold, chr, description of the lower water quality threshold, if applicable
-    #     UpperThreshold, chr, description of the upper water quality threshold, if applicable
-    # Example:
-    #   DataOpts$Park<- "GWMP"
-    #   DataOpts$Site<- "NCRN_GWMP_TURU"
-    #   DataOpts$Param<- "TotalP"
-    #   WaterData<- NCRN::getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
-    #   output$ExceedancesTable <-DT::renderDataTable(
-    #     expr=datatable(ExceedancesDataUse(), extensions=c("Buttons","KeyTable"),caption=htmltools::tags$caption(htmltools::h3(Title())),
-    #                   class="stripe hover order-column cell-border",filter="top",
-    #                   rownames=F, options=list(autoWidth=TRUE, dom="Bltirp", buttons=c("copy","csv","excel","pdf","print"), keys=TRUE)
-    #     ),server=F)  
+    #  DataOpts$Park, chr, required. The character string provided by parkChooser() in global.R.
+    #  DataOpts$Site, chr or vector if multiple sites selected, required. The character string provided by siteChooser() in global.R.
+    #  DataOpts$Param, chr, required. The character string provided by paramChooser() in global.R.
+    #  WaterData, list, required. The list of NCRN water quality data assembled from /wqp_ncrnwater_metadata.csv and /wqp.csv
+    # 
+    # Return:
+    #  mydatastrucure, list. A temporary package containing:
+    #    [[site]], list. A temporary package for each selected site containing:
+    #      df, data.frame. A data.frame that includes water records for a [[site]].
+    #      exdf, data.frame. A data.frame that includes water records for threshold exceedances at a [[site]].
+    #
+    # Examples:
+    #
     shiny::validate(
       need(DataOpts$Park, message="Choose a Park"),
       need(DataOpts$Site, message="Choose a Site"),
-      need(DataOpts$Param, message="Choose a Water Quality Parameter"))  
+      need(DataOpts$Param, message="Choose a Water Quality Parameter")
+    )  
     
-    tmp <- ExceedancesPrep(DataOpts$Park, DataOpts$Site, DataOpts$Param, WaterData)
-    exdf <- tmp$exdf
-    df <- tmp$df
-    LowerThreshold <- tmp$lowerthreshold
-    UpperThreshold <- tmp$upperthreshold
-    LowerPoint <- tmp$lowerpoint
-    UpperPoint <- tmp$upperpoint
-    Unit <- tmp$unit
-    Characteristic <- tmp$characteristic
-    Sitename <- tmp$sitename
-
-    exdf<- exdf %>%
-      dplyr::arrange(desc(Date))
-
-      if(!is.na(LowerPoint) & all(df$Value > LowerPoint)) {
-        shiny::showNotification(
-          paste0("No measurements of ", Characteristic, " at ", Sitename, " fall below the water quality threshold of ", LowerPoint, " ", Unit)
-          ,type = "error"
-          ,duration = 10
-          ,id = "n1")
+    mydatastructure <- list()
+    for (site in DataOpts$Site) {
+      mydatastructure[[site]]<-list()
+      
+      # Building df
+      mydatastructure[[site]][["df"]] <- getWData(WaterData, parkcode=DataOpts$Park, sitecode = site, charname=DataOpts$Param)
+      mydatastructure[[site]][["df"]] <- mydatastructure[[site]][["df"]][, c("MonitoringLocationName", "Date", "Characteristic", "Value", "ResultMeasure.MeasureUnitCode")]
+      mydatastructure[[site]][["df"]] <- subset(mydatastructure[[site]][["df"]], !is.na(Value))
+      
+      # Getting characters
+      mydatastructure[[site]][["LowerThreshold"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="LowerDescription")
+      mydatastructure[[site]][["UpperThreshold"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="UpperDescription")
+      mydatastructure[[site]][["LowerPoint"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="LowerPoint")
+      mydatastructure[[site]][["UpperPoint"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="UpperPoint")
+      mydatastructure[[site]][["Sitename"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info = "SiteName")
+      mydatastructure[[site]][["Characteristic"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info = "DisplayName")
+      mydatastructure[[site]][["Unit"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="Units")
+      mydatastructure[[site]][["notification_text"]] <- dplyr::case_when(
+        !is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & all(mydatastructure[[site]][["df"]]$Value > mydatastructure[[site]][["LowerPoint"]]) & all(mydatastructure[[site]][["df"]]$Value < mydatastructure[[site]][["UpperPoint"]]) ~ 
+          paste0("No measurements of ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]], " fall below the lower water quality threshold of ", mydatastructure[[site]][["LowerPoint"]], " ", mydatastructure[[site]][["Unit"]], ", nor exceed the upper water quality threshold of ", mydatastructure[[site]][["UpperPoint"]], " ", mydatastructure[[site]][["Unit"]])
+        ,!is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & all(mydatastructure[[site]][["df"]]$Value > mydatastructure[[site]][["LowerPoint"]]) ~ 
+          paste0("No measurements of ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]],
+                 "fall below the water quality threshold of ", mydatastructure[[site]][["LowerPoint"]], " ", mydatastructure[[site]][["Unit"]])
+        ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & all(mydatastructure[[site]][["df"]]$Value < mydatastructure[[site]][["UpperPoint"]]) ~
+          paste0("No measurements of ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]],
+                 "exceed the water quality threshold of ", mydatastructure[[site]][["UpperPoint"]], " ", mydatastructure[[site]][["Unit"]])
+        ,is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE ~
+          paste0("There is no recorded water quality threshold for ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]])
+      )
+      
+      # Building exdf
+      if(any(mydatastructure[[site]][["df"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm = TRUE)) {
+        lower_sd<- mydatastructure[[site]][["df"]][mydatastructure[[site]][["df"]]$Value < mydatastructure[[site]][["LowerPoint"]], ]
+        lower_sd$LowerThreshold <- mydatastructure[[site]][["LowerThreshold"]]
+      } else{
+        lower_sd<- mydatastructure[[site]][["df"]][0, ]
       }
-
-      if(!is.na(UpperPoint) & all(df$Value < UpperPoint)) {
-        shiny::showNotification(
-          paste0("No measurements of ", Characteristic, " at ", Sitename, " exceed the water quality threshold of ", UpperPoint, " ", Unit)
-          ,type = "error"
-          ,duration = 10
-          ,id = "n2")
+      if(any(mydatastructure[[site]][["df"]]$Value >= mydatastructure[[site]][["UpperPoint"]], na.rm = TRUE)) {
+        upper_sd<- mydatastructure[[site]][["df"]][mydatastructure[[site]][["df"]]$Value > mydatastructure[[site]][["UpperPoint"]], ]
+        upper_sd$UpperThreshold <- mydatastructure[[site]][["UpperThreshold"]]
+      } else {
+        upper_sd<- mydatastructure[[site]][["df"]][0, ]
       }
-
-      if(is.na(LowerPoint) & is.na(UpperPoint)) {
-        shiny::showNotification(
-          paste0("There is no recorded water quality threshold for ", Characteristic, " at ", Sitename, ".")
-          ,type = "error"
-          ,duration = 10
-          ,id = "n3")
+      mydatastructure[[site]][["exdf"]] <- dplyr::bind_rows(lower_sd, upper_sd)
+      
+      ### ...and desc_exdf ###
+      mydatastructure[[site]][["desc_exdf"]]<- mydatastructure[[site]][["exdf"]] %>%
+        dplyr::rename("Units" = "ResultMeasure.MeasureUnitCode") %>%
+        dplyr::rename("Site" = "MonitoringLocationName") %>%
+        dplyr::rename("Parameter" = "Characteristic") %>%
+        dplyr::rename("SampleDate" = "Date") %>%
+        dplyr::mutate("Difference" = case_when(
+          !is.na(mydatastructure[[site]][["UpperPoint"]])==TRUE & is.na(mydatastructure[[site]][["LowerPoint"]])==TRUE ~ 
+            mydatastructure[[site]][["exdf"]]$Value - mydatastructure[[site]][["UpperPoint"]]
+          ,!is.na(mydatastructure[[site]][["LowerPoint"]])==TRUE & is.na(mydatastructure[[site]][["UpperPoint"]])==TRUE ~ 
+            mydatastructure[[site]][["exdf"]]$Value - mydatastructure[[site]][["LowerPoint"]]
+          ,!is.na(mydatastructure[[site]][["UpperPoint"]])==TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]])==TRUE & any(mydatastructure[[site]][["df"]]$Value >= mydatastructure[[site]][["UpperPoint"]], na.rm = TRUE) ~ 
+            mydatastructure[[site]][["exdf"]]$Value - mydatastructure[[site]][["UpperPoint"]]
+          ,!is.na(mydatastructure[[site]][["UpperPoint"]])==TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]])==TRUE & any(mydatastructure[[site]][["df"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm = TRUE) ~ 
+            mydatastructure[[site]][["exdf"]]$Value - mydatastructure[[site]][["LowerPoint"]]
+        )) %>%
+        dplyr::mutate("Difference" = round(Difference, 4)) %>%
+        dplyr::arrange(desc(SampleDate)) %>%
+        dplyr::select("Site", "SampleDate", "Parameter", "Value", "Difference", "Units", any_of(c("UpperThreshold", "LowerThreshold")))
+        
+      
+      # Data wrangle for text and hist
+      mydatastructure[[site]][["histyears"]]<- data.frame(Year = lubridate::year(mydatastructure[[site]][["df"]]$Date))
+      mydatastructure[[site]][["totcount"]]<- mydatastructure[[site]][["histyears"]] %>%
+        dplyr::count(Year) %>%
+        dplyr::rename("ntot" = "n")
+      mydatastructure[[site]][["totcount"]] <- subset(mydatastructure[[site]][["totcount"]], !is.na(Year))
+      
+      mydatastructure[[site]][["excount"]] <- mydatastructure[[site]][["exdf"]] %>%
+        dplyr::mutate(Year = lubridate::year(Date)) %>%
+        dplyr::count(Year) %>%
+        dplyr::rename("nex" = "n")
+      mydatastructure[[site]][["excount"]] <- subset(mydatastructure[[site]][["excount"]], !is.na(Year))
+      
+      mydatastructure[[site]][["histdata"]] <- dplyr::left_join(mydatastructure[[site]][["totcount"]], mydatastructure[[site]][["excount"]], by = "Year")
+      mydatastructure[[site]][["histdata"]][is.na(mydatastructure[[site]][["histdata"]])] <- 0
+      mydatastructure[[site]][["histdata"]] <- mydatastructure[[site]][["histdata"]] %>%
+        dplyr::mutate(percent_ex = (nex / ntot) * 100) %>%
+        dplyr::mutate(formatted_percent_ex = scales::percent(percent_ex / 100, accuracy = 0.01))
+      
+      # Text prep
+      mydatastructure[[site]][["recent_year"]]<- max(mydatastructure[[site]][["histdata"]]$Year)
+      mydatastructure[[site]][["oldest_year"]]<- min(mydatastructure[[site]][["histdata"]]$Year)
+      mydatastructure[[site]][["nex"]]<- mydatastructure[[site]][["histdata"]][mydatastructure[[site]][["histdata"]]$Year == mydatastructure[[site]][["recent_year"]], "nex"]
+      mydatastructure[[site]][["ntot"]]<- mydatastructure[[site]][["histdata"]][mydatastructure[[site]][["histdata"]]$Year == mydatastructure[[site]][["recent_year"]], "ntot"]
+      # recent_freq<- sprintf("%.2f%%", (nex/ntot)*100)
+      mydatastructure[[site]][["sum_nex"]]<- sum(mydatastructure[[site]][["histdata"]]$nex)
+      mydatastructure[[site]][["sum_ntot"]]<- sum(mydatastructure[[site]][["histdata"]]$ntot)
+      # sum_freq<- sprintf("%.2f%%", (sum_nex/sum_ntot)*100)
+      # freq_comp<- ifelse((nex/ntot) > (sum_nex/sum_ntot), "greater than",
+      #                      ifelse((nex/ntot) == (sum_nex/sum_ntot), "equal to", "less than"))
+      mydatastructure[[site]][["grammar1"]]<- if(mydatastructure[[site]][["nex"]]==1) {
+        paste0("There was ", "<b>", mydatastructure[[site]][["nex"]], "</b>", " exceedance of the ")
+      } else {
+        paste0("There were ", "<b>", mydatastructure[[site]][["nex"]], "</b>", " exceedances of the ")
       }
-    
-    return(exdf)
-    
-  })
-  
-### Exceedances Data Table Output ###
-  
-  output$ExceedancesTable <-DT::renderDataTable(
-    expr=datatable(ExceedancesDataUse(), extensions=c("Buttons","KeyTable"),caption=htmltools::tags$caption(htmltools::h3(Title())),
-                   class="stripe hover order-column cell-border",filter="top",
-                   rownames=F, options=list(autoWidth=TRUE, dom="Bltirp", buttons=c("copy","csv","excel","pdf","print"), keys=TRUE)
-    ),server=F
-  )  
-  
-### SummarizeExceedances() Function ###
-  
-  SummarizeExceedances<- function(df, exdf){
-    # A function that returns a data.frame containing counts and percentages of observations and exceedances per year of observation
-    # Args:
-    #   df, data.frame, required. All water quality site observations at user selected inputs
-    #   exdf, data.frame, required. Water quality site observations exceeding water quality thresholds and threshold information
-    # Returns:
-    #   histdata, dataframe. Counts and percents of observations and exceedances per year of water quality observation
-    # Example:
-    #   DataOpts$Park<- "GWMP"
-    #   DataOpts$Site<- "NCRN_GWMP_TURU"
-    #   DataOpts$Param<- "TotalP"
-    #   WaterData<- NCRN::getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
-    #   tmp<- ExceedancesPrep(DataOpts$Park, DataOpts$Site, DataOpts$Param, WaterData)
-    #   exdf<- tmp$exdf
-    #   df<- tmp$df
-    #   histdata<- SummarizeExceedances(df, exdf)
-    histyears<- data.frame(Year = lubridate::year(df$Date))
-    totcount<- histyears %>%
-      dplyr::count(Year) %>%
-      dplyr::rename("ntot" = "n")
-    totcount <- subset(totcount, !is.na(Year))
-    
-    excount <- exdf %>%
-      dplyr::mutate(Year = lubridate::year(Date)) %>%
-      dplyr::count(Year) %>%
-      dplyr::rename("nex" = "n")
-    excount <- subset(excount, !is.na(Year))
-    
-    histdata<- dplyr::left_join(totcount, excount, by = "Year")
-    histdata[is.na(histdata)] <- 0
-    histdata<- histdata %>%
-      dplyr::mutate(percent_ex = (nex / ntot) * 100) %>%
-      dplyr::mutate(formatted_percent_ex = scales::percent(percent_ex / 100, accuracy = 0.01))
-    
-    return(histdata)
-  }
-  
-### Exceedances Text Function ###
-  
-  exceedances_text<- shiny::reactive({
-    # A reactive function that outputs dynamic text summarizing threshold exceedances for a water quality parameter at a site
-    # Args:
-    #   DataOpts$Park, chr, required. The character string provided by parkChooser() in global.R
-    #   DataOpts$Site, chr, required. The character string provided by siteChooser() in global.R
-    #   DataOpts$Site, chr, required. The character string provided by paramChooser() in global.R
-    #   WaterData, list, required. The list of NCRN water quality data assembled from /wqp_ncrnwater_metadata.csv and /wqp.csv
-    # Returns:
-    #   chr. A character string containing reactive formatted HTML text
-    # Example:
-    #   DataOpts$Park<- "GWMP"  
-    #   DataOpts$Site<- "NCRN_GWMP_TURU"
-    #   DataOpts$Param<- "TotalP"
-    #   WaterData<- NCRN::getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
-    #   output$exceedances_summary<- shiny::renderText({
-    #     exceedances_text()
-    #   })
-    shiny::validate(
-      need(DataOpts$Park, message=""),
-      need(DataOpts$Site, message=""),
-      need(DataOpts$Param, message=""))
-    
-    tmp <- ExceedancesPrep(DataOpts$Park, DataOpts$Site, DataOpts$Param, WaterData)
-    exdf <- tmp$exdf
-    df <- tmp$df
-    LowerThreshold <- tmp$lowerthreshold
-    UpperThreshold <- tmp$upperthreshold
-    LowerPoint <- tmp$lowerpoint
-    UpperPoint <- tmp$upperpoint
-    Unit <- tmp$unit
-    Characteristic <- tmp$characteristic
-    Sitename <- tmp$sitename
-    
-  histdata<- SummarizeExceedances(df, exdf)
-
-  # Text prep
-  recent_year<- max(histdata$Year)
-  oldest_year<- min(histdata$Year)
-  nex<- histdata[histdata$Year == recent_year, "nex"]
-  ntot<- histdata[histdata$Year == recent_year, "ntot"]
-  recent_freq<- sprintf("%.2f%%", (nex/ntot)*100)
-  sum_nex<- sum(histdata$nex)
-  sum_ntot<- sum(histdata$ntot)
-  sum_freq<- sprintf("%.2f%%", (sum_nex/sum_ntot)*100)
-  freq_comp<- ifelse((nex/ntot) > (sum_nex/sum_ntot), "greater than",
-                       ifelse((nex/ntot) == (sum_nex/sum_ntot), "equal to", "less than"))
-  grammar1<- if(nex==1) {
-    paste("There was", nex, "exceedance of the ")
-  } else {
-    paste("There were", nex, "exceedances of the ")
-  }
-  grammar2<- if(sum_nex==1) {
-    paste("There has been", sum_nex, "exceedance of the ")
-  } else {
-    paste("There have been", sum_nex, "exceedances of the ")
-  }
-    
-  # Writing text
-  summary<- c(
-    paste0(grammar1, Characteristic, " water quality threshold among ", ntot, " observations at ", Sitename, " in ", recent_year, ".")
-    ,paste0(grammar2, Characteristic, " water quality threshold among ", sum_ntot, " observations at ", Sitename, " since monitoring began in ", oldest_year, ".")
-    ,paste0("<u>", recent_freq, "</u>", " of observations exceeded the water quality threshold in ", recent_year, ", ", freq_comp, " the overall exceedance percentage of ", "<u>", sum_freq, "</u>", ".")
-  )
-  summary_bullets<- paste0("<li>", summary, "</li>", collapse = "")
-   
-  HTML(paste0(
-    "<p><b><span style='font-size: 18px;'>Exceedances Summary:</b></p>",
-    "<ul>", summary_bullets, "</ul>"
-  ))
-   
-  })
-  
-  ### HTML Text Tutput ###
-  
-  output$exceedances_summary<- shiny::renderText({
-    exceedances_text()
-  })
-  
-  ### Exceedances Histogram ###
-  
-  exceedances_hist_plot<- shiny::reactive({
-    # A reactive function that outputs an interactive histogram displaying the percentage of observations per year which a parameter exceeds a threshold at a site
-    # Args:
-    #   DataOpts$Park, chr, required. The character string provided by parkChooser() in global.R
-    #   DataOpts$Site, chr, required. The character string provided by siteChooser() in global.R
-    #   DataOpts$Site, chr, required. The character string provided by paramChooser() in global.R
-    #   WaterData, list, required. The list of NCRN water quality data assembled from /wqp_ncrnwater_metadata.csv and /wqp.csv
-    # Returns:
-    #   list. A plotly histogram displaying percentages of observations per year exceeding a threshold at a site, containing:
-    #     x, list. Containing the data and formatting layout of the histogram
-    #     width, int, optional. An optional plotly parameter
-    #     height, int, optional. An optional plotly parameter
-    #     sizingPolicy, list. Containing default sizing and formatting information
-    #     dependencies, list. Containing html information
-    #     elementId, int, optional. An optional plotly parameter
-    #     preRenderHook, function. Containing functions to build plotly output
-    #     jsHooks, list, optional. An optional plotly feature
-    # Example:
-    #   DataOpts$Park<- "GWMP"  
-    #   DataOpts$Site<- "NCRN_GWMP_TURU"
-    #   DataOpts$Param<- "TotalP"
-    #   WaterData<- NCRN::getWData(WaterData, parkcode=DataOpts$Park, sitecode=DataOpts$Site, charname=DataOpts$Param)
-    #   output$hist<- renderPlotly({
-    #     exceedances_hist_plot()
-    #   })
-    shiny::validate(
-      need(DataOpts$Park, message=""),
-      need(DataOpts$Site, message=""),
-      need(DataOpts$Param, message=""))
-    
-    tmp <- ExceedancesPrep(DataOpts$Park, DataOpts$Site, DataOpts$Param, WaterData)
-    exdf <- tmp$exdf
-    df <- tmp$df
-    LowerThreshold <- tmp$lowerthreshold
-    UpperThreshold <- tmp$upperthreshold
-    LowerPoint <- tmp$lowerpoint
-    UpperPoint <- tmp$upperpoint
-    Unit <- tmp$unit
-    Characteristic <- tmp$characteristic
-    Sitename <- tmp$sitename
-    
-  histdata<- SummarizeExceedances(df, exdf)
-    
-  # Plot prep
-    ExPoint<- dplyr::case_when(
-      is.na(UpperPoint) == TRUE & !is.na(LowerPoint) == TRUE ~ LowerPoint
-      ,!is.na(UpperPoint) == TRUE & is.na(LowerPoint) == TRUE ~ UpperPoint
-      ,!is.na(UpperPoint) == TRUE & !is.na(LowerPoint) == TRUE & any(exdf$Value <= LowerPoint, na.rm=TRUE) & all(exdf$Value < UpperPoint, na.rm=TRUE) ~ LowerPoint
-      ,!is.na(UpperPoint) == TRUE & !is.na(LowerPoint) == TRUE & any(exdf$Value >= UpperPoint, na.rm=TRUE) & all(exdf$Value > LowerPoint, na.rm=TRUE) ~ UpperPoint
-      # ,!is.na(UpperPoint) == TRUE & !is.na(LowerPoint) == TRUE & any(exdf$Value >= UpperPoint, na.rm=TRUE) & any(exdf$Value <= LowerPoint, na.rm=TRUE) ~ paste0(str(LowerPoint), " and ", str(UpperPoint))
-    )
-    
-  # Plotting
-    p<- ggplot2::ggplot(histdata, aes(x = Year, y = percent_ex,
-                              text = paste0(Year, ", ", Characteristic, "\n",
-                                            ntot, " total observation(s)", "\n",
-                                            formatted_percent_ex, " of observations exceeding ", ExPoint, " ", Unit))) +
+      mydatastructure[[site]][["grammar2"]]<- if(mydatastructure[[site]][["sum_nex"]]==1) {
+        paste0("There has been ", "<b>", mydatastructure[[site]][["sum_nex"]], "</b>", " exceedance of the ")
+      } else {
+        paste0("There have been ", "<b>", mydatastructure[[site]][["sum_nex"]], "</b>", " exceedances of the ")
+      }
+      
+      # Writing text
+      mydatastructure[[site]][["extext"]]<- c(
+        paste0(mydatastructure[[site]][["grammar1"]], mydatastructure[[site]][["Characteristic"]], " water quality threshold among ", mydatastructure[[site]][["ntot"]], " observations at ", mydatastructure[[site]][["Sitename"]], " in ", mydatastructure[[site]][["recent_year"]], ".")
+        ,paste0(mydatastructure[[site]][["grammar2"]], mydatastructure[[site]][["Characteristic"]], " water quality threshold among ", mydatastructure[[site]][["sum_ntot"]], " observations at ", mydatastructure[[site]][["Sitename"]], " since monitoring began in ", mydatastructure[[site]][["oldest_year"]], ".")
+        # ,paste0("<u>", recent_freq, "</u>", " of observations exceeded the water quality threshold in ", recent_year, ", ", freq_comp, " the overall exceedance percentage of ", "<u>", sum_freq, "</u>", ".")
+      )
+      mydatastructure[[site]][["extext_bullets"]]<- paste0("<li>", mydatastructure[[site]][["extext"]], "</li>", collapse = "")
+      
+      mydatastructure[[site]][["html_extext"]]<- paste0(
+        "<p><b><span style='font-size: 18px;'>Exceedances Report:</b></p>",
+        "<ul>", mydatastructure[[site]][["extext_bullets"]], "</ul>"
+      )
+      
+      # Histogram
+      mydatastructure[[site]][["ExPoint"]]<- dplyr::case_when(
+        is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE ~ mydatastructure[[site]][["LowerPoint"]]
+        ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE ~ mydatastructure[[site]][["UpperPoint"]]
+        ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & any(mydatastructure[[site]][["exdf"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm=TRUE) & all(mydatastructure[[site]][["exdf"]]$Value < mydatastructure[[site]][["UpperPoint"]], na.rm=TRUE) ~ mydatastructure[[site]][["LowerPoint"]]
+        ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & any(mydatastructure[[site]][["exdf"]]$Value >= mydatastructure[[site]][["UpperPoint"]], na.rm=TRUE) & all(mydatastructure[[site]][["exdf"]]$Value > mydatastructure[[site]][["LowerPoint"]], na.rm=TRUE) ~ mydatastructure[[site]][["UpperPoint"]]
+        # ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & any(mydatastructure[[site]][["exdf"]]$Value >= mydatastructure[[site]][["UpperPoint"]], na.rm=TRUE) & any(mydatastructure[[site]][["exdf"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm=TRUE) ~ paste0(mydatastructure[[site]][["LowerPoint"]], " and ", mydatastructure[[site]][["UpperPoint"]])
+      )
+      
+      mydatastructure[[site]][["p"]]<- ggplot2::ggplot(mydatastructure[[site]][["histdata"]], aes(x = Year, y = percent_ex,
+                                                                                                  text = paste0(mydatastructure[[site]][["histdata"]]$Year, ", ", mydatastructure[[site]][["Characteristic"]], "\n",
+                                                                                                                mydatastructure[[site]][["histdata"]]$ntot, " total observation(s)", "\n",
+                                                                                                                mydatastructure[[site]][["histdata"]]$formatted_percent_ex, " of observations exceeding ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]]))) +
         geom_bar(stat = "identity", fill = "lightgray") +
         ylim(0, 100) +
         labs(
-          title = paste0("Percent of ", Characteristic, " observations exceeding the water quality threshold at ", Sitename),
+          title = paste0("Percent of ", mydatastructure[[site]][["Characteristic"]], " observations exceeding the water quality threshold at ", mydatastructure[[site]][["Sitename"]]),
           x = "Year",
           y = "% observations") +
         theme_minimal() +
         theme(
           panel.grid.major = element_blank(),
           panel.grid.minor = element_blank())
-    
-    plotly::ggplotly(p, tooltip = "text")
+      
+      # Hist Alt Text
+      alt_text <- c()
+      for (i in seq_len(nrow(mydatastructure[[site]][["histdata"]]))) {
+        if(mydatastructure[[site]][["histdata"]]$nex[i] != 0) {
+          alt_text <- c(alt_text, paste0("<b>", mydatastructure[[site]][["histdata"]]$Year[i], "</b>: ", mydatastructure[[site]][["histdata"]]$ntot[i], " total observation(s), ", mydatastructure[[site]][["histdata"]]$formatted_percent_ex[i], " of observations exceeding ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]]))
+        }
+      }
+      mydatastructure[[site]][["alt_raw"]] <- alt_text
+      mydatastructure[[site]][["alt_bullets"]] <- paste0("<li>", mydatastructure[[site]][["alt_raw"]], "</li>", collapse = "")
+      mydatastructure[[site]][["alt_bullets2"]] <- paste0("<ul>", mydatastructure[[site]][["alt_bullets"]], "</ul>")
+      
+      mydatastructure[[site]][["recent_ex"]] <- max(mydatastructure[[site]][["histdata"]]$Year[mydatastructure[[site]][["histdata"]]$nex != 0])
+      mydatastructure[[site]][["oldest_ex"]] <- min(mydatastructure[[site]][["histdata"]]$Year[mydatastructure[[site]][["histdata"]]$nex != 0])
+      mydatastructure[[site]][["highest_ex_rate"]] <- mydatastructure[[site]][["histdata"]]$formatted_percent_ex[which.max(mydatastructure[[site]][["histdata"]]$percent_ex)]
+      mydatastructure[[site]][["hry_vec"]] <- mydatastructure[[site]][["histdata"]]$Year[mydatastructure[[site]][["histdata"]]$percent_ex == max(mydatastructure[[site]][["histdata"]]$percent_ex)]
+      vec_format <- function(vec) {
+        n <- length(vec)
+        if (n == 1) return(as.character(vec[1]))
+        if (n == 2) return(paste(vec, collapse = " and "))
+        paste(paste(vec[-n], collapse = ", "), "and", vec[n])
+      }
+      mydatastructure[[site]][["highest_rate_year"]] <- vec_format(mydatastructure[[site]][["hry_vec"]])
+      
+      mydatastructure[[site]][["n_ex_year"]] <- sum(mydatastructure[[site]][["histdata"]]$nex != 0)
+      if (mydatastructure[[site]][["n_ex_year"]] == 1) {
+        mydatastructure[[site]][["alt_text_line2"]] <- paste0("Exceedances of the water quality threshold of ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]], " were measured in only ", mydatastructure[[site]][["recent_ex"]], ".")
+      } else {
+        mydatastructure[[site]][["alt_text_line2"]] <- paste0("Exceedances of the water quality threshold of ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]], " were measured first in ", mydatastructure[[site]][["oldest_ex"]], ", and most recently in ", mydatastructure[[site]][["recent_ex"]], ".")
+      }
+      
+      if (mydatastructure[[site]][["n_ex_year"]] != 0) {
+        mydatastructure[[site]][["alt_text"]] <- paste0(
+          "<b>Figure Description:</b> Acceptable water quality measurements for ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]], " have occurred between ", mydatastructure[[site]][["oldest_year"]], " and ", mydatastructure[[site]][["recent_year"]], ". ",
+          mydatastructure[[site]][["alt_text_line2"]],
+          " The highest proportion of threshold exceedances per measurements taken in a single year was ", mydatastructure[[site]][["highest_ex_rate"]], " in ", mydatastructure[[site]][["highest_rate_year"]], ".",
+          " See exceedances profiles per year below:",
+          mydatastructure[[site]][["alt_bullets2"]])
+      } else {
+        mydatastructure[[site]][["alt_text"]] <- paste0(
+          "<b>Figure Description:</b> Acceptable water quality measurements for ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]], " have occurred between ", mydatastructure[[site]][["oldest_year"]], " and ", mydatastructure[[site]][["recent_year"]], ". ",
+          "There are no exceedances data to describe."
+        )
+      }
+      
+    }
+      return(mydatastructure)
+  })
+
+### Table Hover Text ###
+  exceedances_tooltips <- list(
+    "Site" = "Site name of monitoring event"
+    ,"SampleDate" = "Date of monitoring event"
+    ,"Parameter" = "Water quality parameter"
+    ,"Value" = "Numeric measurement of a water quality parameter"
+    ,"Difference" = "Magnitude of the exceedance (Value - Threshold)"
+    ,"Units" = "Units of the measured value"
+    ,"UpperThreshold" = "Description of the upper threshold for this site and parameter"
+    ,"LowerThreshold" = "Description of the lower threshold for this site and parameter"
+  )
+  exceedances_tooltips_json <- jsonlite::toJSON(exceedances_tooltips, auto_unbox = TRUE)
   
-})
-  
-  ### Plot Output###
-  
+### Output ###
   show_plot<- shiny::reactiveVal(FALSE)
   
-  output$exceedances_hist<- shiny::renderUI({
-    if (show_plot()) {
-      plotlyOutput("hist")
-    }
-  })
-  
-  output$hist<- renderPlotly({
-    exceedances_hist_plot()
-  })
+  output$mytabs <- shiny::renderUI({
+    req(DataOpts$Park, DataOpts$Site, DataOpts$Param) # execute output$mytabs only if user makes selections
+
+    mydatastructure <- exDUM() # get the data
+    
+    # if (!is.na(mydatastructure[[site]][["notification_text"]])==TRUE) {shiny::showNotification(
+    #   mydatastructure[[site]][["notification_text"]], type = "error", duration = 10)}
+
+    
+    nTabs = length(names(mydatastructure))
+    myTabs = lapply(seq_len(nTabs), function(i) { # i is the index (e.g., 1, 2, 3)
+      shiny::tabPanel(
+        mydatastructure[[i]][['Sitename']] # this is the name displayed on the tab
+        ,div(
+          class = "summary-box"
+          ,shiny::uiOutput(paste0("dynamic_text_",i)))
+        ,if (show_plot()) {plotlyOutput(paste0("hist_",i))}
+        ,if (show_plot()) {uiOutput(paste0("alt_text_",i))}
+        ,DT::dataTableOutput(paste0("datatable_",i))
+        
+        
+        )
+      })
+    do.call(tabsetPanel, myTabs) # make a tabsetPanel containing one tab per site
+    
+    
+    
+    })
+
+  shiny::observe(
+    lapply(seq_len(length(DataOpts$Site)), function(i) { # i is the index (e.g., 1, 2, 3)
+
+      mydatastructure <- exDUM() # get the data, again
+      site <- DataOpts$Site[i] # site ID (e.g., 'NCRN_GWMP_TURU')
+      output[[paste0("dynamic_text_",i)]] <- shiny::renderUI({HTML(mydatastructure[[site]][["html_extext"]])})
+      output[[paste0("hist_",i)]]<- renderPlotly({plotly::ggplotly(mydatastructure[[site]][["p"]], tooltip = "text")})
+      output[[paste0("alt_text_",i)]] <- shiny::renderUI({HTML(mydatastructure[[site]][["alt_text"]])})
+      output[[paste0("datatable_",i)]] <- DT::renderDataTable({
+        DT::datatable(mydatastructure[[site]][['desc_exdf']]
+        ,extensions=c("Buttons","KeyTable")
+        # ,caption=htmltools::tags$caption(htmltools::h3(Title()))
+        ,class="stripe hover order-column cell-border"
+        # ,filter="top"
+        ,rownames=F
+        ,options=list(
+          autoWidth=TRUE
+          ,dom="Bltirp"
+          ,buttons=c("copy","csv","excel","pdf","print")
+          ,keys=TRUE
+          ,headerCallback = JS("function(thead, data, start, end, display){",
+                               "$(thead).find('th').css('text-align', 'center');",
+                               "$(thead).find('th').filter(function() {
+                                          return $(this).html().trim() === 'Site'; }).css('text-align', 'left');",
+                               "$('th', thead).each(function(index){",
+                               " var tooltips = ",
+                               exceedances_tooltips_json,";",
+                               " var colName = $
+                                          (this).html().trim();",
+                               " if(tooltips[colName]) {",
+                               " $(this).attr('title', tooltips[colName]);",
+                               " }",
+                               "});",
+                               "}"
+          )
+        )
+        )
+        })
+      
+      
+      
+
+      }
+    )
+  )
   
   shiny::observeEvent(input$hist_button, {
     show_plot(!show_plot())
-    new_label<- ifelse(show_plot(), "Hide Histogram", "Show Histogram")
+    new_label<- ifelse(show_plot(), "Hide Figure", "Show Figure")
     shiny::updateActionButton(session, "hist_button", label = new_label)
   })
+  
   
 #### Mapping ####
   

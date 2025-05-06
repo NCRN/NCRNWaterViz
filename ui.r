@@ -257,7 +257,7 @@ shinyUI(
         h4("Photos")
         ,tabsetPanel(
           tabPanel(
-          h4("First Photo Parameters")
+          h4("First Photo")
           ,div(
           style='padding: 5px 10px'
           ,class="panel panel-default"
@@ -272,38 +272,9 @@ shinyUI(
             ,tags$style(type = "text/css", ".irs-grid-pol.small {height: 0px;}")
             ,column(width=4, sliderInput(inputId = "photoSlider", label = "Photo", min = 1, max = 8, value = 1))
           )
-        )        
+        )  ,imageOutput("image_plot")      
           )
-          ,tabPanel(
-          h4("Second Photo Parameters")
-          ,div(
-          style='padding: 5px 10px'
-          ,class="panel panel-default"
-          # ,uiOutput('DatasetURL')
-          ,fluidRow(
-            column(width=4, parkChooserUI("PhotoPark"))
-            ,column(width=4, siteChooserUI("PhotoSite"))
-            ,column(width=4, yearChooserUI("PhotoYears"))
-          )
-          ,fluidRow(
-            column(width=4, siteVisitChooserUI("PhotoSiteVisit"))
-            ,tags$style(type = "text/css", ".irs-grid-pol.small {height: 0px;}")
-            ,column(width=4, sliderInput(inputId = "photoSlider", label = "Photo", min = 1, max = 8, value = 1))
-          )
-        )        
-          )
-        )
-        ,tabsetPanel(
-          tabPanel(
-            h4('First Photo')
-            ,imageOutput("image_plot")
-          )
-          ,tabPanel(
-            h4('Second Photo')
-            ,imageOutput("image_plot")
-          )
-        )
-      ),
+      )),
       tabPanel(h4("Exceedances"),
                column(3, div(style='padding: 5px 10px',class="panel panel-default", 
                              

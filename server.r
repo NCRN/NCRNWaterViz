@@ -185,6 +185,12 @@ shinyServer(function(input,output,session){
   shiny::observeEvent(input$FigureVerticalScaling,  {
     GraphOpts$FigureVerticalScaling <- input$FigureVerticalScaling
    })
+  
+  #### Load screen
+  shiny::observe({
+   invalidateLater(4000, session)
+   removeUI(selector = "#loading_screen", immediate = TRUE)
+ })
 
   #### Time Series Controls ####
   # callModule tells the conditional picklists to update

@@ -369,15 +369,20 @@ photoChooser2<-function(input, output, session, data, park, site, years, imgs, s
 }
 
 #-------------------------
-# Global figure specs
+# Facts and images for loading screen
 #-------------------------
-global_textsize <- 20
-global_figure_height <- 1200 # pixels
-global_figure_width <- 2000 # pixels
-FIGURE_VERTICAL_SCALING <- 0.5
-FIGURE_HORIZONTAL_SCALING <- 0.75
 
+LOADING_TEXT <- c(
+  "Loading application..."
+  ,"Loading application..."
+  ,"Loading application..."
+)
 
+LOADING_IMAGES <- list(
+   list(src= "dwq_NCRN_ANTI_SHCK_2024-06-04_20240604-131442.jpg", location = "Antietam", date = "June 2024")
+  ,list(src= "dwq_NCRN_MONO_BUCK_2024-06-04_20240604-084406.jpg", location = "Monocacy", date = "June 2024")
+  ,list(src= "dwq_NCRN_PRWI_BONE_2024-06-11_20240611-130821.jpg", location = "Prince William", date = "June 2024")
+)
 
 
 #### Map Module ####

@@ -2491,6 +2491,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
       )
       
       # Histogram
+      
       mydatastructure[[site]][["ExPoint"]]<- dplyr::case_when(
         is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE ~ mydatastructure[[site]][["LowerPoint"]]
         ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE ~ mydatastructure[[site]][["UpperPoint"]]
@@ -2499,26 +2500,29 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
         # ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & any(mydatastructure[[site]][["exdf"]]$Value >= mydatastructure[[site]][["UpperPoint"]], na.rm=TRUE) & any(mydatastructure[[site]][["exdf"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm=TRUE) ~ paste0(mydatastructure[[site]][["LowerPoint"]], " and ", mydatastructure[[site]][["UpperPoint"]])
       )
       
-      mydatastructure[[site]][["p"]]<- ggplot2::ggplot(mydatastructure[[site]][["histdata"]], aes(x = Year, y = percent_ex,
-                                                                                                  text = paste0(mydatastructure[[site]][["histdata"]]$Year, ", ", mydatastructure[[site]][["Characteristic"]], "\n",
-                                                                                                                mydatastructure[[site]][["histdata"]]$ntot, " total observation(s)", "\n",
-                                                                                                                mydatastructure[[site]][["histdata"]]$formatted_percent_ex, " of observations exceeding ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]]))) +
+      
+      mydatastructure[[site]][["histdata"]]$hover_text <- paste0(
+        mydatastructure[[site]][["histdata"]]$Year, ", ", mydatastructure[[site]][["Characteristic"]], "\n",
+        mydatastructure[[site]][["histdata"]]$ntot, " total observation(s)", "\n",
+        mydatastructure[[site]][["histdata"]]$formatted_percent_ex, " of observations exceeding ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]]
+      )
+      
+      mydatastructure[[site]][["p"]]<- ggplot2::ggplot(mydatastructure[[site]][["histdata"]], aes(x = Year, y = percent_ex, text = hover_text)) +
         geom_bar(stat = "identity", fill = "lightgray") +
+        scale_x_continuous(breaks = seq(min(mydatastructure[[site]][["histdata"]]$Year), max(mydatastructure[[site]][["histdata"]]$Year), by = 1)) +
         ylim(0, 100) +
         labs(
-          title = paste0("Percent of ", mydatastructure[[site]][["Characteristic"]], " observations exceeding the water quality threshold at ", mydatastructure[[site]][["Sitename"]]),
+          title = paste0("Percent of non-NA ", mydatastructure[[site]][["Characteristic"]], " observations exceeding the water quality threshold at ", mydatastructure[[site]][["Sitename"]]),
           x = "Year",
-          y = "% observations") +
+          y = "% non-NA observations") +
         theme_minimal() +
-        theme(
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank())
+        theme(panel.grid.major.x = element_blank())
       
       # Hist Alt Text
       alt_text <- c()
       for (i in seq_len(nrow(mydatastructure[[site]][["histdata"]]))) {
         if(mydatastructure[[site]][["histdata"]]$nex[i] != 0) {
-          alt_text <- c(alt_text, paste0("<b>", mydatastructure[[site]][["histdata"]]$Year[i], "</b>: ", mydatastructure[[site]][["histdata"]]$ntot[i], " total observation(s), ", mydatastructure[[site]][["histdata"]]$formatted_percent_ex[i], " of observations exceeding ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]]))
+          alt_text <- c(alt_text, paste0("<b>", mydatastructure[[site]][["histdata"]]$Year[i], "</b>: ", mydatastructure[[site]][["histdata"]]$ntot[i], " non-NA observation(s), ", mydatastructure[[site]][["histdata"]]$formatted_percent_ex[i], " exceeding ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]]))
         }
       }
       mydatastructure[[site]][["alt_raw"]] <- alt_text
@@ -2561,6 +2565,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     }
       return(mydatastructure)
   })
+  
 
 ### Table Hover Text ###
   exceedances_tooltips <- list(
@@ -2583,10 +2588,6 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
 
     mydatastructure <- exDUM() # get the data
     
-    # if (!is.na(mydatastructure[[site]][["notification_text"]])==TRUE) {shiny::showNotification(
-    #   mydatastructure[[site]][["notification_text"]], type = "error", duration = 10)}
-
-    
     nTabs = length(names(mydatastructure))
     myTabs = lapply(seq_len(nTabs), function(i) { # i is the index (e.g., 1, 2, 3)
       shiny::tabPanel(
@@ -2603,10 +2604,9 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
       })
     do.call(tabsetPanel, myTabs) # make a tabsetPanel containing one tab per site
     
-    
-    
     })
 
+  
   shiny::observe(
     lapply(seq_len(length(DataOpts$Site)), function(i) { # i is the index (e.g., 1, 2, 3)
 

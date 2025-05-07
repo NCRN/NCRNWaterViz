@@ -372,7 +372,7 @@ shinyUI(
             ,column(width=4, siteChooserUI("DataSiteExceedances"))
             ,column(width=4, paramChooserUI("DataParamExceedances"))
           ),fluidRow(
-            column(width=8, actionButton("hist_button", "Show Figure"))
+            column(width=8, actionButton("hist_button", "Show Figure", class = "btn-primary"))
             ,column(width=4, actionButton(inputId="AboutExceedances", label="About Exceedances...", class="btn btn-primary"))
           )
         )

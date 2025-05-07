@@ -1406,9 +1406,7 @@ WaterSeriesOutMultiple <- reactive({
     t = 100,
     pad = 20
   )
-  t <- list(
-    size = global_textsize
-    )
+
   baseplot <-
     plotly::plot_ly(
       series_df
@@ -1909,9 +1907,7 @@ BoxPlotMultipleOut<-reactive({
     t = 100,
     pad = 20
   )
-  t <- list(
-    size = global_textsize
-    )
+
   baseplot <-
     plotly::plot_ly(
       summary_table

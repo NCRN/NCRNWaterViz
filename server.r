@@ -2377,7 +2377,9 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
       # Building df
       mydatastructure[[site]][["df"]] <- getWData(WaterData, parkcode=DataOpts$Park, sitecode = site, charname=DataOpts$Param)
       mydatastructure[[site]][["df"]] <- mydatastructure[[site]][["df"]][, c("MonitoringLocationName", "Date", "Characteristic", "Value", "ResultMeasure.MeasureUnitCode")]
+      mydatastructure[[site]][["total_obs"]] <- nrow(mydatastructure[[site]][["df"]])
       mydatastructure[[site]][["df"]] <- subset(mydatastructure[[site]][["df"]], !is.na(Value))
+      mydatastructure[[site]][["non_na_obs"]] <- nrow(mydatastructure[[site]][["df"]])
       
       # Getting characters
       mydatastructure[[site]][["LowerThreshold"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="LowerDescription")
@@ -2512,7 +2514,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
         scale_x_continuous(breaks = seq(min(mydatastructure[[site]][["histdata"]]$Year), max(mydatastructure[[site]][["histdata"]]$Year), by = 1)) +
         ylim(0, 100) +
         labs(
-          title = paste0("Percent of non-NA ", mydatastructure[[site]][["Characteristic"]], " observations exceeding the water quality threshold at ", mydatastructure[[site]][["Sitename"]]),
+          title = paste0("Percent of non-NA ", mydatastructure[[site]][["Characteristic"]], " observations exceeding the water quality threshold at ", mydatastructure[[site]][["Sitename"]], "\nNon-NA observations: ", mydatastructure[[site]][["non_na_obs"]], " (NAs: ", mydatastructure[[site]][["total_obs"]]-mydatastructure[[site]][["non_na_obs"]], ")"),
           x = "Year",
           y = "% non-NA observations") +
         theme_minimal() +

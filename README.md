@@ -16,7 +16,9 @@ git checkout ncrn_refactor
 3.  Bring your project's `renv` in sync with the provided renv.lock file. In your R console:
 
 ```{r}
-renv::status()
+install.packages('renv')
+renv::activate() # tells your R project to use renv to manage packages locally instead of gloablly via install.packages()
+renv::restore() # tells your R project to install all of the packages from the renv.lock file
 ```
 
 4.  Create a Data/NCRN folder. In terminal:

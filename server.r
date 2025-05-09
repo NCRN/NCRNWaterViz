@@ -2360,201 +2360,203 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     #
     # Examples:
     #
-    shiny::validate(
-      need(DataOpts$Park, message="Choose a Park"),
-      need(DataOpts$Site, message="Choose a Site"),
-      need(DataOpts$Param, message="Choose a Water Quality Parameter")
-    )  
+    req(DataOpts$Park, DataOpts$Site, DataOpts$Param)  
     
-    mydatastructure <- list()
-    for (site in DataOpts$Site) {
-      mydatastructure[[site]]<-list()
-      
-      # Building df
-      mydatastructure[[site]][["df"]] <- getWData(WaterData, parkcode=DataOpts$Park, sitecode = site, charname=DataOpts$Param)
-      mydatastructure[[site]][["df"]] <- mydatastructure[[site]][["df"]][, c("MonitoringLocationName", "Date", "Characteristic", "Value", "ResultMeasure.MeasureUnitCode")]
-      mydatastructure[[site]][["df"]] <- subset(mydatastructure[[site]][["df"]], !is.na(Value))
-      
-      # Getting characters
-      mydatastructure[[site]][["LowerThreshold"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="LowerDescription")
-      mydatastructure[[site]][["UpperThreshold"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="UpperDescription")
-      mydatastructure[[site]][["LowerPoint"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="LowerPoint")
-      mydatastructure[[site]][["UpperPoint"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="UpperPoint")
-      mydatastructure[[site]][["Sitename"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info = "SiteName")
-      mydatastructure[[site]][["Characteristic"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info = "DisplayName")
-      mydatastructure[[site]][["Unit"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="Units")
-      mydatastructure[[site]][["notification_text"]] <- dplyr::case_when(
-        !is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & all(mydatastructure[[site]][["df"]]$Value > mydatastructure[[site]][["LowerPoint"]]) & all(mydatastructure[[site]][["df"]]$Value < mydatastructure[[site]][["UpperPoint"]]) ~ 
-          paste0("No measurements of ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]], " fall below the lower water quality threshold of ", mydatastructure[[site]][["LowerPoint"]], " ", mydatastructure[[site]][["Unit"]], ", nor exceed the upper water quality threshold of ", mydatastructure[[site]][["UpperPoint"]], " ", mydatastructure[[site]][["Unit"]])
-        ,!is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & all(mydatastructure[[site]][["df"]]$Value > mydatastructure[[site]][["LowerPoint"]]) ~ 
-          paste0("No measurements of ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]],
-                 "fall below the water quality threshold of ", mydatastructure[[site]][["LowerPoint"]], " ", mydatastructure[[site]][["Unit"]])
-        ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & all(mydatastructure[[site]][["df"]]$Value < mydatastructure[[site]][["UpperPoint"]]) ~
-          paste0("No measurements of ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]],
-                 "exceed the water quality threshold of ", mydatastructure[[site]][["UpperPoint"]], " ", mydatastructure[[site]][["Unit"]])
-        ,is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE ~
-          paste0("There is no recorded water quality threshold for ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]])
-      )
-      
-      # Building exdf
-      if(any(mydatastructure[[site]][["df"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm = TRUE)) {
-        lower_sd<- mydatastructure[[site]][["df"]][mydatastructure[[site]][["df"]]$Value < mydatastructure[[site]][["LowerPoint"]], ]
-        lower_sd$LowerThreshold <- mydatastructure[[site]][["LowerThreshold"]]
-      } else{
-        lower_sd<- mydatastructure[[site]][["df"]][0, ]
+      mydatastructure <- list()
+      for (site in DataOpts$Site) {
+          mydatastructure[[site]]<-list()
+          
+          # Building df
+          mydatastructure[[site]][["df"]] <- getWData(WaterData, parkcode=DataOpts$Park, sitecode = site, charname=DataOpts$Param)
+          mydatastructure[[site]][["df"]] <- mydatastructure[[site]][["df"]][, c("MonitoringLocationName", "Date", "Characteristic", "Value", "ResultMeasure.MeasureUnitCode")]
+          mydatastructure[[site]][["total_obs"]] <- nrow(mydatastructure[[site]][["df"]])
+          mydatastructure[[site]][["df"]] <- subset(mydatastructure[[site]][["df"]], !is.na(Value))
+          mydatastructure[[site]][["non_na_obs"]] <- nrow(mydatastructure[[site]][["df"]])
+          
+          # Getting characters
+          mydatastructure[[site]][["LowerThreshold"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="LowerDescription")
+          mydatastructure[[site]][["UpperThreshold"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="UpperDescription")
+          mydatastructure[[site]][["LowerPoint"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="LowerPoint")
+          mydatastructure[[site]][["UpperPoint"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="UpperPoint")
+          mydatastructure[[site]][["Sitename"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info = "SiteName")
+          mydatastructure[[site]][["Characteristic"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info = "DisplayName")
+          mydatastructure[[site]][["Unit"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="Units")
+          mydatastructure[[site]][["notification_text"]] <- dplyr::case_when(
+              !is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & all(mydatastructure[[site]][["df"]]$Value > mydatastructure[[site]][["LowerPoint"]]) & all(mydatastructure[[site]][["df"]]$Value < mydatastructure[[site]][["UpperPoint"]]) ~ 
+                  paste0("No measurements of ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]], " fall below the lower water quality threshold of ", mydatastructure[[site]][["LowerPoint"]], " ", mydatastructure[[site]][["Unit"]], ", nor exceed the upper water quality threshold of ", mydatastructure[[site]][["UpperPoint"]], " ", mydatastructure[[site]][["Unit"]])
+              ,!is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & all(mydatastructure[[site]][["df"]]$Value > mydatastructure[[site]][["LowerPoint"]]) ~ 
+                  paste0("No measurements of ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]],
+                         "fall below the water quality threshold of ", mydatastructure[[site]][["LowerPoint"]], " ", mydatastructure[[site]][["Unit"]])
+              ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & all(mydatastructure[[site]][["df"]]$Value < mydatastructure[[site]][["UpperPoint"]]) ~
+                  paste0("No measurements of ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]],
+                         "exceed the water quality threshold of ", mydatastructure[[site]][["UpperPoint"]], " ", mydatastructure[[site]][["Unit"]])
+              ,is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE ~
+                  paste0("There is no recorded water quality threshold for ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]])
+          )
+          
+          # Building exdf
+          if(any(mydatastructure[[site]][["df"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm = TRUE)) {
+              lower_sd<- mydatastructure[[site]][["df"]][mydatastructure[[site]][["df"]]$Value < mydatastructure[[site]][["LowerPoint"]], ]
+              lower_sd$LowerThreshold <- mydatastructure[[site]][["LowerThreshold"]]
+          } else{
+              lower_sd<- mydatastructure[[site]][["df"]][0, ]
+          }
+          if(any(mydatastructure[[site]][["df"]]$Value >= mydatastructure[[site]][["UpperPoint"]], na.rm = TRUE)) {
+              upper_sd<- mydatastructure[[site]][["df"]][mydatastructure[[site]][["df"]]$Value > mydatastructure[[site]][["UpperPoint"]], ]
+              upper_sd$UpperThreshold <- mydatastructure[[site]][["UpperThreshold"]]
+          } else {
+              upper_sd<- mydatastructure[[site]][["df"]][0, ]
+          }
+          mydatastructure[[site]][["exdf"]] <- dplyr::bind_rows(lower_sd, upper_sd)
+          
+          ### ...and desc_exdf ###
+          mydatastructure[[site]][["desc_exdf"]]<- mydatastructure[[site]][["exdf"]] %>%
+              dplyr::rename("Units" = "ResultMeasure.MeasureUnitCode") %>%
+              dplyr::rename("Site" = "MonitoringLocationName") %>%
+              dplyr::rename("Parameter" = "Characteristic") %>%
+              dplyr::rename("SampleDate" = "Date") %>%
+              dplyr::mutate("Difference" = case_when(
+                  !is.na(mydatastructure[[site]][["UpperPoint"]])==TRUE & is.na(mydatastructure[[site]][["LowerPoint"]])==TRUE ~ 
+                      mydatastructure[[site]][["exdf"]]$Value - mydatastructure[[site]][["UpperPoint"]]
+                  ,!is.na(mydatastructure[[site]][["LowerPoint"]])==TRUE & is.na(mydatastructure[[site]][["UpperPoint"]])==TRUE ~ 
+                      mydatastructure[[site]][["exdf"]]$Value - mydatastructure[[site]][["LowerPoint"]]
+                  ,!is.na(mydatastructure[[site]][["UpperPoint"]])==TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]])==TRUE & any(mydatastructure[[site]][["df"]]$Value >= mydatastructure[[site]][["UpperPoint"]], na.rm = TRUE) ~ 
+                      mydatastructure[[site]][["exdf"]]$Value - mydatastructure[[site]][["UpperPoint"]]
+                  ,!is.na(mydatastructure[[site]][["UpperPoint"]])==TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]])==TRUE & any(mydatastructure[[site]][["df"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm = TRUE) ~ 
+                      mydatastructure[[site]][["exdf"]]$Value - mydatastructure[[site]][["LowerPoint"]]
+              )) %>%
+              dplyr::mutate("Difference" = round(Difference, 4)) %>%
+              dplyr::arrange(desc(SampleDate)) %>%
+              dplyr::select("Site", "SampleDate", "Parameter", "Value", "Difference", "Units", any_of(c("UpperThreshold", "LowerThreshold")))
+          
+          
+          # Data wrangle for text and hist
+          mydatastructure[[site]][["histyears"]]<- data.frame(Year = lubridate::year(mydatastructure[[site]][["df"]]$Date))
+          mydatastructure[[site]][["totcount"]]<- mydatastructure[[site]][["histyears"]] %>%
+              dplyr::count(Year) %>%
+              dplyr::rename("ntot" = "n")
+          mydatastructure[[site]][["totcount"]] <- subset(mydatastructure[[site]][["totcount"]], !is.na(Year))
+          
+          mydatastructure[[site]][["excount"]] <- mydatastructure[[site]][["exdf"]] %>%
+              dplyr::mutate(Year = lubridate::year(Date)) %>%
+              dplyr::count(Year) %>%
+              dplyr::rename("nex" = "n")
+          mydatastructure[[site]][["excount"]] <- subset(mydatastructure[[site]][["excount"]], !is.na(Year))
+          
+          mydatastructure[[site]][["histdata"]] <- dplyr::left_join(mydatastructure[[site]][["totcount"]], mydatastructure[[site]][["excount"]], by = "Year")
+          mydatastructure[[site]][["histdata"]][is.na(mydatastructure[[site]][["histdata"]])] <- 0
+          mydatastructure[[site]][["histdata"]] <- mydatastructure[[site]][["histdata"]] %>%
+              dplyr::mutate(percent_ex = (nex / ntot) * 100) %>%
+              dplyr::mutate(formatted_percent_ex = scales::percent(percent_ex / 100, accuracy = 0.01))
+          
+          # Text prep
+          mydatastructure[[site]][["recent_year"]]<- max(mydatastructure[[site]][["histdata"]]$Year)
+          mydatastructure[[site]][["oldest_year"]]<- min(mydatastructure[[site]][["histdata"]]$Year)
+          mydatastructure[[site]][["nex"]]<- mydatastructure[[site]][["histdata"]][mydatastructure[[site]][["histdata"]]$Year == mydatastructure[[site]][["recent_year"]], "nex"]
+          mydatastructure[[site]][["ntot"]]<- mydatastructure[[site]][["histdata"]][mydatastructure[[site]][["histdata"]]$Year == mydatastructure[[site]][["recent_year"]], "ntot"]
+          # recent_freq<- sprintf("%.2f%%", (nex/ntot)*100)
+          mydatastructure[[site]][["sum_nex"]]<- sum(mydatastructure[[site]][["histdata"]]$nex)
+          mydatastructure[[site]][["sum_ntot"]]<- sum(mydatastructure[[site]][["histdata"]]$ntot)
+          # sum_freq<- sprintf("%.2f%%", (sum_nex/sum_ntot)*100)
+          # freq_comp<- ifelse((nex/ntot) > (sum_nex/sum_ntot), "greater than",
+          #                      ifelse((nex/ntot) == (sum_nex/sum_ntot), "equal to", "less than"))
+          mydatastructure[[site]][["grammar1"]]<- if(mydatastructure[[site]][["nex"]]==1) {
+              paste0("There was ", "<b>", mydatastructure[[site]][["nex"]], "</b>", " exceedance of the ")
+          } else {
+              paste0("There were ", "<b>", mydatastructure[[site]][["nex"]], "</b>", " exceedances of the ")
+          }
+          mydatastructure[[site]][["grammar2"]]<- if(mydatastructure[[site]][["sum_nex"]]==1) {
+              paste0("There has been ", "<b>", mydatastructure[[site]][["sum_nex"]], "</b>", " exceedance of the ")
+          } else {
+              paste0("There have been ", "<b>", mydatastructure[[site]][["sum_nex"]], "</b>", " exceedances of the ")
+          }
+          
+          # Writing text
+          mydatastructure[[site]][["extext"]]<- c(
+              paste0(mydatastructure[[site]][["grammar1"]], mydatastructure[[site]][["Characteristic"]], " water quality threshold among ", mydatastructure[[site]][["ntot"]], " observations at ", mydatastructure[[site]][["Sitename"]], " in ", mydatastructure[[site]][["recent_year"]], ".")
+              ,paste0(mydatastructure[[site]][["grammar2"]], mydatastructure[[site]][["Characteristic"]], " water quality threshold among ", mydatastructure[[site]][["sum_ntot"]], " observations at ", mydatastructure[[site]][["Sitename"]], " since monitoring began in ", mydatastructure[[site]][["oldest_year"]], ".")
+              # ,paste0("<u>", recent_freq, "</u>", " of observations exceeded the water quality threshold in ", recent_year, ", ", freq_comp, " the overall exceedance percentage of ", "<u>", sum_freq, "</u>", ".")
+          )
+          mydatastructure[[site]][["extext_bullets"]]<- paste0("<li>", mydatastructure[[site]][["extext"]], "</li>", collapse = "")
+          
+          mydatastructure[[site]][["html_extext"]]<- paste0(
+              "<p><b><span style='font-size: 18px;'>Exceedances Report:</b></p>",
+              "<ul>", mydatastructure[[site]][["extext_bullets"]], "</ul>"
+          )
+          
+          # Histogram
+          
+          mydatastructure[[site]][["ExPoint"]]<- dplyr::case_when(
+              is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE ~ mydatastructure[[site]][["LowerPoint"]]
+              ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE ~ mydatastructure[[site]][["UpperPoint"]]
+              ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & any(mydatastructure[[site]][["exdf"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm=TRUE) & all(mydatastructure[[site]][["exdf"]]$Value < mydatastructure[[site]][["UpperPoint"]], na.rm=TRUE) ~ mydatastructure[[site]][["LowerPoint"]]
+              ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & any(mydatastructure[[site]][["exdf"]]$Value >= mydatastructure[[site]][["UpperPoint"]], na.rm=TRUE) & all(mydatastructure[[site]][["exdf"]]$Value > mydatastructure[[site]][["LowerPoint"]], na.rm=TRUE) ~ mydatastructure[[site]][["UpperPoint"]]
+              # ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & any(mydatastructure[[site]][["exdf"]]$Value >= mydatastructure[[site]][["UpperPoint"]], na.rm=TRUE) & any(mydatastructure[[site]][["exdf"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm=TRUE) ~ paste0(mydatastructure[[site]][["LowerPoint"]], " and ", mydatastructure[[site]][["UpperPoint"]])
+          )
+          
+          
+          mydatastructure[[site]][["histdata"]]$hover_text <- paste0(
+              mydatastructure[[site]][["histdata"]]$Year, ", ", mydatastructure[[site]][["Characteristic"]], "\n",
+              mydatastructure[[site]][["histdata"]]$ntot, " total observation(s)", "\n",
+              mydatastructure[[site]][["histdata"]]$formatted_percent_ex, " of observations exceeding ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]]
+          )
+          
+          mydatastructure[[site]][["p"]]<- ggplot2::ggplot(mydatastructure[[site]][["histdata"]], aes(x = Year, y = percent_ex, text = hover_text)) +
+              geom_bar(stat = "identity", fill = "lightgray") +
+              scale_x_continuous(breaks = seq(min(mydatastructure[[site]][["histdata"]]$Year), max(mydatastructure[[site]][["histdata"]]$Year), by = 1)) +
+              ylim(0, 100) +
+              labs(
+                  title = paste0("Percent of non-NA ", mydatastructure[[site]][["Characteristic"]], " observations exceeding the water quality threshold at ", mydatastructure[[site]][["Sitename"]], "\nNon-NA observations: ", mydatastructure[[site]][["non_na_obs"]], " (NAs: ", mydatastructure[[site]][["total_obs"]]-mydatastructure[[site]][["non_na_obs"]], ")"),
+                  x = "Year",
+                  y = "% non-NA observations") +
+              theme_minimal() +
+              theme(panel.grid.major.x = element_blank())
+          
+          # Hist Alt Text
+          alt_text <- c()
+          for (i in seq_len(nrow(mydatastructure[[site]][["histdata"]]))) {
+              if(mydatastructure[[site]][["histdata"]]$nex[i] != 0) {
+                  alt_text <- c(alt_text, paste0("<b>", mydatastructure[[site]][["histdata"]]$Year[i], "</b>: ", mydatastructure[[site]][["histdata"]]$ntot[i], " non-NA observation(s), ", mydatastructure[[site]][["histdata"]]$formatted_percent_ex[i], " exceeding ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]]))
+              }
+          }
+          mydatastructure[[site]][["alt_raw"]] <- alt_text
+          mydatastructure[[site]][["alt_bullets"]] <- paste0("<li>", mydatastructure[[site]][["alt_raw"]], "</li>", collapse = "")
+          mydatastructure[[site]][["alt_bullets2"]] <- paste0("<ul>", mydatastructure[[site]][["alt_bullets"]], "</ul>")
+          
+          mydatastructure[[site]][["recent_ex"]] <- max(mydatastructure[[site]][["histdata"]]$Year[mydatastructure[[site]][["histdata"]]$nex != 0])
+          mydatastructure[[site]][["oldest_ex"]] <- min(mydatastructure[[site]][["histdata"]]$Year[mydatastructure[[site]][["histdata"]]$nex != 0])
+          mydatastructure[[site]][["highest_ex_rate"]] <- mydatastructure[[site]][["histdata"]]$formatted_percent_ex[which.max(mydatastructure[[site]][["histdata"]]$percent_ex)]
+          mydatastructure[[site]][["hry_vec"]] <- mydatastructure[[site]][["histdata"]]$Year[mydatastructure[[site]][["histdata"]]$percent_ex == max(mydatastructure[[site]][["histdata"]]$percent_ex)]
+          vec_format <- function(vec) {
+              n <- length(vec)
+              if (n == 1) return(as.character(vec[1]))
+              if (n == 2) return(paste(vec, collapse = " and "))
+              paste(paste(vec[-n], collapse = ", "), "and", vec[n])
+          }
+          mydatastructure[[site]][["highest_rate_year"]] <- vec_format(mydatastructure[[site]][["hry_vec"]])
+          
+          mydatastructure[[site]][["n_ex_year"]] <- sum(mydatastructure[[site]][["histdata"]]$nex != 0)
+          if (mydatastructure[[site]][["n_ex_year"]] == 1) {
+              mydatastructure[[site]][["alt_text_line2"]] <- paste0("Exceedances of the water quality threshold of ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]], " were measured in only ", mydatastructure[[site]][["recent_ex"]], ".")
+          } else {
+              mydatastructure[[site]][["alt_text_line2"]] <- paste0("Exceedances of the water quality threshold of ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]], " were measured first in ", mydatastructure[[site]][["oldest_ex"]], ", and most recently in ", mydatastructure[[site]][["recent_ex"]], ".")
+          }
+          
+          if (mydatastructure[[site]][["n_ex_year"]] != 0) {
+              mydatastructure[[site]][["alt_text"]] <- paste0(
+                  "<b>Figure Description:</b> Acceptable water quality measurements for ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]], " have occurred between ", mydatastructure[[site]][["oldest_year"]], " and ", mydatastructure[[site]][["recent_year"]], ". ",
+                  mydatastructure[[site]][["alt_text_line2"]],
+                  " The highest proportion of threshold exceedances per measurements taken in a single year was ", mydatastructure[[site]][["highest_ex_rate"]], " in ", mydatastructure[[site]][["highest_rate_year"]], ".",
+                  " See exceedances profiles per year below:",
+                  mydatastructure[[site]][["alt_bullets2"]])
+          } else {
+              mydatastructure[[site]][["alt_text"]] <- paste0(
+                  "<b>Figure Description:</b> Acceptable water quality measurements for ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]], " have occurred between ", mydatastructure[[site]][["oldest_year"]], " and ", mydatastructure[[site]][["recent_year"]], ". ",
+                  "There are no exceedances data to describe."
+              )
+          }
+          
       }
-      if(any(mydatastructure[[site]][["df"]]$Value >= mydatastructure[[site]][["UpperPoint"]], na.rm = TRUE)) {
-        upper_sd<- mydatastructure[[site]][["df"]][mydatastructure[[site]][["df"]]$Value > mydatastructure[[site]][["UpperPoint"]], ]
-        upper_sd$UpperThreshold <- mydatastructure[[site]][["UpperThreshold"]]
-      } else {
-        upper_sd<- mydatastructure[[site]][["df"]][0, ]
-      }
-      mydatastructure[[site]][["exdf"]] <- dplyr::bind_rows(lower_sd, upper_sd)
-      
-      ### ...and desc_exdf ###
-      mydatastructure[[site]][["desc_exdf"]]<- mydatastructure[[site]][["exdf"]] %>%
-        dplyr::rename("Units" = "ResultMeasure.MeasureUnitCode") %>%
-        dplyr::rename("Site" = "MonitoringLocationName") %>%
-        dplyr::rename("Parameter" = "Characteristic") %>%
-        dplyr::rename("SampleDate" = "Date") %>%
-        dplyr::mutate("Difference" = case_when(
-          !is.na(mydatastructure[[site]][["UpperPoint"]])==TRUE & is.na(mydatastructure[[site]][["LowerPoint"]])==TRUE ~ 
-            mydatastructure[[site]][["exdf"]]$Value - mydatastructure[[site]][["UpperPoint"]]
-          ,!is.na(mydatastructure[[site]][["LowerPoint"]])==TRUE & is.na(mydatastructure[[site]][["UpperPoint"]])==TRUE ~ 
-            mydatastructure[[site]][["exdf"]]$Value - mydatastructure[[site]][["LowerPoint"]]
-          ,!is.na(mydatastructure[[site]][["UpperPoint"]])==TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]])==TRUE & any(mydatastructure[[site]][["df"]]$Value >= mydatastructure[[site]][["UpperPoint"]], na.rm = TRUE) ~ 
-            mydatastructure[[site]][["exdf"]]$Value - mydatastructure[[site]][["UpperPoint"]]
-          ,!is.na(mydatastructure[[site]][["UpperPoint"]])==TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]])==TRUE & any(mydatastructure[[site]][["df"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm = TRUE) ~ 
-            mydatastructure[[site]][["exdf"]]$Value - mydatastructure[[site]][["LowerPoint"]]
-        )) %>%
-        dplyr::mutate("Difference" = round(Difference, 4)) %>%
-        dplyr::arrange(desc(SampleDate)) %>%
-        dplyr::select("Site", "SampleDate", "Parameter", "Value", "Difference", "Units", any_of(c("UpperThreshold", "LowerThreshold")))
-        
-      
-      # Data wrangle for text and hist
-      mydatastructure[[site]][["histyears"]]<- data.frame(Year = lubridate::year(mydatastructure[[site]][["df"]]$Date))
-      mydatastructure[[site]][["totcount"]]<- mydatastructure[[site]][["histyears"]] %>%
-        dplyr::count(Year) %>%
-        dplyr::rename("ntot" = "n")
-      mydatastructure[[site]][["totcount"]] <- subset(mydatastructure[[site]][["totcount"]], !is.na(Year))
-      
-      mydatastructure[[site]][["excount"]] <- mydatastructure[[site]][["exdf"]] %>%
-        dplyr::mutate(Year = lubridate::year(Date)) %>%
-        dplyr::count(Year) %>%
-        dplyr::rename("nex" = "n")
-      mydatastructure[[site]][["excount"]] <- subset(mydatastructure[[site]][["excount"]], !is.na(Year))
-      
-      mydatastructure[[site]][["histdata"]] <- dplyr::left_join(mydatastructure[[site]][["totcount"]], mydatastructure[[site]][["excount"]], by = "Year")
-      mydatastructure[[site]][["histdata"]][is.na(mydatastructure[[site]][["histdata"]])] <- 0
-      mydatastructure[[site]][["histdata"]] <- mydatastructure[[site]][["histdata"]] %>%
-        dplyr::mutate(percent_ex = (nex / ntot) * 100) %>%
-        dplyr::mutate(formatted_percent_ex = scales::percent(percent_ex / 100, accuracy = 0.01))
-      
-      # Text prep
-      mydatastructure[[site]][["recent_year"]]<- max(mydatastructure[[site]][["histdata"]]$Year)
-      mydatastructure[[site]][["oldest_year"]]<- min(mydatastructure[[site]][["histdata"]]$Year)
-      mydatastructure[[site]][["nex"]]<- mydatastructure[[site]][["histdata"]][mydatastructure[[site]][["histdata"]]$Year == mydatastructure[[site]][["recent_year"]], "nex"]
-      mydatastructure[[site]][["ntot"]]<- mydatastructure[[site]][["histdata"]][mydatastructure[[site]][["histdata"]]$Year == mydatastructure[[site]][["recent_year"]], "ntot"]
-      # recent_freq<- sprintf("%.2f%%", (nex/ntot)*100)
-      mydatastructure[[site]][["sum_nex"]]<- sum(mydatastructure[[site]][["histdata"]]$nex)
-      mydatastructure[[site]][["sum_ntot"]]<- sum(mydatastructure[[site]][["histdata"]]$ntot)
-      # sum_freq<- sprintf("%.2f%%", (sum_nex/sum_ntot)*100)
-      # freq_comp<- ifelse((nex/ntot) > (sum_nex/sum_ntot), "greater than",
-      #                      ifelse((nex/ntot) == (sum_nex/sum_ntot), "equal to", "less than"))
-      mydatastructure[[site]][["grammar1"]]<- if(mydatastructure[[site]][["nex"]]==1) {
-        paste0("There was ", "<b>", mydatastructure[[site]][["nex"]], "</b>", " exceedance of the ")
-      } else {
-        paste0("There were ", "<b>", mydatastructure[[site]][["nex"]], "</b>", " exceedances of the ")
-      }
-      mydatastructure[[site]][["grammar2"]]<- if(mydatastructure[[site]][["sum_nex"]]==1) {
-        paste0("There has been ", "<b>", mydatastructure[[site]][["sum_nex"]], "</b>", " exceedance of the ")
-      } else {
-        paste0("There have been ", "<b>", mydatastructure[[site]][["sum_nex"]], "</b>", " exceedances of the ")
-      }
-      
-      # Writing text
-      mydatastructure[[site]][["extext"]]<- c(
-        paste0(mydatastructure[[site]][["grammar1"]], mydatastructure[[site]][["Characteristic"]], " water quality threshold among ", mydatastructure[[site]][["ntot"]], " observations at ", mydatastructure[[site]][["Sitename"]], " in ", mydatastructure[[site]][["recent_year"]], ".")
-        ,paste0(mydatastructure[[site]][["grammar2"]], mydatastructure[[site]][["Characteristic"]], " water quality threshold among ", mydatastructure[[site]][["sum_ntot"]], " observations at ", mydatastructure[[site]][["Sitename"]], " since monitoring began in ", mydatastructure[[site]][["oldest_year"]], ".")
-        # ,paste0("<u>", recent_freq, "</u>", " of observations exceeded the water quality threshold in ", recent_year, ", ", freq_comp, " the overall exceedance percentage of ", "<u>", sum_freq, "</u>", ".")
-      )
-      mydatastructure[[site]][["extext_bullets"]]<- paste0("<li>", mydatastructure[[site]][["extext"]], "</li>", collapse = "")
-      
-      mydatastructure[[site]][["html_extext"]]<- paste0(
-        "<p><b><span style='font-size: 18px;'>Exceedances Report:</b></p>",
-        "<ul>", mydatastructure[[site]][["extext_bullets"]], "</ul>"
-      )
-      
-      # Histogram
-      mydatastructure[[site]][["ExPoint"]]<- dplyr::case_when(
-        is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE ~ mydatastructure[[site]][["LowerPoint"]]
-        ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE ~ mydatastructure[[site]][["UpperPoint"]]
-        ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & any(mydatastructure[[site]][["exdf"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm=TRUE) & all(mydatastructure[[site]][["exdf"]]$Value < mydatastructure[[site]][["UpperPoint"]], na.rm=TRUE) ~ mydatastructure[[site]][["LowerPoint"]]
-        ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & any(mydatastructure[[site]][["exdf"]]$Value >= mydatastructure[[site]][["UpperPoint"]], na.rm=TRUE) & all(mydatastructure[[site]][["exdf"]]$Value > mydatastructure[[site]][["LowerPoint"]], na.rm=TRUE) ~ mydatastructure[[site]][["UpperPoint"]]
-        # ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & any(mydatastructure[[site]][["exdf"]]$Value >= mydatastructure[[site]][["UpperPoint"]], na.rm=TRUE) & any(mydatastructure[[site]][["exdf"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm=TRUE) ~ paste0(mydatastructure[[site]][["LowerPoint"]], " and ", mydatastructure[[site]][["UpperPoint"]])
-      )
-      
-      mydatastructure[[site]][["p"]]<- ggplot2::ggplot(mydatastructure[[site]][["histdata"]], aes(x = Year, y = percent_ex,
-                                                                                                  text = paste0(mydatastructure[[site]][["histdata"]]$Year, ", ", mydatastructure[[site]][["Characteristic"]], "\n",
-                                                                                                                mydatastructure[[site]][["histdata"]]$ntot, " total observation(s)", "\n",
-                                                                                                                mydatastructure[[site]][["histdata"]]$formatted_percent_ex, " of observations exceeding ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]]))) +
-        geom_bar(stat = "identity", fill = "lightgray") +
-        ylim(0, 100) +
-        labs(
-          title = paste0("Percent of ", mydatastructure[[site]][["Characteristic"]], " observations exceeding the water quality threshold at ", mydatastructure[[site]][["Sitename"]]),
-          x = "Year",
-          y = "% observations") +
-        theme_minimal() +
-        theme(
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank())
-      
-      # Hist Alt Text
-      alt_text <- c()
-      for (i in seq_len(nrow(mydatastructure[[site]][["histdata"]]))) {
-        if(mydatastructure[[site]][["histdata"]]$nex[i] != 0) {
-          alt_text <- c(alt_text, paste0("<b>", mydatastructure[[site]][["histdata"]]$Year[i], "</b>: ", mydatastructure[[site]][["histdata"]]$ntot[i], " total observation(s), ", mydatastructure[[site]][["histdata"]]$formatted_percent_ex[i], " of observations exceeding ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]]))
-        }
-      }
-      mydatastructure[[site]][["alt_raw"]] <- alt_text
-      mydatastructure[[site]][["alt_bullets"]] <- paste0("<li>", mydatastructure[[site]][["alt_raw"]], "</li>", collapse = "")
-      mydatastructure[[site]][["alt_bullets2"]] <- paste0("<ul>", mydatastructure[[site]][["alt_bullets"]], "</ul>")
-      
-      mydatastructure[[site]][["recent_ex"]] <- max(mydatastructure[[site]][["histdata"]]$Year[mydatastructure[[site]][["histdata"]]$nex != 0])
-      mydatastructure[[site]][["oldest_ex"]] <- min(mydatastructure[[site]][["histdata"]]$Year[mydatastructure[[site]][["histdata"]]$nex != 0])
-      mydatastructure[[site]][["highest_ex_rate"]] <- mydatastructure[[site]][["histdata"]]$formatted_percent_ex[which.max(mydatastructure[[site]][["histdata"]]$percent_ex)]
-      mydatastructure[[site]][["hry_vec"]] <- mydatastructure[[site]][["histdata"]]$Year[mydatastructure[[site]][["histdata"]]$percent_ex == max(mydatastructure[[site]][["histdata"]]$percent_ex)]
-      vec_format <- function(vec) {
-        n <- length(vec)
-        if (n == 1) return(as.character(vec[1]))
-        if (n == 2) return(paste(vec, collapse = " and "))
-        paste(paste(vec[-n], collapse = ", "), "and", vec[n])
-      }
-      mydatastructure[[site]][["highest_rate_year"]] <- vec_format(mydatastructure[[site]][["hry_vec"]])
-      
-      mydatastructure[[site]][["n_ex_year"]] <- sum(mydatastructure[[site]][["histdata"]]$nex != 0)
-      if (mydatastructure[[site]][["n_ex_year"]] == 1) {
-        mydatastructure[[site]][["alt_text_line2"]] <- paste0("Exceedances of the water quality threshold of ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]], " were measured in only ", mydatastructure[[site]][["recent_ex"]], ".")
-      } else {
-        mydatastructure[[site]][["alt_text_line2"]] <- paste0("Exceedances of the water quality threshold of ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]], " were measured first in ", mydatastructure[[site]][["oldest_ex"]], ", and most recently in ", mydatastructure[[site]][["recent_ex"]], ".")
-      }
-      
-      if (mydatastructure[[site]][["n_ex_year"]] != 0) {
-        mydatastructure[[site]][["alt_text"]] <- paste0(
-          "<b>Figure Description:</b> Acceptable water quality measurements for ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]], " have occurred between ", mydatastructure[[site]][["oldest_year"]], " and ", mydatastructure[[site]][["recent_year"]], ". ",
-          mydatastructure[[site]][["alt_text_line2"]],
-          " The highest proportion of threshold exceedances per measurements taken in a single year was ", mydatastructure[[site]][["highest_ex_rate"]], " in ", mydatastructure[[site]][["highest_rate_year"]], ".",
-          " See exceedances profiles per year below:",
-          mydatastructure[[site]][["alt_bullets2"]])
-      } else {
-        mydatastructure[[site]][["alt_text"]] <- paste0(
-          "<b>Figure Description:</b> Acceptable water quality measurements for ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]], " have occurred between ", mydatastructure[[site]][["oldest_year"]], " and ", mydatastructure[[site]][["recent_year"]], ". ",
-          "There are no exceedances data to describe."
-        )
-      }
-      
-    }
       return(mydatastructure)
   })
 

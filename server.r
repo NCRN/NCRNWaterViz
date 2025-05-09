@@ -2359,11 +2359,81 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     # Return:
     #  mydatastrucure, list. A temporary package containing:
     #    [[site]], list. A temporary package for each selected site containing:
-    #      df, data.frame. A data.frame that includes water records for a [[site]].
-    #      exdf, data.frame. A data.frame that includes water records for threshold exceedances at a [[site]].
-    #
+    #      df, data.frame. A data.frame that includes water records for a site, containing:
+    #        MonitoringLocationName, chr. A site name.
+    #        Date, date. The date of a monitoring event.
+    #        Characteristic, chr. A water quality parameter.
+    #        Value, num. Measurement of a water quality parameter.
+    #        ResultMeasure.MeasureUnitCode, chr. Units of a water quality parameter.
+    #      total_obs, int. The total number of non-NA and NA records for a parameter and site.
+    #      non_na_obs, int. The number of non-NA records for a parameter and site.
+    #      LowerThreshold, chr. A description of a lower threshold of a water quality parameter at a site, if applicable.
+    #      UpperThreshold, chr. A description of an upper threshold of a water quality parameter at a site, if applicable.
+    #      LowerPoint, num. The value of a lower threshold of a water quality parameter at a site, if applicable.
+    #      UpperPoint, num. The value of an upper threshold of a water quality parameter at a site, if applicable.
+    #      Sitename, chr. A site name.
+    #      Characteristic, chr. A water quality parameter.
+    #      Unit, chr. The units of measurement of a water quality parameter.
+    #      exdf, data.frame. A data.frame that includes water records for threshold exceedances at a site, containing:
+    #        MonitoringLocationName, chr. A site name.
+    #        Date, date. The date of a monitoring event.
+    #        Characteristic, chr. A water quality parameter.
+    #        Value, num. Measurement of a water quality parameter.
+    #        ResultMeasure.MeasureUnitCode, chr. Units of a water quality parameter.
+    #        LowerThreshold, chr. A description of the lower threshold of a water quality parameter, if applicable.
+    #        UpperThreshold, chr. A description of the upper threshold of a water quality parameter, if applicable.
+    #      desc_exdf, data.frame. A data.frame configured to display water quality records for threshold exceedances at a site in tabular form, containing:
+    #        Site, chr. A site name.
+    #        SampleDate, date. The date of a monitoring event, in reverse chronological order.
+    #        Parameter, chr. A water quality parameter.
+    #        Value, num. Measurement of a water quality parameter.
+    #        Difference, num. Magniture of an exceedance, Value - Threshold.
+    #        Units, chr. Units of a water quality parameter.
+    #        LowerThreshold, chr. A description of the lower threshold of a water quality parameter, if applicable.
+    #        UpperThreshold, chr. A description of the upper threshold of a water quality parameter, if applicable.
+    #      histyears, data.frame. A data.frame that includes the year of each non-NA record of a parameter at a site, containing:
+    #        Year, num. The year of each non-NA record of a parameter at a site.
+    #      totcount, data.frame. A data.frame that includes the number of non-NA records in each year that observation for a parameter at a site occurred, containing:
+    #        Year, num. A unique year during which non-NA observations occurred.
+    #        ntot, num. The number of non-NA observations which occurred during each year.
+    #      excount, data.frame. A data.frame that includes the number of exceedances in each year that exceedances for a parameter at a site occurred, containing:
+    #        Year, num. A unique year during which exceedances were recorded.
+    #        nex, num. The number of exceedances recorded during each year.
+    #      histdata, data.frame. A data.frame that includes information on the number of observations and exceedances per year of observation for a parameter at a site, containing:
+    #        Year, num. A unique year during which non-NA observations occurred.
+    #        ntot, num. The number of non-NA observations which occurred during each year.
+    #        nex, num. The number of exceedances recorded during each year.
+    #        percent_ex, num. The percent of non-NA observations which exceeded a water quality threshold in each year.
+    #        formatted_percent_ex, chr. A formatted version of "percent_ex".
+    #        hover_text, chr. Hover text summarizing the information included in each row of "histdata".
+    #      recent_year, num. The most recent year of data collection.
+    #      oldest_year, num. The earliest year of data collection.
+    #      nex, num. The number of exceedances in the most recent year of data collection.
+    #      ntot, int. The number of non-NA observations in the most recent year of data collection.
+    #      sum_nex, num. The total number of exceedances in all recorded years of data collection.
+    #      sum_ntot, int. The total number of non-NA observations in all recorded years of data collection.
+    #      grammar1, chr. Grammatically formatted dynamic text in the first line of the exceedances report.
+    #      grammar2, chr. Grammatically formatted dynamic text in the second line of the exceedances report.
+    #      extext, chr. Unformatted dynamic text for the exceedances report.
+    #      extext_bullets, chr. Bulleted dynamic text from "extext".
+    #      html_extext, chr. HTML-formatted dynamic text from "extext_bullets".
+    #      ExPoint, num. The water quality threshold pertaining to a selected parameter and site
+    #      p, ggplot. A histogram displaying the percentage of non-NA observations which exceeded the water quality threshold, binned by year of observation.
+    #      alt_raw, chr. Unformatted alternate text containing the content of the histogram hover text.
+    #      alt_bullets, chr. Bulleted alternate text in "alt_raw".
+    #      alt_bullets2, chr. HTML-bulleted alternate text in "alt_bullets".
+    #      recent_ex, num. The year of the most recently measured exceedance.
+    #      oldest_ex, num. The year of the earliest measured exceedance.
+    #      highest_ex_rate, chr. The largest percentage of non-NA observations exceeding the water quality threshold within any year of observation.
+    #      hry_vec, num. A vector of the years in which "highest_ex_rate" occurred.
+    #      highest_rate_year, chr. A grammatically formatted version of "hry_vec".
+    #      n_ex_year, int. The number of years during which at least one exceedance was recorded.
+    #      alt_text_line2, chr. Dynamic text in the second line of alternate text describing data displayed in the histogram.
+    #      alt_text, chr. HTML-formatted alternate text including a figure description and bulleted information describing data displayed in the histogram.
+    # 
     # Examples:
-    #
+    #  mydatastructure <- exDUM()
+    # 
     shiny::validate(
       need(DataOpts$Park, message="Choose a Park"),
       need(DataOpts$Site, message="Choose a Site"),
@@ -2389,18 +2459,6 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
       mydatastructure[[site]][["Sitename"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info = "SiteName")
       mydatastructure[[site]][["Characteristic"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info = "DisplayName")
       mydatastructure[[site]][["Unit"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="Units")
-      mydatastructure[[site]][["notification_text"]] <- dplyr::case_when(
-        !is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & all(mydatastructure[[site]][["df"]]$Value > mydatastructure[[site]][["LowerPoint"]]) & all(mydatastructure[[site]][["df"]]$Value < mydatastructure[[site]][["UpperPoint"]]) ~ 
-          paste0("No measurements of ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]], " fall below the lower water quality threshold of ", mydatastructure[[site]][["LowerPoint"]], " ", mydatastructure[[site]][["Unit"]], ", nor exceed the upper water quality threshold of ", mydatastructure[[site]][["UpperPoint"]], " ", mydatastructure[[site]][["Unit"]])
-        ,!is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & all(mydatastructure[[site]][["df"]]$Value > mydatastructure[[site]][["LowerPoint"]]) ~ 
-          paste0("No measurements of ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]],
-                 "fall below the water quality threshold of ", mydatastructure[[site]][["LowerPoint"]], " ", mydatastructure[[site]][["Unit"]])
-        ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & all(mydatastructure[[site]][["df"]]$Value < mydatastructure[[site]][["UpperPoint"]]) ~
-          paste0("No measurements of ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]],
-                 "exceed the water quality threshold of ", mydatastructure[[site]][["UpperPoint"]], " ", mydatastructure[[site]][["Unit"]])
-        ,is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE ~
-          paste0("There is no recorded water quality threshold for ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]])
-      )
       
       # Building exdf
       if(any(mydatastructure[[site]][["df"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm = TRUE)) {

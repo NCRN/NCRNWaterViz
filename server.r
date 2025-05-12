@@ -1,3 +1,5 @@
+# options(download.file.method = "wininet")
+# remotes::install_github('https://github.com/ncrn/ncrnwater')
 library(shiny)
 library(lattice)
 library(dplyr)
@@ -13,6 +15,7 @@ library(magrittr)
 library(openair)
 library(NADA)
 library(plotly)
+library(devtools)
 
 ### Filtering data to active Characteristics and Sites ####
 

@@ -11,3 +11,5 @@ Data/
 brainstorming.R
 *.jpg
 dev_environment.R
+rsconnect/
+NCRNWater-master/

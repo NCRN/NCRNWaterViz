@@ -102,6 +102,24 @@ parkChooser2<-function(input,output,session, data, chosen){
 #### Site Module ####
 
 siteChooserUI<-function(id){
+  tags$head(
+    tags$script(HTML("
+      Shiny.addCustomMessageHandler('lockPicklist', function(id) {
+        var el = document.getElementById(id);
+        if (el) {
+          var selectize = $(el).selectize()[0].selectize;
+
+          // Disable typing in the input box
+          selectize.$control_input.prop('disabled', true);
+
+          // Disable all key input (Backspace, typing, etc.)
+          selectize.on('keydown', function(e) {
+            e.preventDefault();
+          });
+        }
+      });
+    "))
+  )
   ns<-NS(id)
   selectizeInput(inputId = ns("SiteIn"), label="Site", choices=NULL, multiple = TRUE)
 }

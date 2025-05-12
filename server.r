@@ -189,6 +189,11 @@ shinyServer(function(input,output,session){
     GraphOpts$FigureVerticalScaling <- input$FigureVerticalScaling
    })
   
+  ### 5/12/25 bug fix ###
+  session$onFlushed(function() {
+    session$sendCustomMessage("lockPicklist", session$ns("SiteIn"))
+  })
+  
   #### Load screen
   shiny::observe({
    invalidateLater(4000, session)

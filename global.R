@@ -102,44 +102,30 @@ parkChooser2<-function(input,output,session, data, chosen){
 #### Site Module ####
 
 siteChooserUI<-function(id){
-  tags$head(
-    tags$script(HTML("
-      Shiny.addCustomMessageHandler('lockPicklist', function(id) {
-        var el = document.getElementById(id);
-        if (el) {
-          var selectize = $(el).selectize()[0].selectize;
-
-          // Disable typing in the input box
-          selectize.$control_input.prop('disabled', true);
-
-          // Disable all key input (Backspace, typing, etc.)
-          selectize.on('keydown', function(e) {
-            e.preventDefault();
-          });
-        }
-      });
-    "))
-  )
   ns<-NS(id)
   selectizeInput(inputId = ns("SiteIn"), label="Site", choices=NULL, multiple = TRUE)
 }
 
 siteChooser<-function(input, output, session, data, park, chosen){
+
+  debouncedSiteIn <- debounce(reactive(input$SiteIn), 2000)
+
    observe({
-     updateSelectizeInput(session, inputId = "SiteIn", selected=chosen(), 
+     updateSelectizeInput(session, inputId = "SiteIn", selected=chosen(),
        choices=c("Choose a Site"="",
-       c("Select All" = "ALL", setNames(getSiteInfo(data, parkcode=park(), info="SiteCode"), 
+       c("Select All" = "ALL", setNames(getSiteInfo(data, parkcode=park(), info="SiteCode"),
          getSiteInfo(data, parkcode=park(), info="SiteName") )))
      )
    })
   return(reactive({
-    if ("ALL" %in% input$SiteIn){
+    if ("ALL" %in% debouncedSiteIn()){
       getSiteInfo(data, parkcode = park(), info = "SiteCode")
     } else {
-      input$SiteIn
+      debouncedSiteIn()
     }
     }))
 }
+
 
 siteChooserUI2<-function(id){
   ns<-NS(id)

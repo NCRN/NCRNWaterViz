@@ -107,6 +107,9 @@ siteChooserUI<-function(id){
 }
 
 siteChooser<-function(input, output, session, data, park, chosen){
+    
+   debouncedSiteIn <- shiny::debounce(reactive(input$SiteIn), 1000)
+   
    observe({
      updateSelectizeInput(session, inputId = "SiteIn", selected=chosen(), 
        choices=c("Choose a Site"="",
@@ -115,10 +118,10 @@ siteChooser<-function(input, output, session, data, park, chosen){
      )
    })
   return(reactive({
-    if ("ALL" %in% input$SiteIn){
+    if ("ALL" %in% debouncedSiteIn()){
       getSiteInfo(data, parkcode = park(), info = "SiteCode")
     } else {
-      input$SiteIn
+        debouncedSiteIn()
     }
     }))
 }

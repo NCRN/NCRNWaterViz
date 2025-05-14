@@ -375,11 +375,11 @@ photoChooser2<-function(input, output, session, data, park, site, years, imgs, s
 # Facts and images for loading screen
 #-------------------------
 
-LOADING_TEXT <- c(
-  "Loading application..."
-  ,"Loading application..."
-  ,"Loading application..."
-)
+# LOADING_TEXT <- c(
+#   "Loading application..."
+#   ,"Loading application..."
+#   ,"Loading application..."
+# )
 
 LOADING_IMAGES <- list(
    list(src= "dwq_NCRN_ANTI_SHCK_2024-06-04_20240604-131442.jpg", location = "", date = "")

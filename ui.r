@@ -42,17 +42,12 @@ shinyUI(
       ,tags$head(
       #custom styling for loading message
       tags$style(HTML("
-                    .typing-text {
+                    .loading-message {
                     font-family: monospace;
-                    #overflow: hidden;
-                    #white-space: nowrap;
-                    #width: fit-content;
                     font-size: 24px;
+                    font-weight: 500;
                     color: #333;
-                    text-align: center;
-                    position: relative;
-                    margin-top: 50px;
-                    margin: 40px;
+                    margin-bottom: 20px;
                     display: none;
                     }
                     .loading-image {
@@ -154,37 +149,34 @@ shinyUI(
                     ")),
       
       #Loading screen HTML div (initially visible)
-      div(id = "loading_screen", #"Loading, please wait...",
+      div(id = "loading_screen",
           style = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: white; opacity: 0.8; 
           z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column;",
           
-          tags$div(id =  "typingText", class = "typing-text"),
+          tags$div(id = "loadingMessage", class = "loading-message", "Loading application..."),
           tags$img(id = "loadingImage", class = "loading-image", alt = "Water monitoring Image"),
           tags$div(id = "captionText"),
-          tags$div(id = "spinner", class = "loading-bar-container",
+          tags$div(id = "container", class = "loading-bar-container",
                    tags$div(id = "progressBar", class = "loading-bar"))),
       
       tags$script(HTML(sprintf("
-                     const facts = %s;
                      const images = %s;
                      
               setTimeout(() => {
                      if (!window.shinyAppLoaded) {
-                     const fact_index = Math.floor(Math.random() * facts.length);
-                     const image_index = Math.floor(Math.random() * images.length);
+                    const image_index = Math.floor(Math.random() * images.length);
                    
-                    const fact1 = document.getElementById('typingText'); 
-                      fact1.textContent = facts[fact_index];
-                      fact1.style.display = 'block';
-                    const img1 = document.getElementById('loadingImage')
+                    const msg1 = document.getElementById('loadingMessage');
+                      msg1.style.display = 'block';
+                    const img1 = document.getElementById('loadingImage');
                       img1.src = images[image_index].src;
                       img1.style.display = 'block';
-                    const caption1 = document.getElementById('captionText')
+                    const caption1 = document.getElementById('captionText');
                       caption1.textContent = images[image_index].location + ' - ' + images[image_index].date;
                       caption1.style.display = 'block';  
-                    const spinner1 = document.getElementById('spinner');
+                    const container1 = document.getElementById('container');
+                      container1.style.display = 'block';
                     const progressBar = document.getElementById('progressBar');
-                      spinner1.style.display = 'block';
                          
                     let progress = 0;
                     const progressInterval = setInterval(() => {
@@ -198,7 +190,7 @@ shinyUI(
                      }, 60);
                     }
                   }, 1500);",
-                               jsonlite::toJSON(LOADING_TEXT, auto_unbox = TRUE),
+                              # jsonlite::toJSON(LOADING_TEXT, auto_unbox = TRUE),
                                jsonlite::toJSON(LOADING_IMAGES, auto_unbox = TRUE)))))
     ),
     

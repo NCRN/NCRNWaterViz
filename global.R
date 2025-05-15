@@ -382,9 +382,9 @@ LOADING_TEXT <- c(
 )
 
 LOADING_IMAGES <- list(
-   list(src= "dwq_NCRN_ANTI_SHCK_2024-06-04_20240604-131442.jpg", location = "", date = "")
-  ,list(src= "dwq_NCRN_MONO_BUCK_2024-06-04_20240604-084406.jpg", location = "", date = "")
-  ,list(src= "dwq_NCRN_PRWI_BONE_2024-06-11_20240611-130821.jpg", location = "", date = "")
+    list(src= "dwq_NCRN_ANTI_SHCK_2024-06-04_20240604-131442.jpg", location = "Antietam National Battlefield, Sharpsburg Creek", date = "June 4, 2024")
+    ,list(src= "dwq_NCRN_MONO_BUCK_2024-06-04_20240604-084406.jpg", location = "Monocacy National Battlefield, Bush Creek", date = "June 4, 2024")
+    ,list(src= "dwq_NCRN_PRWI_BONE_2024-06-11_20240611-130821.jpg", location = "Prince William Forest Park, Boneyard Run", date = "June 11, 2024")
 )
 
 

@@ -197,7 +197,7 @@ shinyUI(
                       }
                      }, 60);
                     }
-                  }, 1500);",
+                  }, 2000);",
                                jsonlite::toJSON(LOADING_TEXT, auto_unbox = TRUE),
                                jsonlite::toJSON(LOADING_IMAGES, auto_unbox = TRUE)))))
     ),

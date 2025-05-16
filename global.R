@@ -28,7 +28,13 @@ yearChooser<-function(input,output,session,data,chosen)  {
     if(class(data()$Date)=="Date"){
       YrMax<-reactive(max(year(data()$Date), na.rm=T))
       YrMin<-reactive(min(year(data()$Date), na.rm=T))
-      updateSliderInput(session, inputId="YearsShow", min=YrMin(),max=YrMax(),val=chosen())
+      
+      # debounce slows down the app to prevent infinite loops caused by the user changing
+      # variables faster than the app can respond
+      YrMax_debounce <- debounce(YrMax, 1000)
+      YrMin_debounce <- debounce(YrMin, 1000)
+      
+      updateSliderInput(session, inputId="YearsShow", min=YrMin_debounce(),max=YrMax_debounce(),val=chosen())
     }
   })
 
@@ -48,7 +54,13 @@ yearChooser2<-function(input,output,session,data,chosen)  {
     if(class(data()$Date)=="Date"){
       YrMax<-reactive(max(year(data()$Date), na.rm=T))
       YrMin<-reactive(min(year(data()$Date), na.rm=T))
-      updateSliderInput(session, inputId="YearsShow2", min=YrMin(),max=YrMax(),val=chosen())
+      
+      # debounce slows down the app to prevent infinite loops caused by the user changing
+      # variables faster than the app can respond
+      YrMax_debounce <- debounce(YrMax, 1000)
+      YrMin_debounce <- debounce(YrMin, 1000)
+      
+      updateSliderInput(session, inputId="YearsShow2", min=YrMin_debounce(),max=YrMax_debounce(),val=chosen())
     }
   })
 
@@ -107,7 +119,8 @@ siteChooserUI<-function(id){
 }
 
 siteChooser<-function(input, output, session, data, park, chosen){
-    
+    # debounce slows down the app to prevent infinite loops caused by the user changing
+    # variables faster than the app can respond
    debouncedSiteIn <- shiny::debounce(reactive(input$SiteIn), 1000)
    
    observe({
@@ -132,6 +145,10 @@ siteChooserUI2<-function(id){
 }
 
 siteChooser2<-function(input, output, session, data, park, chosen){
+    # debounce slows down the app to prevent infinite loops caused by the user changing
+    # variables faster than the app can respond
+    debouncedSiteIn2 <- shiny::debounce(reactive(input$SiteIn2), 1000)
+    
    observe({
      updateSelectizeInput(session, inputId = "SiteIn2", selected=chosen(), 
        choices=c("Choose a Site"="",
@@ -140,11 +157,11 @@ siteChooser2<-function(input, output, session, data, park, chosen){
      )
    })
   return(reactive({
-    if ("ALL" %in% input$SiteIn2){
-      getSiteInfo(data, parkcode = park(), info = "SiteCode")
-    } else {
-      input$SiteIn2
-    }
+      if ("ALL" %in% debouncedSiteIn2()){
+          getSiteInfo(data, parkcode = park(), info = "SiteCode")
+      } else {
+          debouncedSiteIn2()
+      }
     }))
 }
 

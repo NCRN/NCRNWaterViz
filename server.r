@@ -160,7 +160,7 @@ getTresholdText<-function(object, parkcode,sitecode,charname){
 shinyServer(function(input,output,session){
 
   #### Reactive Values for Graphics Options with Defaults ####
-  GraphOpts<-shiny::reactiveValues(Legend=TRUE, FontSize=20, GoodColor="Blue", BadColor="Orange",OutColor="Vermillion",PointSize=10,
+  GraphOpts<-shiny::reactiveValues(Legend=TRUE, FontSize=20, GoodColor="Blue", BadColor="Orange",OutColor="Vermillion",PointSize=6,
                               ThColor="Orange", TrColor="Green", LineWidth=2, ShowHidePoint=F, FigureHorizontalScaling=0.9, FigureVerticalScaling=0.7)
   
   #### Reactive Values for Choosing Data ####

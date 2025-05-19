@@ -32,11 +32,11 @@ shinyUI(
         '
         )
       )
-      ,tags$head(HTML( '<link rel="icon", href="AH_small_flat_4C_12x16.png", type="image/png" />'))
+      # ,tags$head(HTML( '<link rel="icon", href="AH_small_flat_4C_12x16.png", type="image/png" />'))
       ,div(
         h1(
           style="background-color: black; color: white; height: 125px; padding: 10px; margin: 0px"
-          ,HTML('<img src="ah_large_black.gif", style="float:right; padding-right:25px"/>', Network_long, '<br>', Viz_name)
+          ,HTML(Network_long, '<br>', Viz_name)
           )
       )
       ,tags$head(

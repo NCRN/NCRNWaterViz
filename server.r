@@ -1446,17 +1446,17 @@ WaterSeriesOutMultiple <- reactive({
           )
           ,text=NULL
       ) %>% layout(
-          font=list(size=input$FontSize)
+          font=list(size=GraphOpts$FontSize)
           ,margin=m
-          ,title = list(text=title ,font=list(size=input$FontSize))
+          ,title = list(text=title ,font=list(size=GraphOpts$FontSize))
           ,legend = list(
               title=list(text='<br><br>')
-              ,font=list(size=input$FontSize)
+              ,font=list(size=GraphOpts$FontSize)
           )
           ,hovermode='x'
           ,showlegend=T
-          ,yaxis = list(title=list(text=paste0(yname, '<br>'), font=list(size=input$FontSize)), font=list(size=input$FontSize))
-          ,xaxis = list(title=list(text=paste0(xname, '<br>'), font=list(size=input$FontSize)), font=list(size=input$FontSize))
+          ,yaxis = list(title=list(text=paste0(yname, '<br>'), font=list(size=GraphOpts$FontSize)), font=list(size=GraphOpts$FontSize))
+          ,xaxis = list(title=list(text=paste0(xname, '<br>'), font=list(size=GraphOpts$FontSize)), font=list(size=GraphOpts$FontSize))
       )   
 
   if (assessment==T & identical(threshold, numeric(0))==F) {
@@ -1751,16 +1751,16 @@ CorrPlotOutMultiple <- reactive({
         )
       ,text=NULL
     ) %>% layout(
-      font=list(size=input$FontSize)
+      font=list(size=GraphOpts$FontSize)
       ,margin=m
-      ,title = list(text=title ,font=list(size=input$FontSize))
+      ,title = list(text=title ,font=list(size=GraphOpts$FontSize))
       ,legend = list(
         title=list(text='<br>Site<br>')
-        ,font=list(size=input$FontSize)
+        ,font=list(size=GraphOpts$FontSize)
         )
       ,showlegend=T
-      ,yaxis = list(title=list(text=paste0(yname, '<br>'), font=list(size=input$FontSize)), font=list(size=input$FontSize))
-      ,xaxis = list(title=list(text=paste0(xname, '<br>'), font=list(size=input$FontSize)), font=list(size=input$FontSize))
+      ,yaxis = list(title=list(text=paste0(yname, '<br>'), font=list(size=GraphOpts$FontSize)), font=list(size=GraphOpts$FontSize))
+      ,xaxis = list(title=list(text=paste0(xname, '<br>'), font=list(size=GraphOpts$FontSize)), font=list(size=GraphOpts$FontSize))
     )   
 
     return(baseplot)
@@ -2020,16 +2020,16 @@ BoxPlotMultipleOut<-reactive({
       ,type='box'
     ) %>% layout(
       boxmode = 'group'
-      ,font=list(size=input$FontSize)
+      ,font=list(size=GraphOpts$FontSize)
       ,margin=m
-      ,title = list(text=title ,font=list(size=input$FontSize))
+      ,title = list(text=title ,font=list(size=GraphOpts$FontSize))
       ,legend = list(
         title=list(text='<br>Site<br>')
-        ,font=list(size=input$FontSize)
+        ,font=list(size=GraphOpts$FontSize)
         )
       ,showlegend=T
-      ,yaxis = list(title=list(text=paste0(yname, '<br>'), font=list(size=input$FontSize)), font=list(size=input$FontSize))
-      ,xaxis = list(title=list(text=paste0(xname, '<br>'), font=list(size=input$FontSize)), font=list(size=input$FontSize))
+      ,yaxis = list(title=list(text=paste0(yname, '<br>'), font=list(size=GraphOpts$FontSize)), font=list(size=GraphOpts$FontSize))
+      ,xaxis = list(title=list(text=paste0(xname, '<br>'), font=list(size=GraphOpts$FontSize)), font=list(size=GraphOpts$FontSize))
     )
 
   if (assessment==T & identical(threshold, numeric(0))==F) {

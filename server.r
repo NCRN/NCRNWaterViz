@@ -2332,6 +2332,18 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     ,Value = 'Value'
     ,Units = 'ResultMeasure.MeasureUnitCode'
     )
+  data_tooltips <- list(
+    'Park'='Park name of monitoring event'
+    ,'Site'='Site name of monitoring event'
+    ,'Latitude'='Latitude of monitoring site'
+    ,'Longitude'='Longitude of monitoring site'
+    ,'SampleDate'='Date of monitoring event'
+    ,'SampleTime'='Time of monitoring event'
+    ,'Parameter'='Water quality parameter'
+    ,'Value'='Numeric measurement of a water quality parameter'
+    ,'Units'='Units of the measured value'
+  )
+  data_tooltips_json <- jsonlite::toJSON(data_tooltips, auto_unbox = TRUE)
 
   output$WaterTable <-DT::renderDataTable(
     # Generate a data table for the `Data` tab given user inputs
@@ -2393,6 +2405,21 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
           ,"csv"
           ,"excel"
         ),keys=TRUE
+        ,headerCallback = JS("function(thead, data, start, end, display){",
+                             "$(thead).find('th').css('text-align', 'center');",
+                             "$(thead).find('th').filter(function() {
+                                          return $(this).html().trim() === 'Site'; }).css('text-align', 'left');",
+                             "$('th', thead).each(function(index){",
+                             " var tooltips = ",
+                             data_tooltips_json,";",
+                             " var colName = $
+                                          (this).html().trim();",
+                             " if(tooltips[colName]) {",
+                             " $(this).attr('title', tooltips[colName]);",
+                             " }",
+                             "});",
+                             "}"
+        )
       )
     )
     ,server=F
@@ -2436,6 +2463,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
           mydatastructure[[site]][["Sitename"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info = "SiteName")
           mydatastructure[[site]][["Characteristic"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info = "DisplayName")
           mydatastructure[[site]][["Unit"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="Units")
+          mydatastructure[[site]][["df"]]$Characteristic<-mydatastructure[[site]][["Characteristic"]]
           mydatastructure[[site]][["notification_text"]] <- dplyr::case_when(
               !is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & all(mydatastructure[[site]][["df"]]$Value > mydatastructure[[site]][["LowerPoint"]]) & all(mydatastructure[[site]][["df"]]$Value < mydatastructure[[site]][["UpperPoint"]]) ~ 
                   paste0("No measurements of ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]], " fall below the lower water quality threshold of ", mydatastructure[[site]][["LowerPoint"]], " ", mydatastructure[[site]][["Unit"]], ", nor exceed the upper water quality threshold of ", mydatastructure[[site]][["UpperPoint"]], " ", mydatastructure[[site]][["Unit"]])
@@ -2483,7 +2511,6 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
               dplyr::mutate("Difference" = round(Difference, 4)) %>%
               dplyr::arrange(desc(SampleDate)) %>%
               dplyr::select("Site", "SampleDate", "Parameter", "Value", "Difference", "Units", any_of(c("UpperThreshold", "LowerThreshold")))
-          
           
           # Data wrangle for text and hist
           mydatastructure[[site]][["histyears"]]<- data.frame(Year = lubridate::year(mydatastructure[[site]][["df"]]$Date))

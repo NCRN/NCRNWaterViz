@@ -15,7 +15,7 @@ library(magrittr)
 library(openair)
 library(NADA)
 library(plotly)
-library(devtools)
+# library(devtools)
 
 ### Filtering data to active Characteristics and Sites ####
 
@@ -161,7 +161,7 @@ shinyServer(function(input,output,session){
 
   #### Reactive Values for Graphics Options with Defaults ####
   GraphOpts<-shiny::reactiveValues(Legend=TRUE, FontSize=20, GoodColor="Blue", BadColor="Orange",OutColor="Vermillion",PointSize=6,
-                              ThColor="Orange", TrColor="Green", LineWidth=2, ShowHidePoint=F, FigureHorizontalScaling=0.9, FigureVerticalScaling=0.7)
+                              ThColor="Orange", TrColor="Green", LineWidth=2, ShowHidePoint=T, FigureHorizontalScaling=0.9, FigureVerticalScaling=0.7)
   
   #### Reactive Values for Choosing Data ####
   DataOpts<-shiny::reactiveValues(Park=NA, Site=NA, Param=NA, Agg=NA, DateRange=NA, Years=NA, USGSload=FALSE, USGSdata=NA, Param2=NA, SiteVisit=NA, Photo=NA, Park2=NA, Site2=NA, Years2=NA, SiteVisit2=NA, Photo2=NA)
@@ -697,7 +697,7 @@ shinyServer(function(input,output,session){
         # ),
         # ,column(3,selectInput("BadColor","Poor Quality Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$BadColor,
         #                      width='130px') )
-        ,column(6,checkboxInput("ShowHidePoint", "Show/hide points", value=GraphOpts$ShowHidePoint))
+        # ,column(6,checkboxInput("ShowHidePoint", "Show/hide points", value=GraphOpts$ShowHidePoint))
         # column(3,selectInput("OutColor","Outlier Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$OutColor, width='130px')),   
         
       ),
@@ -1422,10 +1422,10 @@ WaterSeriesOutMultiple <- reactive({
       ,connectgaps=TRUE # set to FALSE to create breaks in the line for NAs
       ,width = (GraphOpts$FigureHorizontalScaling*as.numeric(input$dimension[1])) # to dynamically resize fig
       ,height = (GraphOpts$FigureVerticalScaling*as.numeric(input$dimension[2]))
-      ,line=list(width=input$LineWidth)
+      ,line=list(width=GraphOpts$LineWidth)
       ,marker=list(
-        size=input$PointSize
-        ,opacity=as.numeric(input$ShowHidePoint)
+        size=GraphOpts$PointSize
+        ,opacity=as.numeric(GraphOpts$ShowHidePoint)
         )
       ,hovertemplate = paste(
         "<br>Date :", series_df$Date

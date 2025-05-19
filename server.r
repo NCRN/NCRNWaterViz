@@ -1722,7 +1722,7 @@ hline <- function(y = 0, color = "red", dash = 'dash', size=1) {
     xref = "paper",
     y0 = y,
     y1 = y,
-    line = list(color = input$ThColor, dash = dash, width=input$LineWidth)
+    line = list(color = GraphOpts$ThColor, dash = dash, width=GraphOpts$LineWidth)
   )
 }
 
@@ -2172,6 +2172,7 @@ output$BoxPlotMultiple<-renderPlotly({   BoxPlotMultipleOut() })
     req(input$SeriesThreshLine, DataOpts$Park, DataOpts$Site, DataOpts$Param)
 
     sitethreshes <- c()
+    sitedetails <- c()
 
     if(input$SeriesThreshLine){
         for (site in DataOpts$Site){
@@ -2179,13 +2180,19 @@ output$BoxPlotMultiple<-renderPlotly({   BoxPlotMultipleOut() })
             getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="UpperDescription")) %>%
             unlist %>% unique
           sitethreshes <- c(tmp, sitethreshes)
+          tmp2<-c(getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="AssessmentDetails"),
+            getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="AssessmentDetails")) %>%
+            unlist %>% unique
+          sitedetails <- c(tmp2, sitedetails)
       }
       sitethresh <- sitethreshes %>% unique
       sitethresh <- sitethresh[!is.na(sitethresh)] # needed if there is no upper or lower sitethresh.
+      sitedetail <- sitedetails %>% unique
+      sitedetail <- sitedetail[!is.na(sitedetail)] # needed if there is no upper or lower sitethresh.
     }
 
     if (length(sitethresh)>0){
-      paste("Threshold: ",sitethresh)
+      paste("<p><strong>Threshold: </strong>",sitethresh,"<br><strong>Reference: </strong>",sitedetail,"</p>")
     } else {
       paste("This parameter has no water quality threshold.")
     }

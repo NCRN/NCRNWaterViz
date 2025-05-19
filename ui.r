@@ -224,8 +224,8 @@ shinyUI(
             ,column(width=2, actionButton(inputId="AboutTimeSeries", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px"))
           )
           ,fluidRow(
-            column(width=6, htmlOutput("SeriesThresholdSummaryMultiple"))
-            ,column(width=6, htmlOutput("SeriesRefSummaryMultiple"))
+            column(width=7)
+            ,column(width=5, htmlOutput("SeriesThresholdSummaryMultiple"))
           )
         )
         ,fluidRow(

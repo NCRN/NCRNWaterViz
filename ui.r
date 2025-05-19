@@ -39,6 +39,20 @@ shinyUI(
           ,HTML(Network_long, '<br>', Viz_name)
           )
       )
+      ,tags$head(tags$style(HTML("
+                                 .leaflet-tooltip {
+                                 background-color: transparent !important;
+                                 padding: 0 !important;
+                                 border: none !important;
+                                 box-shadow: none !important;
+                                 }
+                                 .leaflet-tooltip .label-text {
+                                 background-color: white;
+                                 padding: 1px 5px;
+                                 border-radius: 4px;
+                                 display: inline-block;
+                                 }
+                                 ")))
       ,tags$head(
       #custom styling for loading message
       tags$style(HTML("

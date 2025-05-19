@@ -2121,25 +2121,32 @@ output$BoxPlotMultiple<-renderPlotly({   BoxPlotMultipleOut() })
     #     )
     #
     req(input$BoxThreshLine, DataOpts$Park, DataOpts$Site, DataOpts$Param)
-
-    sitethreshes <- c()
-
-    if(input$BoxThreshLine){
-        for (site in DataOpts$Site){
-          tmp<-c(getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="LowerDescription"),
-            getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="UpperDescription")) %>%
-            unlist %>% unique
-          sitethreshes <- c(tmp, sitethreshes)
+      
+      sitethreshes <- c()
+      sitedetails <- c()
+      
+      if(input$SeriesThreshLine){
+          for (site in DataOpts$Site){
+              tmp<-c(getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="LowerDescription"),
+                     getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="UpperDescription")) %>%
+                  unlist %>% unique
+              sitethreshes <- c(tmp, sitethreshes)
+              tmp2<-c(getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="AssessmentDetails"),
+                      getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="AssessmentDetails")) %>%
+                  unlist %>% unique
+              sitedetails <- c(tmp2, sitedetails)
+          }
+          sitethresh <- sitethreshes %>% unique
+          sitethresh <- sitethresh[!is.na(sitethresh)] # needed if there is no upper or lower sitethresh.
+          sitedetail <- sitedetails %>% unique
+          sitedetail <- sitedetail[!is.na(sitedetail)] # needed if there is no upper or lower sitethresh.
       }
-      sitethresh <- sitethreshes %>% unique
-      sitethresh <- sitethresh[!is.na(sitethresh)] # needed if there is no upper or lower sitethresh.
-    }
-
-    if (length(sitethresh)>0){
-      paste("Threshold: ",sitethresh)
-    } else {
-      paste("This parameter has no water quality threshold.")
-    }
+      
+      if (length(sitethresh)>0){
+          paste("<p><strong>Threshold: </strong>",sitethresh,"<br><strong>Reference: </strong>",sitedetail,"</p>")
+      } else {
+          paste("This parameter has no water quality threshold.")
+      }
   })
   
   output$BoxThresholdSummaryMultiple<-renderUI( HTML(BoxThresholdSummaryMultiple()) )

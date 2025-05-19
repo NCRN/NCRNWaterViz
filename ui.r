@@ -218,8 +218,8 @@ shinyUI(
           )
           ,fluidRow(
             column(width=4, yearChooserUI("TimeYears"))
-            ,column(width=2, checkboxInput("SeriesThreshLine","Show Water Quality Threshold Line", TRUE))
             ,column(width=2,checkboxInput("ShowHidePoint", "Show points", TRUE))
+            ,column(width=2, checkboxInput("SeriesThreshLine","Show Water Quality Threshold Line", TRUE))
             ,column(width=2, actionButton(inputId="GraphicsModal2", label='Graphics Options', class="btn btn-primary",style="margin-top: 15px"))
             ,column(width=2, actionButton(inputId="AboutTimeSeries", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px"))
           )
@@ -251,8 +251,8 @@ shinyUI(
             ,column(width=2, actionButton(inputId="AboutComparisons", label="About this Graph...", class="btn btn-primary",style="margin-top: 15px"))
           )
           ,fluidRow(
-            column(width=6, htmlOutput("BoxThresholdSummaryMultiple"))
-            ,column(width=6, htmlOutput("BoxRefSummaryMultiple"))
+              column(width=7)
+              ,column(width=5, htmlOutput("BoxThresholdSummaryMultiple"))
           )
         )
         ,fluidRow(

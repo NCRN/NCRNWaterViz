@@ -2931,17 +2931,17 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     req(NPSGeoData)
     updateCheckboxGroupInput(session, "MapIn", choices = unique(NPSGeoData$ParkName), inline = FALSE)
   })
-  
-  directions <- c("top", "bottom", "left", "right", "tr", "tl", "br", "bl")
+  #Label directions
+  directions <- c("top", "bottom", "left", "right") #, "tr", "tl", "br", "bl", "center") #additional label directions if needed
   offset <- list(
-    top = c(0, -18),
-    bottom = c(0, 18),
-    left = c(-18, 0),
-    right = c(18, 0),
-    tr = c(18, -18),
-    tl = c(-18, -18),
-    br = c(18, 18),
-    bl = c(-18, 18)
+    top = c(0, -19),
+    bottom = c(0, 19),
+    left = c(-19, 0),
+    right = c(19, 0)
+    #,tr = c(19, -19)
+    #,tl = c(-19, -19)
+    #,br = c(19, 19)
+    #,bl = c(-19, 19)
     #,center = c(0,0)
   )
   
@@ -3013,9 +3013,13 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     filtered_exceed <- ExceedData()
     
     merge_data <- dplyr::left_join(filtered_data, filtered_exceed, by = c("SiteCode"="Site"))
-    
+    merge_data <- merge_data %>% mutate(SiteName = case_when(
+                                         SiteName == "Rock Creek at Dumbarton Oaks" ~"\n\n<span class='label-text'>Rock Creek at Dumbarton Oaks</span>", #line break added before name so it doesn't collide in map w/other label
+                                         TRUE ~ paste0("<span class='label-text'>", SiteName, "</span>")
+                                       ))
+
     label_color <- if ("Slate" %in% input$WaterMap_groups) {
-      "white" 
+      "black" #"white" if there's no label background 
     } else {
       "black"
     }
@@ -3054,13 +3058,14 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
           group = "Sites"
           ,lng = merge_data$longitude[i]
           ,lat = merge_data$latitude[i]
-          ,label = merge_data$SiteName[i]
+          ,label = lapply(merge_data$SiteName[i], HTML)
           ,labelOptions = labelOptions(
             noHide = TRUE
-            ,textOnly = TRUE
+            ,textOnly = FALSE
             ,direction = merge_data$label_dir[i]
             ,offset= c(merge_data$xoffset[i], merge_data$yoffset[i])
-            ,style = list("font-weight"="bold", "font-size"="13px", "color"=label_color)
+            ,style =
+              list("font-weight"="bold", "font-size"="13px", "color"=label_color, "white-space" = "pre")
             )
           )
         } 

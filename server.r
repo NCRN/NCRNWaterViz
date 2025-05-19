@@ -1980,16 +1980,9 @@ BoxPlotMultipleOut<-reactive({
   
   # covering edge-case
   # in some cases, like ANTI_SHCK 2010 and 2012, air pressure was measured once as NA
-  # when that happens, plotly adds a box at 0 and that screws up the scale of the figure
-  # a better solution would be to add a box at the mean value for the selected points
-  # and have that box be opacity = 0
-  # We don't want to filter-out the NA groups because we want those groups to exist on the x-axis
-  
-  # TODO: map the `opc` variable to box opacity so that boxes for all-NA groups
-  # are invisible to the user, but the group is still visible.
-  # It's not clear to me if it's even possible to map different opacities to boxes in the way you can with points.
-  # In the short-term, simply moving the all-NA groups to the mean allows the figure-scale to update properly
-  # which makes the figure useful to the user.
+  # when that happens, plotly adds a box at 0, and that box screws up the scale of the figure
+  # so the user can't see the non-NA observations
+  # filtering-out groups with only NA observations solves this problem in the figure
   
   summary_table <- summary_table %>% dplyr::mutate(
       Minimum = ifelse(Minimum == 'Data not collected', NA, Minimum)
@@ -2007,20 +2000,9 @@ BoxPlotMultipleOut<-reactive({
       ,Q3 = as.numeric(Q3)
       ,Maximum = as.numeric(Maximum)
       ,Standard_Deviation = as.numeric(Standard_Deviation)
+  ) %>% dplyr::filter(
+      Total_Measurements != Missing_Values # filter-out groups with all NA observations
   )
-  
-  md <- mean(summary_table$Mean, na.rm=T)
-  
-  summary_table <- summary_table %>% dplyr::mutate(
-      Minimum = ifelse(Total_Measurements == Missing_Values, md, Minimum)
-      ,Q1 = ifelse(Total_Measurements == Missing_Values, md, Q1)
-      ,Mean = ifelse(Total_Measurements == Missing_Values, md, Mean)
-      ,Median = ifelse(Total_Measurements == Missing_Values, md, Mean)
-      ,Q3 = ifelse(Total_Measurements == Missing_Values, md, Q3)
-      ,Maximum = ifelse(Total_Measurements == Missing_Values, md, Maximum)
-      ,opc = ifelse(Total_Measurements == Missing_Values, 0, 1)
-  )
-  print(head(summary_table))
 
   baseplot <-
     plotly::plot_ly(
@@ -2029,14 +2011,6 @@ BoxPlotMultipleOut<-reactive({
       ,color= ~Site
       ,width = (GraphOpts$FigureHorizontalScaling*as.numeric(input$dimension[1])) # to dynamically resize fig
       ,height = (GraphOpts$FigureVerticalScaling*as.numeric(input$dimension[2]))
-      # ,opacity = ~opc # doesn't map opacity to individual boxes
-      # boxplot_df
-      # ,y= ~Value
-      # ,x= ~Grouper
-      # ,color= ~MonitoringLocationName
-      # ,type='box'
-      # # ,height = global_figure_height
-      # # ,width = global_figure_width
     ) %>% add_trace(
       lowerfence= ~Minimum
       ,q1= ~Q1
@@ -2044,8 +2018,6 @@ BoxPlotMultipleOut<-reactive({
       ,q3= ~Q3
       ,upperfence= ~Maximum
       ,type='box'
-      # ,marker = list(opacity = ~opc) # doesn't map opacity to individual boxes
-      # ,opacity = ~opc # doesn't map opacity to individual boxes
     ) %>% layout(
       boxmode = 'group'
       ,font=list(size=input$FontSize)

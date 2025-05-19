@@ -1344,6 +1344,7 @@ WaterSeriesOutMultiple <- reactive({
   assessment <- input$SeriesThreshLine
   assessments <- c()
   threshold <- NA
+  references <- c()
   units <- c()
   displaynames <- c()
 
@@ -1391,9 +1392,16 @@ WaterSeriesOutMultiple <- reactive({
           getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="UpperPoint")) %>%
           unlist %>% unique
         assessments <- c(tmp, assessments)
+        tmp2<-c(getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="AssessmentDetails"),
+                getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="AssessmentDetails")) %>%
+            unlist %>% unique
+        references <- c(tmp2, references)
     }
     threshold <- assessments %>% unique
     threshold <- threshold[!is.na(threshold)] # needed if there is no upper or lower threshold.
+    
+    reference <- references %>% unique
+    reference <- reference[!is.na(reference)] # needed if there is no upper or lower threshold.
   }
   
   # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L106-L127
@@ -1411,43 +1419,45 @@ WaterSeriesOutMultiple <- reactive({
   )
 
   baseplot <-
-    plotly::plot_ly(
-      series_df
-      ,y= ~Value
-      ,x= ~Date
-      ,color= ~MonitoringLocationName
-      ,symbol= ~MonitoringLocationName
-      ,type='scatter'
-      ,mode='lines'
-      ,connectgaps=TRUE # set to FALSE to create breaks in the line for NAs
-      ,width = (GraphOpts$FigureHorizontalScaling*as.numeric(input$dimension[1])) # to dynamically resize fig
-      ,height = (GraphOpts$FigureVerticalScaling*as.numeric(input$dimension[2]))
-      ,line=list(width=GraphOpts$LineWidth)
-      ,marker=list(
-        size=GraphOpts$PointSize
-        ,opacity=as.numeric(GraphOpts$ShowHidePoint)
-        )
-      ,hovertemplate = paste(
-        "<br>Date :", series_df$Date
-        ,"<br>Site :", series_df$MonitoringLocationName
-        ,"<br>", yname, ": ", series_df$Value
-        # extra is a secondary bit of hovertext that's visible on the right-ide of the main hovertext
-        # https://community.plotly.com/t/disabling-default-tooltip-while-using-a-hovertemplate-in-python/85824/3
-        ,'<extra></extra>'
-        )
-      ,text=NULL
-    ) %>% layout(
-      font=list(size=input$FontSize)
-      ,margin=m
-      ,title = list(text=title ,font=list(size=input$FontSize))
-      ,legend = list(
-        title=list(text='<br>Site<br>')
-        ,font=list(size=input$FontSize)
-        )
-      ,showlegend=T
-      ,yaxis = list(title=list(text=paste0(yname, '<br>'), font=list(size=input$FontSize)), font=list(size=input$FontSize))
-      ,xaxis = list(title=list(text=paste0(xname, '<br>'), font=list(size=input$FontSize)), font=list(size=input$FontSize))
-    )   
+      plotly::plot_ly(
+          series_df
+          ,type='scatter'
+          ,mode='lines'
+          ,width = (GraphOpts$FigureHorizontalScaling*as.numeric(input$dimension[1])) # to dynamically resize fig
+          ,height = (GraphOpts$FigureVerticalScaling*as.numeric(input$dimension[2]))
+      ) %>% add_trace(
+          y= ~Value
+          ,x= ~Date
+          ,color= ~MonitoringLocationName
+          ,symbol= ~MonitoringLocationName
+          ,connectgaps=TRUE # set to FALSE to create breaks in the line for NAs
+          ,line=list(width=GraphOpts$LineWidth)
+          ,marker=list(
+              size=GraphOpts$PointSize
+              ,opacity=as.numeric(GraphOpts$ShowHidePoint)
+          )
+          ,hovertemplate = paste(
+              "<br>Date :", series_df$Date
+              ,"<br>Site :", series_df$MonitoringLocationName
+              ,"<br>", yname, ": ", series_df$Value
+              # extra is a secondary bit of hovertext that's visible on the right-ide of the main hovertext
+              # https://community.plotly.com/t/disabling-default-tooltip-while-using-a-hovertemplate-in-python/85824/3
+              ,'<extra></extra>'
+          )
+          ,text=NULL
+      ) %>% layout(
+          font=list(size=input$FontSize)
+          ,margin=m
+          ,title = list(text=title ,font=list(size=input$FontSize))
+          ,legend = list(
+              title=list(text='<br><br>')
+              ,font=list(size=input$FontSize)
+          )
+          ,hovermode='x'
+          ,showlegend=T
+          ,yaxis = list(title=list(text=paste0(yname, '<br>'), font=list(size=input$FontSize)), font=list(size=input$FontSize))
+          ,xaxis = list(title=list(text=paste0(xname, '<br>'), font=list(size=input$FontSize)), font=list(size=input$FontSize))
+      )   
 
   if (assessment==T & identical(threshold, numeric(0))==F) {
     # a <- list( # commented-out because the annotation doesn't look great
@@ -1461,19 +1471,78 @@ WaterSeriesOutMultiple <- reactive({
     #   ay = -40
     # )
     if (length(threshold)==2){
-      baseplot %>% layout(
-      shapes = list(
-        hline(threshold[1])
-        ,hline(threshold[2])
+        baseplot %>% add_trace(
+            name='Water Quality Threshold'
+            ,x=~Date
+            ,y=threshold[1]
+            ,mode="lines"
+            # ,hoverinfo="text"
+            # ,text="hello"
+            ,hovertemplate = paste(
+                "<br>Water Quality Threshold"
+                ,"<br>", yname, ": ", threshold[1]
+                ,"<br>Reference: ", if(length(reference)==1){reference} else {reference[1]}
+                # extra is a secondary bit of hovertext that's visible on the right-ide of the main hovertext
+                # https://community.plotly.com/t/disabling-default-tooltip-while-using-a-hovertemplate-in-python/85824/3
+                ,'<extra></extra>'
+            )
+            ,text=NULL
+            ,color = GraphOpts$ThColor
+            ,dash = 'dash'
+            ,width=GraphOpts$LineWidth
+        ) %>% add_trace(
+            name='Water Quality Threshold'
+            ,x=~Date
+            ,y=threshold[2]
+            ,mode="lines"
+            # ,hoverinfo="text"
+            # ,text="hello"
+            ,hovertemplate = paste(
+                "<br>Water Quality Threshold"
+                ,"<br>", yname, ": ", threshold[2]
+                ,"<br>Reference: ", if(length(reference)==1){reference} else {reference[2]}
+                # extra is a secondary bit of hovertext that's visible on the right-ide of the main hovertext
+                # https://community.plotly.com/t/disabling-default-tooltip-while-using-a-hovertemplate-in-python/85824/3
+                ,'<extra></extra>'
+            )
+            ,text=NULL
+            ,color = GraphOpts$ThColor
+            ,dash = 'dash'
+            ,width=GraphOpts$LineWidth
         )
-      # ,annotations = a # commented-out because the annotation doesn't look great
-    )
+    #   baseplot %>% layout(
+    #   shapes = list(
+    #     hline(threshold[1])
+    #     ,hline(threshold[2])
+    #     )
+    #   # ,annotations = a # commented-out because the annotation doesn't look great
+    # )
 
     } else if (length(threshold)==1){
-      baseplot %>% layout(
-        shapes = list(hline(threshold))
-      # ,annotations = a # commented-out because the annotation doesn't look great
-      )
+      baseplot %>% add_trace(
+          name='Water Quality Threshold'
+          ,x=~Date
+          ,y=threshold
+          ,mode="lines"
+          # ,hoverinfo="text"
+          # ,text="hello"
+          ,hovertemplate = paste(
+              "<br>Water Quality Threshold"
+              ,"<br>", yname, ": ", threshold
+              ,"<br>Reference: ", reference
+              # extra is a secondary bit of hovertext that's visible on the right-ide of the main hovertext
+              # https://community.plotly.com/t/disabling-default-tooltip-while-using-a-hovertemplate-in-python/85824/3
+              ,'<extra></extra>'
+          )
+          ,text=NULL
+          ,color = GraphOpts$ThColor
+          ,dash = 'dash'
+          ,width=GraphOpts$LineWidth
+          )
+      # baseplot %>% layout(
+      #   shapes = list(hline(threshold))
+      # # ,annotations = a # commented-out because the annotation doesn't look great
+      # )
     }
   } else {
     baseplot

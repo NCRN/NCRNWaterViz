@@ -1481,7 +1481,7 @@ shinyServer(function(input,output,session){
             ,hovertemplate = paste(
                 "<br>Water Quality Threshold"
                 ,"<br>", yname, ": ", threshold[1]
-                ,"<br>Reference: ", if(length(reference)==1){reference} else {reference[1]}
+                # ,"<br>Reference: ", if(length(reference)==1){reference} else {reference[1]}
                 # extra is a secondary bit of hovertext that's visible on the right-ide of the main hovertext
                 # https://community.plotly.com/t/disabling-default-tooltip-while-using-a-hovertemplate-in-python/85824/3
                 ,'<extra></extra>'
@@ -1500,7 +1500,7 @@ shinyServer(function(input,output,session){
             ,hovertemplate = paste(
                 "<br>Water Quality Threshold"
                 ,"<br>", yname, ": ", threshold[2]
-                ,"<br>Reference: ", if(length(reference)==1){reference} else {reference[2]}
+                # ,"<br>Reference: ", if(length(reference)==1){reference} else {reference[2]}
                 # extra is a secondary bit of hovertext that's visible on the right-ide of the main hovertext
                 # https://community.plotly.com/t/disabling-default-tooltip-while-using-a-hovertemplate-in-python/85824/3
                 ,'<extra></extra>'
@@ -1529,7 +1529,7 @@ shinyServer(function(input,output,session){
           ,hovertemplate = paste(
               "<br>Water Quality Threshold"
               ,"<br>", yname, ": ", threshold
-              ,"<br>Reference: ", reference
+              # ,"<br>Reference: ", reference
               # extra is a secondary bit of hovertext that's visible on the right-ide of the main hovertext
               # https://community.plotly.com/t/disabling-default-tooltip-while-using-a-hovertemplate-in-python/85824/3
               ,'<extra></extra>'

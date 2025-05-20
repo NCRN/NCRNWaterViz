@@ -2344,6 +2344,9 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     ,'Units'='Units of the measured value'
   )
   data_tooltips_json <- jsonlite::toJSON(data_tooltips, auto_unbox = TRUE)
+  
+  data_text_cols<-c("Park", "Site", "Parameter", "Units")
+  data_num_or_date_cols<-c("Latitude", "Longitude", "SampleDate", "SampleTime", "Value")
 
   output$WaterTable <-DT::renderDataTable(
     # Generate a data table for the `Data` tab given user inputs
@@ -2406,9 +2409,10 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
           ,"excel"
         ),keys=TRUE
         ,headerCallback = JS("function(thead, data, start, end, display){",
-                             "$(thead).find('th').css('text-align', 'center');",
+                             "$(thead).find('th').css('text-align', 'left');",
                              "$(thead).find('th').filter(function() {
-                                          return $(this).html().trim() === 'Site'; }).css('text-align', 'left');",
+                                          const col = $(this).html().trim();
+                                          return ['Latitude', 'Longitude', 'SampleDate', 'SampleTime', 'Value'].includes(col); }).css('text-align', 'center');",
                              "$('th', thead).each(function(index){",
                              " var tooltips = ",
                              data_tooltips_json,";",
@@ -2421,7 +2425,17 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
                              "}"
         )
       )
-    )
+    ) %>%
+      formatStyle(
+        columns = data_text_cols,
+        target = 'cell',
+        `text-align` = 'left'
+      ) %>%
+      formatStyle(
+        columns = data_num_or_date_cols,
+        target = 'cell',
+        `text-align` = 'center'
+      )
     ,server=F
   )
   
@@ -2512,6 +2526,9 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
               dplyr::arrange(desc(SampleDate)) %>%
               dplyr::select("Site", "SampleDate", "Parameter", "Value", "Difference", "Units", any_of(c("UpperThreshold", "LowerThreshold")))
           
+          mydatastructure[[site]][["text_cols"]] <- which(sapply(mydatastructure[[site]][["desc_exdf"]], is.character))
+          mydatastructure[[site]][["num_or_date_cols"]] <- which(sapply(mydatastructure[[site]][["desc_exdf"]], function(x) is.numeric(x) || inherits(x, "Date")))
+          
           # Data wrangle for text and hist
           mydatastructure[[site]][["histyears"]]<- data.frame(Year = lubridate::year(mydatastructure[[site]][["df"]]$Date))
           mydatastructure[[site]][["totcount"]]<- mydatastructure[[site]][["histyears"]] %>%
@@ -2592,7 +2609,8 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
                   x = "Year",
                   y = "% non-NA observations") +
               theme_minimal() +
-              theme(panel.grid.major.x = element_blank())
+              theme(panel.grid.major.x = element_blank()) +
+              theme(plot.title = element_text(hjust = 0.5))
           
           # Hist Alt Text
           alt_text <- c()
@@ -2708,9 +2726,10 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
           ,buttons=c("copy","csv","excel")
           ,keys=TRUE
           ,headerCallback = JS("function(thead, data, start, end, display){",
-                               "$(thead).find('th').css('text-align', 'center');",
+                               "$(thead).find('th').css('text-align', 'left');",
                                "$(thead).find('th').filter(function() {
-                                          return $(this).html().trim() === 'Site'; }).css('text-align', 'left');",
+                                          const col = $(this).html().trim();
+                                          return ['SampleDate', 'Value', 'Difference'].includes(col); }).css('text-align', 'center');",
                                "$('th', thead).each(function(index){",
                                " var tooltips = ",
                                exceedances_tooltips_json,";",
@@ -2723,7 +2742,17 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
                                "}"
           )
         )
-        )
+        ) %>%
+          formatStyle(
+            columns = mydatastructure[[site]][["text_cols"]],
+            target = 'cell',
+            `text-align` = 'left'
+          ) %>%
+          formatStyle(
+            columns = mydatastructure[[site]][["num_or_date_cols"]],
+            target = 'cell',
+            `text-align` = 'center'
+          )
         })
       
       

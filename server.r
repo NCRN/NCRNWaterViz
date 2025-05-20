@@ -2415,6 +2415,21 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     ,Value = 'Value'
     ,Units = 'ResultMeasure.MeasureUnitCode'
     )
+  data_tooltips <- list(
+    'Park'='Park name of monitoring event'
+    ,'Site'='Site name of monitoring event'
+    ,'Latitude'='Latitude of monitoring site'
+    ,'Longitude'='Longitude of monitoring site'
+    ,'SampleDate'='Date of monitoring event'
+    ,'SampleTime'='Time of monitoring event'
+    ,'Parameter'='Water quality parameter'
+    ,'Value'='Numeric measurement of a water quality parameter'
+    ,'Units'='Units of the measured value'
+  )
+  data_tooltips_json <- jsonlite::toJSON(data_tooltips, auto_unbox = TRUE)
+  
+  data_text_cols<-c("Park", "Site", "Parameter", "Units")
+  data_num_or_date_cols<-c("Latitude", "Longitude", "SampleDate", "SampleTime", "Value")
 
   output$WaterTable <-DT::renderDataTable(
     # Generate a data table for the `Data` tab given user inputs
@@ -2476,8 +2491,34 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
           ,"csv"
           ,"excel"
         ),keys=TRUE
+        ,headerCallback = JS("function(thead, data, start, end, display){",
+                             "$(thead).find('th').css('text-align', 'left');",
+                             "$(thead).find('th').filter(function() {
+                                          const col = $(this).html().trim();
+                                          return ['Latitude', 'Longitude', 'SampleDate', 'SampleTime', 'Value'].includes(col); }).css('text-align', 'center');",
+                             "$('th', thead).each(function(index){",
+                             " var tooltips = ",
+                             data_tooltips_json,";",
+                             " var colName = $
+                                          (this).html().trim();",
+                             " if(tooltips[colName]) {",
+                             " $(this).attr('title', tooltips[colName]);",
+                             " }",
+                             "});",
+                             "}"
+        )
       )
-    )
+    ) %>%
+      formatStyle(
+        columns = data_text_cols,
+        target = 'cell',
+        `text-align` = 'left'
+      ) %>%
+      formatStyle(
+        columns = data_num_or_date_cols,
+        target = 'cell',
+        `text-align` = 'center'
+      )
     ,server=F
   )
   
@@ -2519,18 +2560,23 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
           mydatastructure[[site]][["Sitename"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info = "SiteName")
           mydatastructure[[site]][["Characteristic"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info = "DisplayName")
           mydatastructure[[site]][["Unit"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="Units")
-          mydatastructure[[site]][["notification_text"]] <- dplyr::case_when(
-              !is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & all(mydatastructure[[site]][["df"]]$Value > mydatastructure[[site]][["LowerPoint"]]) & all(mydatastructure[[site]][["df"]]$Value < mydatastructure[[site]][["UpperPoint"]]) ~ 
-                  paste0("No measurements of ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]], " fall below the lower water quality threshold of ", mydatastructure[[site]][["LowerPoint"]], " ", mydatastructure[[site]][["Unit"]], ", nor exceed the upper water quality threshold of ", mydatastructure[[site]][["UpperPoint"]], " ", mydatastructure[[site]][["Unit"]])
-              ,!is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & all(mydatastructure[[site]][["df"]]$Value > mydatastructure[[site]][["LowerPoint"]]) ~ 
-                  paste0("No measurements of ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]],
-                         "fall below the water quality threshold of ", mydatastructure[[site]][["LowerPoint"]], " ", mydatastructure[[site]][["Unit"]])
-              ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & all(mydatastructure[[site]][["df"]]$Value < mydatastructure[[site]][["UpperPoint"]]) ~
-                  paste0("No measurements of ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]],
-                         "exceed the water quality threshold of ", mydatastructure[[site]][["UpperPoint"]], " ", mydatastructure[[site]][["Unit"]])
-              ,is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE ~
-                  paste0("There is no recorded water quality threshold for ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]])
-          )
+          mydatastructure[[site]][["df"]]$Characteristic<-mydatastructure[[site]][["Characteristic"]]
+          if (is.na(mydatastructure[[site]][["LowerThreshold"]]) &&
+              is.na(mydatastructure[[site]][["UpperThreshold"]]) &&
+              !is.na(mydatastructure[[site]][["UpperPoint"]])
+          ) {
+            mydatastructure[[site]][["UpperThreshold"]] <- paste0(
+              "Acceptable ", tolower(mydatastructure[[site]][["Characteristic"]]), " is below ", mydatastructure[[site]][["UpperPoint"]], " ", mydatastructure[[site]][["Unit"]], "."
+            )
+          } else if (
+            is.na(mydatastructure[[site]][["LowerThreshold"]]) &&
+            is.na(mydatastructure[[site]][["UpperThreshold"]]) &&
+            !is.na(mydatastructure[[site]][["LowerPoint"]])
+          ) {
+            mydatastructure[[site]][["LowerThreshold"]] <- paste0(
+              "Acceptable ", tolower(mydatastructure[[site]][["Characteristic"]]), " is above ", mydatastructure[[site]][["LowerPoint"]], " ", mydatastructure[[site]][["Unit"]], "."
+            )
+          }
           
           # Building exdf
           if(any(mydatastructure[[site]][["df"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm = TRUE)) {
@@ -2567,6 +2613,8 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
               dplyr::arrange(desc(SampleDate)) %>%
               dplyr::select("Site", "SampleDate", "Parameter", "Value", "Difference", "Units", any_of(c("UpperThreshold", "LowerThreshold")))
           
+          mydatastructure[[site]][["text_cols"]] <- which(sapply(mydatastructure[[site]][["desc_exdf"]], is.character))
+          mydatastructure[[site]][["num_or_date_cols"]] <- which(sapply(mydatastructure[[site]][["desc_exdf"]], function(x) is.numeric(x) || inherits(x, "Date")))
           
           # Data wrangle for text and hist
           mydatastructure[[site]][["histyears"]]<- data.frame(Year = lubridate::year(mydatastructure[[site]][["df"]]$Date))
@@ -2648,7 +2696,8 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
                   x = "Year",
                   y = "% non-NA observations") +
               theme_minimal() +
-              theme(panel.grid.major.x = element_blank())
+              theme(panel.grid.major.x = element_blank()) +
+              theme(plot.title = element_text(hjust = 0.5))
           
           # Hist Alt Text
           alt_text <- c()
@@ -2764,9 +2813,10 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
           ,buttons=c("copy","csv","excel")
           ,keys=TRUE
           ,headerCallback = JS("function(thead, data, start, end, display){",
-                               "$(thead).find('th').css('text-align', 'center');",
+                               "$(thead).find('th').css('text-align', 'left');",
                                "$(thead).find('th').filter(function() {
-                                          return $(this).html().trim() === 'Site'; }).css('text-align', 'left');",
+                                          const col = $(this).html().trim();
+                                          return ['SampleDate', 'Value', 'Difference'].includes(col); }).css('text-align', 'center');",
                                "$('th', thead).each(function(index){",
                                " var tooltips = ",
                                exceedances_tooltips_json,";",
@@ -2779,7 +2829,17 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
                                "}"
           )
         )
-        )
+        ) %>%
+          formatStyle(
+            columns = mydatastructure[[site]][["text_cols"]],
+            target = 'cell',
+            `text-align` = 'left'
+          ) %>%
+          formatStyle(
+            columns = mydatastructure[[site]][["num_or_date_cols"]],
+            target = 'cell',
+            `text-align` = 'center'
+          )
         })
       
       

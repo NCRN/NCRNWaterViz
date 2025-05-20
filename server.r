@@ -897,11 +897,11 @@ shinyServer(function(input,output,session){
   
 
 #### Get Colors from user inputs ####
-  BadCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$BadColor,]$Rcolor})
-  GoodCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$GoodColor,]$Rcolor})
-  OutCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$OutColor,]$Rcolor})
-  ThCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$ThColor,]$Rcolor})
-  TrCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$TrColor,]$Rcolor})
+  BadCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$BadColor,]$rgb_color})
+  GoodCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$GoodColor,]$rgb_color})
+  OutCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$OutColor,]$rgb_color})
+  ThCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$ThColor,]$rgb_color})
+  TrCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$TrColor,]$rgb_color})
   
 #### Summary Table ####
   summary <- shiny::reactive({
@@ -1487,9 +1487,7 @@ shinyServer(function(input,output,session){
                 ,'<extra></extra>'
             )
             ,text=NULL
-            ,color = GraphOpts$ThColor
-            ,dash = 'dash'
-            ,width=GraphOpts$LineWidth
+            ,line=list(width=GraphOpts$LineWidth,dash = 'dash',color = GraphOpts$ThColor)
         ) %>% add_trace(
             name='Water Quality Threshold'
             ,x=~Date
@@ -1506,9 +1504,8 @@ shinyServer(function(input,output,session){
                 ,'<extra></extra>'
             )
             ,text=NULL
-            ,color = GraphOpts$ThColor
-            ,dash = 'dash'
-            ,width=GraphOpts$LineWidth
+            # ,color = GraphOpts$ThColor
+            ,line=list(width=GraphOpts$LineWidth,dash = 'dash',color = GraphOpts$ThColor)
         )
     #   baseplot %>% layout(
     #   shapes = list(
@@ -1529,16 +1526,15 @@ shinyServer(function(input,output,session){
           ,hovertemplate = paste(
               "<br>Water Quality Threshold"
               ,"<br>", yname, ": ", threshold
-              # ,"<br>Reference: ", reference
+              # ,"<br>Reference: ", if(length(reference)==1){reference} else {reference[2]}
               # extra is a secondary bit of hovertext that's visible on the right-ide of the main hovertext
               # https://community.plotly.com/t/disabling-default-tooltip-while-using-a-hovertemplate-in-python/85824/3
               ,'<extra></extra>'
           )
           ,text=NULL
-          ,color = GraphOpts$ThColor
-          ,dash = 'dash'
-          ,width=GraphOpts$LineWidth
-          )
+          # ,color = GraphOpts$ThColor
+          ,line=list(width=GraphOpts$LineWidth,dash = 'dash',color = GraphOpts$ThColor)
+      )
       # baseplot %>% layout(
       #   shapes = list(hline(threshold))
       # # ,annotations = a # commented-out because the annotation doesn't look great

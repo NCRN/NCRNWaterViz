@@ -1898,6 +1898,7 @@ MakeBoxPlot<-reactive({
   assessment <- input$BoxThreshLine
   assessments <- c()
   threshold <- NA
+  references <-
 
   # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L75-L98
   for (site in DataOpts$Site){
@@ -1944,13 +1945,20 @@ MakeBoxPlot<-reactive({
 
   if(assessment){
       for (site in DataOpts$Site){
-        tmp<-c(getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="LowerPoint"),
-          getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="UpperPoint")) %>%
-          unlist %>% unique
-        assessments <- c(tmp, assessments)
-    }
-    threshold <- assessments %>% unique
-    threshold <- threshold[!is.na(threshold)] # needed if there is no upper or lower threshold.
+          tmp<-c(getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="LowerPoint"),
+                 getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="UpperPoint")) %>%
+              unlist %>% unique
+          assessments <- c(tmp, assessments)
+          tmp2<-c(getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="AssessmentDetails"),
+                  getCharInfo(object=WaterData,parkcode=DataOpts$Park, sitecode=site, charname=DataOpts$Param, info="AssessmentDetails")) %>%
+              unlist %>% unique
+          references <- c(tmp2, references)
+      }
+      threshold <- assessments %>% unique
+      threshold <- threshold[!is.na(threshold)] # needed if there is no upper or lower threshold.
+      
+      reference <- references %>% unique
+      reference <- reference[!is.na(reference)] # needed if there is no upper or lower threshold.
   }
   
   # https://github.com/NCRN/NCRNWater/blob/87a16069713e2ea188d8bb8a2ae0cab97a43af4f/R/waterbox.R#L106-L127
@@ -2004,7 +2012,6 @@ MakeBoxPlot<-reactive({
     plotly::plot_ly(
       summary_table
       ,x= ~Aggregation
-      ,color= ~Site
       ,width = (GraphOpts$FigureHorizontalScaling*as.numeric(input$dimension[1])) # to dynamically resize fig
       ,height = (GraphOpts$FigureVerticalScaling*as.numeric(input$dimension[2]))
     ) %>% add_trace(
@@ -2014,13 +2021,14 @@ MakeBoxPlot<-reactive({
       ,q3= ~Q3
       ,upperfence= ~Maximum
       ,type='box'
+      ,color= ~Site
     ) %>% layout(
       boxmode = 'group'
       ,font=list(size=GraphOpts$FontSize)
       ,margin=m
       ,title = list(text=title ,font=list(size=GraphOpts$FontSize))
       ,legend = list(
-        title=list(text='<br>Site<br>')
+        title=list(text='<br><br>')
         ,font=list(size=GraphOpts$FontSize)
         )
       ,showlegend=T
@@ -2040,24 +2048,55 @@ MakeBoxPlot<-reactive({
     #   ay = -40
     # )
     if (length(threshold)==2){
-      baseplot %>% layout(
-      shapes = list(
-        hline(threshold[1])
-        ,hline(threshold[2])
-        # ,hbox(y=threshold[1], opacity=0.5)
-        # ,hbox(threshold[2])
-        )
-      # ,annotations = a # commented-out because the annotation doesn't look great
-    )
+      baseplot  %>%
+            add_lines(
+                # x = ~Aggregation, # Extend across x-axis
+                y = rep(threshold[1], nrow(summary_table)), # Horizontal line at y = threshold
+                ,line=list(width=GraphOpts$LineWidth,dash = 'dash',color = GraphOpts$ThColor) # Customize line style
+                ,hovertemplate = paste(
+                    "<br>Water Quality Threshold"
+                    ,"<br>", yname, ": ", threshold[1]
+                    # ,"<br>Reference: ", if(length(reference)==1){reference} else {reference[2]}
+                    # extra is a secondary bit of hovertext that's visible on the right-ide of the main hovertext
+                    # https://community.plotly.com/t/disabling-default-tooltip-while-using-a-hovertemplate-in-python/85824/3
+                    ,'<extra></extra>'
+                )
+                ,text=NULL
+                ,name = "Water Quality Threshold"
+            ) %>%
+            add_lines(
+                # x = ~Aggregation, # Extend across x-axis
+                y = rep(threshold[2], nrow(summary_table)) # Horizontal line at y = threshold
+                ,line=list(width=GraphOpts$LineWidth,dash = 'dash',color = GraphOpts$ThColor), # Customize line style
+                ,hovertemplate = paste(
+                    "<br>Water Quality Threshold"
+                    ,"<br>", yname, ": ", threshold[2]
+                    # ,"<br>Reference: ", if(length(reference)==1){reference} else {reference[2]}
+                    # extra is a secondary bit of hovertext that's visible on the right-ide of the main hovertext
+                    # https://community.plotly.com/t/disabling-default-tooltip-while-using-a-hovertemplate-in-python/85824/3
+                    ,'<extra></extra>'
+                )
+                ,text=NULL
+                ,name = "Water Quality Threshold"
+            )
 
     } else if (length(threshold)==1){
-      baseplot %>% layout(
-        shapes = list(
-          hline(threshold)
-          # ,hbox(y=threshold, opacity=0.5)
-          )
-      # ,annotations = a # commented-out because the annotation doesn't look great
-      )
+      baseplot %>%
+            add_lines(
+                # x = ~Aggregation, # Extend across x-axis
+                y = rep(threshold, nrow(summary_table)), # Horizontal line at y = threshold
+                ,line=list(width=GraphOpts$LineWidth,dash = 'dash',color = GraphOpts$ThColor) # Customize line style
+                ,hovertemplate = paste(
+                    "<br>Water Quality Threshold"
+                    ,"<br>", yname, ": ", threshold
+                    # ,"<br>Reference: ", if(length(reference)==1){reference} else {reference[2]}
+                    # extra is a secondary bit of hovertext that's visible on the right-ide of the main hovertext
+                    # https://community.plotly.com/t/disabling-default-tooltip-while-using-a-hovertemplate-in-python/85824/3
+                    ,'<extra></extra>'
+                )
+                ,text=NULL
+                ,name = "Water Quality Threshold"
+            )
     }
   } else {
     baseplot

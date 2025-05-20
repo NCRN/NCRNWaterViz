@@ -243,7 +243,7 @@ shinyUI(
           )
         )
         ,fluidRow(
-          column(width=12, plotlyOutput("SeriesPlotMultiple"))
+          column(width=12, plotlyOutput("SeriesPlot"))
         )
       ),  
 
@@ -270,7 +270,7 @@ shinyUI(
           )
         )
         ,fluidRow(
-          column(width=12, plotlyOutput("BoxPlotMultiple"))
+          column(width=12, plotlyOutput("BoxPlot"))
         )
       ),  
 

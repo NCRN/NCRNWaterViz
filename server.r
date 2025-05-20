@@ -1300,7 +1300,7 @@ shinyServer(function(input,output,session){
 })
   
 #### Time Series Plot 2.0 ####
-WaterSeriesOutMultiple <- reactive({
+  MakeSeriesPlot <- reactive({
     # A reactive function that a plotly of boxplots based on user selected site(s) and aggregation method (year, month, or site). 
     # Args:
     #  DataOpts$Years, c(int), required. The character string provided by yearChooser() in global.R. 
@@ -1321,7 +1321,7 @@ WaterSeriesOutMultiple <- reactive({
     #   DataOpts$Site <- c('NCRN_ROCR_KLVA', 'NCRN_ROCR_FEBR')
     #   DataOpts$Param <- 'DOper'
     #   
-    #   myfigure <- BoxPlotMutlipleOut(
+    #   myfigure <- MakeSeriesPlot(
     #     DataOpts$Years
     #     ,input$SummaryBoxBy
     #     ,input$SeriesThreshLine
@@ -1549,9 +1549,9 @@ WaterSeriesOutMultiple <- reactive({
   }
   })
 
-output$SeriesPlotMultiple<-renderPlotly({   WaterSeriesOutMultiple() })
+output$SeriesPlot<-renderPlotly({   MakeSeriesPlot() })
 
-CorrPlotOutMultiple <- reactive({
+MakeCorrPlot <- reactive({
     # A reactive function that returns a plotly scatterplot of two user-selected parameters. 
     # Args:
     #  DataOpts$Years, c(int), required. The character string provided by yearChooser() in global.R. 
@@ -1767,7 +1767,7 @@ CorrPlotOutMultiple <- reactive({
 
   })
 
-output$CorrPlot<-renderPlotly({   CorrPlotOutMultiple() })
+output$CorrPlot<-renderPlotly({   MakeCorrPlot() })
   
 #### Box Plot 2.0 ####
 
@@ -1821,7 +1821,7 @@ hbox <- function(y = 0, color = "red", opacity=0.1) {
   )
 }
 
-BoxPlotMultipleOut<-reactive({
+MakeBoxPlot<-reactive({
     # A reactive function that a plotly of boxplots based on user selected site(s) and aggregation method (year, month, or site). 
     # Args:
     #  DataOpts$Years, c(int), required. The character string provided by yearChooser() in global.R. 
@@ -2094,7 +2094,7 @@ BoxPlotMultipleOut<-reactive({
 
   })
 
-output$BoxPlotMultiple<-renderPlotly({   BoxPlotMultipleOut() })
+output$BoxPlot<-renderPlotly({   MakeBoxPlot() })
 
 #### Box Plot ####
   

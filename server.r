@@ -2478,18 +2478,22 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
           mydatastructure[[site]][["Characteristic"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info = "DisplayName")
           mydatastructure[[site]][["Unit"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="Units")
           mydatastructure[[site]][["df"]]$Characteristic<-mydatastructure[[site]][["Characteristic"]]
-          mydatastructure[[site]][["notification_text"]] <- dplyr::case_when(
-              !is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & all(mydatastructure[[site]][["df"]]$Value > mydatastructure[[site]][["LowerPoint"]]) & all(mydatastructure[[site]][["df"]]$Value < mydatastructure[[site]][["UpperPoint"]]) ~ 
-                  paste0("No measurements of ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]], " fall below the lower water quality threshold of ", mydatastructure[[site]][["LowerPoint"]], " ", mydatastructure[[site]][["Unit"]], ", nor exceed the upper water quality threshold of ", mydatastructure[[site]][["UpperPoint"]], " ", mydatastructure[[site]][["Unit"]])
-              ,!is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & all(mydatastructure[[site]][["df"]]$Value > mydatastructure[[site]][["LowerPoint"]]) ~ 
-                  paste0("No measurements of ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]],
-                         "fall below the water quality threshold of ", mydatastructure[[site]][["LowerPoint"]], " ", mydatastructure[[site]][["Unit"]])
-              ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & all(mydatastructure[[site]][["df"]]$Value < mydatastructure[[site]][["UpperPoint"]]) ~
-                  paste0("No measurements of ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]],
-                         "exceed the water quality threshold of ", mydatastructure[[site]][["UpperPoint"]], " ", mydatastructure[[site]][["Unit"]])
-              ,is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE ~
-                  paste0("There is no recorded water quality threshold for ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]])
-          )
+          if (is.na(mydatastructure[[site]][["LowerThreshold"]]) &&
+              is.na(mydatastructure[[site]][["UpperThreshold"]]) &&
+              !is.na(mydatastructure[[site]][["UpperPoint"]])
+          ) {
+            mydatastructure[[site]][["UpperThreshold"]] <- paste0(
+              "Acceptable ", tolower(mydatastructure[[site]][["Characteristic"]]), " is below ", mydatastructure[[site]][["UpperPoint"]], " ", mydatastructure[[site]][["Unit"]], "."
+            )
+          } else if (
+            is.na(mydatastructure[[site]][["LowerThreshold"]]) &&
+            is.na(mydatastructure[[site]][["UpperThreshold"]]) &&
+            !is.na(mydatastructure[[site]][["LowerPoint"]])
+          ) {
+            mydatastructure[[site]][["LowerThreshold"]] <- paste0(
+              "Acceptable ", tolower(mydatastructure[[site]][["Characteristic"]]), " is above ", mydatastructure[[site]][["LowerPoint"]], " ", mydatastructure[[site]][["Unit"]], "."
+            )
+          }
           
           # Building exdf
           if(any(mydatastructure[[site]][["df"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm = TRUE)) {

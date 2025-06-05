@@ -1436,9 +1436,9 @@ shinyServer(function(input,output,session){
               size=GraphOpts$PointSize
               ,opacity=as.numeric(GraphOpts$ShowHidePoint)
           )
-          ,hovertemplate = paste(
-              "<br>Date :", series_df$Date
-              ,"<br>Site :", series_df$MonitoringLocationName
+          ,hovertemplate = paste0(
+              "<br>Date: ", series_df$Date
+              ,"<br>Site: ", series_df$MonitoringLocationName
               ,"<br>", yname, ": ", series_df$Value
               # extra is a secondary bit of hovertext that's visible on the right-ide of the main hovertext
               # https://community.plotly.com/t/disabling-default-tooltip-while-using-a-hovertemplate-in-python/85824/3
@@ -1478,7 +1478,7 @@ shinyServer(function(input,output,session){
             ,mode="lines"
             # ,hoverinfo="text"
             # ,text="hello"
-            ,hovertemplate = paste(
+            ,hovertemplate = paste0(
                 "<br>Water Quality Threshold"
                 ,"<br>", yname, ": ", threshold[1]
                 # ,"<br>Reference: ", if(length(reference)==1){reference} else {reference[1]}
@@ -1495,7 +1495,7 @@ shinyServer(function(input,output,session){
             ,mode="lines"
             # ,hoverinfo="text"
             # ,text="hello"
-            ,hovertemplate = paste(
+            ,hovertemplate = paste0(
                 "<br>Water Quality Threshold"
                 ,"<br>", yname, ": ", threshold[2]
                 # ,"<br>Reference: ", if(length(reference)==1){reference} else {reference[2]}
@@ -1523,7 +1523,7 @@ shinyServer(function(input,output,session){
           ,mode="lines"
           # ,hoverinfo="text"
           # ,text="hello"
-          ,hovertemplate = paste(
+          ,hovertemplate = paste0(
               "<br>Water Quality Threshold"
               ,"<br>", yname, ": ", threshold
               # ,"<br>Reference: ", if(length(reference)==1){reference} else {reference[2]}
@@ -1736,9 +1736,9 @@ MakeCorrPlot <- reactive({
         size=GraphOpts$PointSize
         ,opacity=1
         )
-      ,hovertemplate = paste(
-        "<br>Date :", df$Date
-        ,"<br>Site :", df$MonitoringLocationName
+      ,hovertemplate = paste0(
+        "<br>Date: ", df$Date
+        ,"<br>Site: ", df$MonitoringLocationName
         ,"<br>",xname, ": ", df$sitevisit_meanvalue_x
         ,"<br>",yname, ": ", df$sitevisit_meanvalue_y
         # extra is a secondary bit of hovertext that's visible on the right-ide of the main hovertext
@@ -2053,7 +2053,7 @@ MakeBoxPlot<-reactive({
                 # x = ~Aggregation, # Extend across x-axis
                 y = rep(threshold[1], nrow(summary_table)), # Horizontal line at y = threshold
                 ,line=list(width=GraphOpts$LineWidth,dash = 'dash',color = GraphOpts$ThColor) # Customize line style
-                ,hovertemplate = paste(
+                ,hovertemplate = paste0(
                     "<br>Water Quality Threshold"
                     ,"<br>", yname, ": ", threshold[1]
                     # ,"<br>Reference: ", if(length(reference)==1){reference} else {reference[2]}
@@ -2068,7 +2068,7 @@ MakeBoxPlot<-reactive({
                 # x = ~Aggregation, # Extend across x-axis
                 y = rep(threshold[2], nrow(summary_table)) # Horizontal line at y = threshold
                 ,line=list(width=GraphOpts$LineWidth,dash = 'dash',color = GraphOpts$ThColor), # Customize line style
-                ,hovertemplate = paste(
+                ,hovertemplate = paste0(
                     "<br>Water Quality Threshold"
                     ,"<br>", yname, ": ", threshold[2]
                     # ,"<br>Reference: ", if(length(reference)==1){reference} else {reference[2]}
@@ -2086,7 +2086,7 @@ MakeBoxPlot<-reactive({
                 # x = ~Aggregation, # Extend across x-axis
                 y = rep(threshold, nrow(summary_table)), # Horizontal line at y = threshold
                 ,line=list(width=GraphOpts$LineWidth,dash = 'dash',color = GraphOpts$ThColor) # Customize line style
-                ,hovertemplate = paste(
+                ,hovertemplate = paste0(
                     "<br>Water Quality Threshold"
                     ,"<br>", yname, ": ", threshold
                     # ,"<br>Reference: ", if(length(reference)==1){reference} else {reference[2]}

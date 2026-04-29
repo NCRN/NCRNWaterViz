@@ -12,12 +12,15 @@ Network <- "NCRN" # for leaflet map center
 Network_long <- "National Capital Region Network" # for navbar title
 Viz_name <- "Stream Water Quality"
 GraphColors<-read.csv("colors.csv", header=T, as.is=T)
-DATASET_URL <- a("Click here to export the dataset from NPS DataStore\n", href="https://irma.nps.gov/DataStore/Reference/Profile/2309154")
+DATASET_URL <- a("Click here to export the dataset from NPS DataStore\n", href="https://irma.nps.gov/DataStore/Reference/Profile/2317661", target="_blank", rel="noopener nonreferrer")
+MAXYR <- 2025 # TODO can read temporal coverage from xml? can't max() a year column because we accomodate two different data input formats
+MINYR <- 2005 # TODO can read temporal coverage from xml? can't max() a year column because we accomodate two different data input formats
+
 
 #### Years Module ####
 yearChooserUI<-function(id){
   ns<-NS(id)
-  sliderInput(inputId=ns("YearsShow"), label= "Years", min=2005, max=2024, step=1, value=c(2005,2024),sep="",ticks=F)
+  sliderInput(inputId=ns("YearsShow"), label= "Years", min=MINYR, max=MAXYR, step=1, value=c(MINYR,MAXYR),sep="",ticks=F)
 }
 
 
@@ -43,7 +46,7 @@ yearChooser<-function(input,output,session,data,chosen)  {
 
 yearChooserUI2<-function(id){
   ns<-NS(id)
-  sliderInput(inputId=ns("YearsShow2"), label= "Years", min=2005, max=2024, step=1, value=c(2005,2024),sep="",ticks=F)
+  sliderInput(inputId=ns("YearsShow2"), label= "Years", min=MINYR, max=MAXYR, step=1, value=c(MINYR,MAXYR),sep="",ticks=F)
 }
 
 

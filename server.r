@@ -15,145 +15,28 @@ library(magrittr)
 library(openair)
 library(NADA)
 library(plotly)
+source('R/photos.R')
+source('R/active.R')
+source('R/threshold.R')
+source('secrets.R')
 # library(devtools)
 
-### Filtering data to active Characteristics and Sites ####
-
-# NCRN maintains 'active' and 'inactive' characteristics and sites.
-
-# Through time, NCRN has monitoried different water quality characteristics.
-# This means that characteristics that are measured in 2025 may not have been measured in other years
-# and characteristics that were measured in 2006 may no longer be measured.
-# In Apr 2025, NCRN decided that including "all" characteristics was confusing
-# because so many picklist items were inactive.
-# To solve this problem, we filter the webapp's dataset to focus on what NCRN does right now.
-# For this reason, the lines below filter out inactive characteristics.
-# The full dataset (i.e., inactive and active) will be available in IRMA for
-# anyone interested in deprecated characteristics.
-
-# Through time, NCRN has monitored different sites; some have been retired and others added.
-# Since characteristics also change through time, sites usually have different recordsets (number of rows, unique CharacteristicNames, etc.) depending on which time they came from.
-# For example, Donaldson Run (NCRN_GWMP_DORU) has only two site visits from 2005 and is, therefore, difficult to reconcile with modern records because DORU returns zero rows for most queries.
-# The result is that the Shiny app is unstable if retired sites are left in the dataset.
-# Since the main reason NCRN retires sites is that they do not fit our protocol, we elected to filter-out retired sites instead of
-# building the app to accomodate the numerous edge cases caused by retired sites that are fundamentally apples-and-oranges to active sites.
-
-mname2 <- file.path('Data',Network, metadataname2)
-dname2 <- file.path('Data',Network, dataname2)
-if (file.exists(mname2)==F | file.exists(dname2)==F){
-  # filter the metadata
-  mname <- file.path('Data',Network,metadataname)
-  metadata_df <- read.csv(mname)
-  metadata_active <- metadata_df %>%
-    dplyr::filter(IsActiveCharacteristicName == "True") %>%
-    dplyr::filter(IsActiveSiteCode == "True") 
-  write.csv(metadata_active, mname2, row.names = FALSE)
-  # filter the data
-  active_chars <- metadata_active %>%
-    dplyr::pull(DataName) %>% unique
-  active_sites <- metadata_active %>%
-    dplyr::pull(SiteCode) %>% unique
-  dname <- file.path('Data',Network,dataname)
-  filtered_data <- read.csv(dname) %>%
-    dplyr::filter(CharacteristicName %in% active_chars) %>%
-    dplyr::filter(MonitoringLocationIdentifier %in% active_sites)
-  write.csv(filtered_data, dname2, row.names = FALSE)
+#### Get data ####
+if (Network == 'NCRN'){
+  fnames <- filterActive(Network, metadataname, dataname) # NCRN filters-out inactive sites and chars
+  WaterData<-suppressWarnings(importNCRNWater(paste0("./Data/", Network), Data=fnames$dname_active, MetaData = fnames$mname_active, wqx=wqx_bool))
+  active_metadataname <- fnames$mname_active
 } else {
-  metadata_active <- read.csv(mname2)
+  WaterData<-suppressWarnings(importNCRNWater(paste0("./Data/", Network), Data=dataname, MetaData = metadataname, wqx=wqx_bool))
+  active_metadataname <- metadataname
 }
 
-#### Get data ####
-WaterData<-suppressWarnings(importNCRNWater(paste0("./Data/", Network), Data=dataname2, MetaData = metadataname2, wqx=wqx_bool))
+metadata_active <- read.csv(file.path('Data',Network,active_metadataname)) # a global variable whose name changes by network
 
 #### Get photos ####
 
-  dir <- file.path('Data',Network,'img')
-  imgs <- list()
-  for (f in list.files(dir)){
-    # we need the park, site, and date given a filename
-
-    # we have three naming conventions to deal with
-    # 1. "WATER_ANTI_SHCK_20240201 (1).JPG"
-    # 2. "dwq_NCRN_MONO_BUCK_2024-06-04_20240604-084406.jpg"
-    # 3. "ANTI_SHCK_20181210 (8).JPG"
-
-    # to start with, we'll use what the string starts with
-    if (base::endsWith(base::tolower(f), 'jpg')){
-        
-      # step 1: break the filename into pieces
-
-      if (base::startsWith(f, 'WATER')){ # 1. "WATER_ANTI_SHCK_20240201 (1).JPG"
-        tmp <- base::strsplit(f, '_')
-        # park and site
-        park <- tmp[[1]][2]
-        site <- tmp[[1]][3]
-        # date and index
-        tmp <- base::strsplit(tmp[[1]][4], ' ')
-        dt <- tmp[[1]][1]
-        idx <- base::sub('.JPG', '', tmp[[1]][2])
-        idx <- base::sub('.*\\((.*)\\).*', '\\1', idx)
-      } else if(base::startsWith(f, 'dwq') | base::startsWith(f, 'cwq')){ # 2. "dwq_NCRN_MONO_BUCK_2024-06-04_20240604-084406.jpg"
-        tmp <- base::strsplit(f, '_')
-        # park and site
-        park <- tmp[[1]][3]
-        site <- tmp[[1]][4]
-        # date and index
-        tmp <- base::strsplit(tmp[[1]][6], '-')
-        dt <- tmp[[1]][1]
-        idx <- base::sub('.jpg', '', tmp[[1]][2])
-      } else { # 3. "ANTI_SHCK_20181210 (8).JPG"
-        tmp <- base::strsplit(f, '_')
-        # park and site
-        park <- tmp[[1]][1]
-        site <- tmp[[1]][2]
-        # date and index
-        tmp <- base::strsplit(tmp[[1]][3], ' ')
-        dt <- tmp[[1]][1]
-        idx <- base::sub('.JPG', '', tmp[[1]][2])
-        idx <- base::sub('.*\\((.*)\\).*', '\\1', idx)
-      }
-
-      site <- paste0('NCRN_',park,'_',site)
-      yr <- base::substr(dt, 1,4)
-      mo <- base::substr(dt, 5,6)
-      day <- base::substr(dt, 7,8)
-      sitevisit <- paste0(NCRNWater::getSiteInfo(WaterData, parkcode=park, sitecode=site, info="SiteName"), ' ', yr, '-', mo, '-', day)
-
-      # step 2: build the data structure
-
-      # add the park if it does not exist
-      if (park %in% names(imgs)==F){
-        imgs[[park]] <- list()
-      }
-      # add the site if it does not exist
-      if (site %in% names(imgs[[park]])==F) {
-        imgs[[park]][[site]] <- list()
-      }
-      # add the year if it does not exist
-      if (yr %in% names(imgs[[park]][[site]])==F) {
-        imgs[[park]][[site]][[yr]] <- list()
-      }
-      # add the date if it does not exist
-      if (sitevisit %in% names(imgs[[park]][[site]][[yr]])==F) {
-        imgs[[park]][[site]][[yr]][[sitevisit]] <- list()
-      }
-      # add the filename if it does not exist
-      if (f %in% names(imgs[[park]][[site]][[yr]][[sitevisit]])==F) {
-        imgs[[park]][[site]][[yr]][[sitevisit]][[f]] <- list()
-      }
-
-      imgs[[park]][[site]][[yr]][[sitevisit]][[f]]$rel_fpath <- file.path(dir, f)
-      imgs[[park]][[site]][[yr]][[sitevisit]][[f]]$sortorder <- idx
-
-    }
-  }
-
-####getThresholdText Function
-getTresholdText<-function(object, parkcode,sitecode,charname){    
- x<-c(getCharInfo(object, parkcode=parkcode, sitecode=sitecode, charname=charname, info="LowerDescription"),
-    getCharInfo(object, parkcode=parkcode, sitecode=sitecode, charname=charname, info="UpperDescription"))
-  return(x[!is.na(x)])
-}
+dir <- file.path('Data',Network,'img')
+imgs <- parsePhotos(dir, WaterData)
 
 ##### Shiny Server ####
 
@@ -225,7 +108,7 @@ shinyServer(function(input,output,session){
     ,id="TimeYears"
     ,data=DataUse
     ,chosen=reactive(DataOpts$Years)
-    )
+    ) %>% debounce(2000)
   # observeEvent resets the values of conditional picklists to their starting point so downstream code (e.g., data()) won't error
   # when the input specified in the function updates it triggers one or more values to update
   # e.g., when input$TimePark changes in the app, it updates DataOpts$Park, DataOpts$Site, DataOpts$Param, and DataOpts$Years
@@ -257,7 +140,7 @@ shinyServer(function(input,output,session){
     TimeYears()
       ,{
         DataOpts$Years<-TimeYears()
-        ;shiny::callModule(yearChooser, id="SummaryYears", data=DataUseMultiple, chosen=reactive(DataOpts$Years))
+        ;shiny::callModule(yearChooser, id="SummaryYears", data=DataUseMultiple, chosen=reactive(DataOpts$Years)) %>% debounce(2000)
       }
     )
   ### Summary Controls ###
@@ -287,7 +170,7 @@ shinyServer(function(input,output,session){
     ,id="SummaryYears"
     ,data=DataUseMultiple
     ,chosen=reactive(DataOpts$Years)
-    )
+    ) %>% debounce(2000)
   shiny::observeEvent(
     SummaryPark()
     ,{
@@ -343,7 +226,7 @@ shinyServer(function(input,output,session){
     ,id="BoxYears"
     ,data=DataUseMultiple
     ,chosen=reactive(DataOpts$Years)
-    )
+    ) %>% debounce(2000)
   shiny::observeEvent(
     BoxPark()
     ,{
@@ -407,7 +290,7 @@ shinyServer(function(input,output,session){
     ,id="CorrYears"
     ,data=DataUseMultiple
     ,chosen=reactive(DataOpts$Years)
-    )
+    ) %>% debounce(2000)
   shiny::observeEvent(
     CorrPark()
     ,{
@@ -502,7 +385,7 @@ shinyServer(function(input,output,session){
     ,id="PhotoYears"
     ,data=DataUseMultiple
     ,chosen=reactive(DataOpts$Years)
-    )
+    ) %>% debounce(2000)
   PhotoSiteVisit<-shiny::callModule(
     siteVisitChooser
     ,id="PhotoSiteVisit"
@@ -2913,8 +2796,15 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
   })
   
  #### NPS Data ####
-  NPSGeoData <- data.frame(ParkCode=getSiteInfo(WaterData, info="ParkCode"), SiteCode=getSiteInfo(WaterData, info="SiteCode"), ParkName=getSiteInfo(WaterData, info = "ParkShortName"), SiteName=getSiteInfo(WaterData, info= "SiteName"), 
-                          latitude=getSiteInfo(WaterData, info="lat"), longitude=getSiteInfo(WaterData, info="long"), stringsAsFactors = F)
+  NPSGeoData <- data.frame(
+    ParkCode=getSiteInfo(WaterData, info="ParkCode")
+    ,SiteCode=getSiteInfo(WaterData, info="SiteCode")
+    ,ParkName=getSiteInfo(WaterData, info = "ParkShortName")
+    ,SiteName=getSiteInfo(WaterData, info= "SiteName")
+    ,latitude=getSiteInfo(WaterData, info="lat")
+    ,longitude=getSiteInfo(WaterData, info="long")
+    ,stringsAsFactors = F
+    )
 
   active_sites <- metadata_active %>%
     dplyr::filter(IsActiveSiteCode == "True") %>%
@@ -3028,9 +2918,8 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
   #                          Network == "NETN" ~ 7)
 
     leaflet() %>%
-      leaflet::addTiles(group="Map", urlTemplate="https://atlas-stg.geoplatform.gov/styles/v1/atlas-user/ck58pyquo009v01p99xebegr9/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiYXRsYXMtdXNlciIsImEiOiJjazFmdGx2bjQwMDAwMG5wZmYwbmJwbmE2In0.lWXK2UexpXuyVitesLdwUg", attribution="National Park Service, © Mapbox, and © OpenStreetMap") %>%
-    #  leaflet::addTiles(group="Imagery", urlTemplate="https://atlas-stg.geoplatform.gov/styles/v1/atlas-user/ck72fwp2642dv07o7tbqinvz4/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiYXRsYXMtdXNlciIsImEiOiJjazFmdGx2bjQwMDAwMG5wZmYwbmJwbmE2In0.lWXK2UexpXuyVitesLdwUg", attribution="National Park Service, © Mapbox, and © OpenStreetMap") %>%
-      leaflet::addTiles(group="Slate", urlTemplate = "https://atlas-stg.geoplatform.gov/styles/v1/atlas-user/ck5cpvc2e0avf01p9zaw4co8o/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiYXRsYXMtdXNlciIsImEiOiJjazFmdGx2bjQwMDAwMG5wZmYwbmJwbmE2In0.lWXK2UexpXuyVitesLdwUg", attribution ="National Park Service, © Mapbox, and © OpenStreetMap") %>%
+      leaflet::addTiles(group="Map", urlTemplate=TEMPLATE_A, attribution="National Park Service, © Mapbox, and © OpenStreetMap") %>%
+      leaflet::addTiles(group="Slate", urlTemplate = TEMPLATE_B, attribution ="National Park Service, © Mapbox, and © OpenStreetMap") %>%
       leaflet::addLayersControl(map=., baseGroups=c("Map","Slate"), options=layersControlOptions(collapsed=T)) %>%
 
     # addTiles() # temporary workaround to provide a basemap
@@ -3043,12 +2932,12 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     leaflet::setView(lng = netlon, lat = netlat , zoom = netzoom) 
      })
 
-  NPSAttrib<-HTML("<a href='https://www.nps.gov/npmap/disclaimer/'>Disclaimer</a> | 
-      &copy; <a href='http://mapbox.com/about/maps' target='_blank'>Mapbox</a>
-      &copy; <a href='http://openstreetmap.org/copyright' target='_blank'>OpenStreetMap</a> contributors |
+  NPSAttrib<-HTML("<a href='https://www.nps.gov/npmap/disclaimer/' target='_blank' rel='noopener noreferrer'>Disclaimer</a> | 
+      &copy; <a href='http://mapbox.com/about/maps' target='_blank' rel='noopener noreferrer'>Mapbox</a>
+      &copy; <a href='http://openstreetmap.org/copyright' target='_blank' rel='noopener noreferrer'>OpenStreetMap</a> contributors |
       <a class='improve-park-tiles' 
       href='http://insidemaps.nps.gov/places/editor/#background=mapbox-satellite&map=4/-95.97656/39.02772&overlays=park-tiles-overlay'
-      target='_blank'>Improve Park Tiles</a>")
+      target='_blank' rel='noopener noreferrer'>Improve Park Tiles</a>")
    
   #  observe({
   #   if(input$MapNPS){
@@ -3328,7 +3217,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
             popup= paste("<b>",ClickData$SiteName,"</b>", br(),
             getCharInfo(WaterData, parkcode=ClickData$ParkCode, sitecode=ClickData$SiteCode,charname=input$MapChar, 
             info="DisplayName"),":", br(), round(100*ExceedData()[ExceedData()$Site==ClickData$SiteCode,]$Acceptable/ExceedData()[ExceedData()$Site==ClickData$SiteCode,]$Total,1),"% of measurements meet water quality standards",br(),br(),
-            getTresholdText(WaterData, ClickData$ParkCode, ClickData$SiteCode, input$MapChar), br(),br(),
+            getThresholdText(WaterData, ClickData$ParkCode, ClickData$SiteCode, input$MapChar), br(),br(),
             "<b>References:</b>",br(),
             getCharInfo(WaterData, ClickData$ParkCode, ClickData$SiteCode, input$MapChar, info="AssessmentDetails")
             )),

@@ -30,7 +30,7 @@ mkdir NCRN
 cd ../..
 ```
 
-5.  Copy the data and metadata files to your `Data/NCRN` folder from [here](https://doimspp.sharepoint.com/:f:/r/sites/NCRNWater/Shared%20Documents/General/Annual-Data-Packages/2024?csf=1&web=1&e=fN3XjJ) wqp.csv wqp_ncrnwater_metadata.csv
+5.  Copy the data and metadata files to your `Data/NCRN` folder from [here](https://doimspp.sharepoint.com/:f:/r/sites/NCRNWater/Shared%20Documents/11_VISUALIZER/water_visualizer/Data?csf=1&web=1&e=8zoFzX) wqp.csv wqp_ncrnwater_metadata.csv
 
 6.  Confirm that you can run the shiny app.
 

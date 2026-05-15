@@ -176,7 +176,7 @@ paramChooserUI<-function(id){
 }
 
 
-paramChooser<-function(input, output, session, data, park, site, chosen){
+paramChooser<-function(input, output, session, data, park, chosen){
   PChoices<-reactive({
     req(park())
     Choice<-getCharInfo(data, parkcode=park(), info="CharName")
@@ -201,7 +201,7 @@ paramChooserUI2<-function(id){
 }
 
 
-paramChooser2<-function(input, output, session, data, park, site, chosen){
+paramChooser2<-function(input, output, session, data, park, chosen){
   PChoices<-reactive({
     req(park())
     Choice<-getCharInfo(data, parkcode=park(), info="CharName")

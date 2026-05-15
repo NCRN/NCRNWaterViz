@@ -100,7 +100,7 @@ shinyServer(function(input,output,session){
     ,id="TimeParam"
     ,data=WaterData
     ,park=reactive(DataOpts$Park)
-    ,site=reactive(DataOpts$Site)
+    # ,site=reactive(DataOpts$Site)
     ,chosen=reactive(DataOpts$Param)
     )
   TimeYears<-shiny::callModule(
@@ -162,7 +162,7 @@ shinyServer(function(input,output,session){
     ,id="SummaryParam"
     ,data=WaterData
     ,park=reactive(DataOpts$Park)
-    ,site=reactive(DataOpts$Site)
+    # ,site=reactive(DataOpts$Site)
     ,chosen=reactive(DataOpts$Param)
     )
   SummaryYears<-shiny::callModule(
@@ -218,7 +218,7 @@ shinyServer(function(input,output,session){
     ,id="BoxParam"
     ,data=WaterData
     ,park=reactive(DataOpts$Park)
-    ,site=reactive(DataOpts$Site)
+    # ,site=reactive(DataOpts$Site)
     ,chosen=reactive(DataOpts$Param)
     )
   BoxYears<-shiny::callModule(
@@ -274,7 +274,7 @@ shinyServer(function(input,output,session){
     ,id="CorrParam1"
     ,data=WaterData
     ,park=reactive(DataOpts$Park)
-    ,site=reactive(DataOpts$Site)
+    # ,site=reactive(DataOpts$Site)
     ,chosen=reactive(DataOpts$Param)
     )
   CorrParam2<-shiny::callModule(
@@ -282,7 +282,7 @@ shinyServer(function(input,output,session){
     ,id="CorrParam2"
     ,data=WaterData
     ,park=reactive(DataOpts$Park)
-    ,site=reactive(DataOpts$Site)
+    # ,site=reactive(DataOpts$Site)
     ,chosen=reactive(DataOpts$Param2)
     )
   CorrYears<-shiny::callModule(
@@ -339,7 +339,7 @@ shinyServer(function(input,output,session){
     ,id="DataParam"
     ,data=WaterData
     ,park=reactive(DataOpts$Park)
-    ,site=reactive(DataOpts$Site)
+    # ,site=reactive(DataOpts$Site)
     ,chosen=reactive(DataOpts$Param)
     )
   shiny::observeEvent(
@@ -537,7 +537,7 @@ shinyServer(function(input,output,session){
     ,id="DataParamExceedances"
     ,data=WaterData
     ,park=reactive(DataOpts$Park)
-    ,site=reactive(DataOpts$Site)
+    # ,site=reactive(DataOpts$Site)
     ,chosen=reactive(DataOpts$Param)
     )
   shiny::observeEvent(

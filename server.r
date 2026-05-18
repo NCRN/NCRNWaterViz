@@ -2462,13 +2462,13 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
           }
           
           # Building exdf
-          if(any(mydatastructure[[site]][["df"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm = TRUE)) {
+          if(any(mydatastructure[[site]][["df"]]$Value < mydatastructure[[site]][["LowerPoint"]], na.rm = TRUE)) {
               lower_sd<- mydatastructure[[site]][["df"]][mydatastructure[[site]][["df"]]$Value <= mydatastructure[[site]][["LowerPoint"]], ]
               lower_sd$LowerThreshold <- mydatastructure[[site]][["LowerThreshold"]]
           } else{
               lower_sd<- mydatastructure[[site]][["df"]][0, ]
           }
-          if(any(mydatastructure[[site]][["df"]]$Value >= mydatastructure[[site]][["UpperPoint"]], na.rm = TRUE)) {
+          if(any(mydatastructure[[site]][["df"]]$Value > mydatastructure[[site]][["UpperPoint"]], na.rm = TRUE)) {
               upper_sd<- mydatastructure[[site]][["df"]][mydatastructure[[site]][["df"]]$Value >= mydatastructure[[site]][["UpperPoint"]], ]
               upper_sd$UpperThreshold <- mydatastructure[[site]][["UpperThreshold"]]
           } else {

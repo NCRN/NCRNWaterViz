@@ -2575,7 +2575,28 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
               scale_x_continuous(breaks = seq(min(mydatastructure[[site]][["histdata"]]$Year), max(mydatastructure[[site]][["histdata"]]$Year), by = 1)) +
               ylim(0, 100) +
               labs(
-                  title = paste0("Percent of non-NA ", mydatastructure[[site]][["Characteristic"]], " observations exceeding the water quality threshold at ", mydatastructure[[site]][["Sitename"]], "\nNon-NA observations: ", mydatastructure[[site]][["non_na_obs"]], " (NAs: ", mydatastructure[[site]][["total_obs"]]-mydatastructure[[site]][["non_na_obs"]], ")"),
+                  title = paste0(
+                    mydatastructure[[site]][["Sitename"]],
+                    ", ",
+                    mydatastructure[[site]][["Characteristic"]],
+                    ", ",
+                    mydatastructure[[site]][['oldest_year']],
+                    "-",
+                    mydatastructure[[site]][["recent_year"]],
+                    "\n",
+                    mydatastructure[[site]][["sum_nex"]],
+                    " of ",
+                    mydatastructure[[site]][["non_na_obs"]],
+                    " measurements ",
+                    "(",
+                    round(100*(mydatastructure[[site]][["sum_nex"]]/mydatastructure[[site]][["non_na_obs"]]),1),
+                    "%",
+                    ")",
+                    " exceeded ",
+                    mydatastructure[[site]][["ExPoint"]],
+                    " ",
+                    mydatastructure[[site]][["Unit"]]
+                    ),
                   x = "Year",
                   y = "% non-NA observations") +
               theme_minimal() +
@@ -2614,14 +2635,14 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
           
           if (mydatastructure[[site]][["n_ex_year"]] != 0) {
               mydatastructure[[site]][["alt_text"]] <- paste0(
-                  "<b>Figure Description:</b> Acceptable water quality measurements for ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]], " have occurred between ", mydatastructure[[site]][["oldest_year"]], " and ", mydatastructure[[site]][["recent_year"]], ". ",
+                  "<b>Figure Description:</b>", mydatastructure[[site]][["oldest_year"]], " and ", mydatastructure[[site]][["recent_year"]], ". ",
                   mydatastructure[[site]][["alt_text_line2"]],
                   " The highest proportion of threshold exceedances per measurements taken in a single year was ", mydatastructure[[site]][["highest_ex_rate"]], " in ", mydatastructure[[site]][["highest_rate_year"]], ".",
                   " See exceedances profiles per year below:",
                   mydatastructure[[site]][["alt_bullets2"]])
           } else {
               mydatastructure[[site]][["alt_text"]] <- paste0(
-                  "<b>Figure Description:</b> Acceptable water quality measurements for ", mydatastructure[[site]][["Characteristic"]], " at ", mydatastructure[[site]][["Sitename"]], " have occurred between ", mydatastructure[[site]][["oldest_year"]], " and ", mydatastructure[[site]][["recent_year"]], ". ",
+                  "<b>Figure Description:</b> All ", mydatastructure[[site]][["Characteristic"]], " measurements at ", mydatastructure[[site]][["Sitename"]], " were acceptable between ", mydatastructure[[site]][["oldest_year"]], " and ", mydatastructure[[site]][["recent_year"]], ". ",
                   "There are no exceedances data to describe."
               )
           }

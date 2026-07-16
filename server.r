@@ -1322,7 +1322,7 @@ shinyServer(function(input,output,session){
           ,hovertemplate = paste0(
               "<br>Date: ", series_df$Date
               ,"<br>Site: ", series_df$MonitoringLocationName
-              ,"<br>", yname, ": ", series_df$Value
+              ,"<br>", yname, ": ", round(series_df$Value,1)
               # extra is a secondary bit of hovertext that's visible on the right-ide of the main hovertext
               # https://community.plotly.com/t/disabling-default-tooltip-while-using-a-hovertemplate-in-python/85824/3
               ,'<extra></extra>'
@@ -1622,8 +1622,8 @@ MakeCorrPlot <- reactive({
       ,hovertemplate = paste0(
         "<br>Date: ", df$Date
         ,"<br>Site: ", df$MonitoringLocationName
-        ,"<br>",xname, ": ", df$sitevisit_meanvalue_x
-        ,"<br>",yname, ": ", df$sitevisit_meanvalue_y
+        ,"<br>",xname, ": ", round(df$sitevisit_meanvalue_x,1)
+        ,"<br>",yname, ": ", round(df$sitevisit_meanvalue_y,1)
         # extra is a secondary bit of hovertext that's visible on the right-ide of the main hovertext
         # https://community.plotly.com/t/disabling-default-tooltip-while-using-a-hovertemplate-in-python/85824/3
         ,'<extra></extra>'
@@ -1880,13 +1880,13 @@ MakeBoxPlot<-reactive({
       ,Maximum = ifelse(Maximum == 'Data not collected', NA, Maximum)
       ,Standard_Deviation = ifelse(Standard_Deviation == 'Data not collected', NA, Standard_Deviation)
   ) %>% dplyr::mutate(
-      Minimum = as.numeric(Minimum)
-      ,Q1 = as.numeric(Q1)
-      ,Mean = as.numeric(Mean)
-      ,Median = as.numeric(Median)
-      ,Q3 = as.numeric(Q3)
-      ,Maximum = as.numeric(Maximum)
-      ,Standard_Deviation = as.numeric(Standard_Deviation)
+      Minimum = round(as.numeric(Minimum),1)
+      ,Q1 = round(as.numeric(Q1),1)
+      ,Mean = round(as.numeric(Mean),1)
+      ,Median = round(as.numeric(Median),1)
+      ,Q3 = round(as.numeric(Q3),1)
+      ,Maximum = round(as.numeric(Maximum),1)
+      ,Standard_Deviation = round(as.numeric(Standard_Deviation),1)
   ) %>% dplyr::filter(
       Total_Measurements != Missing_Values # filter-out groups with all NA observations
   )

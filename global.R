@@ -118,7 +118,12 @@ parkChooser2<-function(input,output,session, data, chosen){
 
 siteChooserUI<-function(id){
   ns<-NS(id)
-  selectizeInput(inputId = ns("SiteIn"), label="Site", choices=NULL, multiple = TRUE)
+  selectizeInput(inputId = ns("SiteIn"),
+                 label="Site",
+                 choices=NULL,
+                 multiple = TRUE,
+                 options = list(plugins = list("remove_button"))
+                 )
 }
 
 siteChooser<-function(input, output, session, data, park, chosen){
@@ -144,7 +149,12 @@ siteChooser<-function(input, output, session, data, park, chosen){
 
 siteChooserUI2<-function(id){
   ns<-NS(id)
-  selectizeInput(inputId = ns("SiteIn2"), label="Site", choices=NULL, multiple = TRUE)
+  selectizeInput(inputId = ns("SiteIn2"),
+                 label="Site",
+                 choices=NULL,
+                 multiple = TRUE,
+                 options = list(plugins = list("remove_button"))
+                 )
 }
 
 siteChooser2<-function(input, output, session, data, park, chosen){

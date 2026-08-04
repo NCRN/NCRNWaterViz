@@ -2548,11 +2548,6 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
           )
           mydatastructure[[site]][["extext_bullets"]]<- paste0("<li>", mydatastructure[[site]][["extext"]], "</li>", collapse = "")
           
-          mydatastructure[[site]][["html_extext"]]<- paste0(
-              "<p><b><span style='font-size: 18px;'>Exceedances Report:</b></p>",
-              "<ul>", mydatastructure[[site]][["extext_bullets"]], "</ul>"
-          )
-          
           # Histogram
           
           mydatastructure[[site]][["ExPoint"]]<- dplyr::case_when(
@@ -2637,9 +2632,17 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
               mydatastructure[[site]][["alt_text"]] <- paste0(
                   "<b>Figure Description:</b>", mydatastructure[[site]][["oldest_year"]], " and ", mydatastructure[[site]][["recent_year"]], ". ",
                   mydatastructure[[site]][["alt_text_line2"]],
-                  " The highest proportion of threshold exceedances per measurements taken in a single year was ", mydatastructure[[site]][["highest_ex_rate"]], " in ", mydatastructure[[site]][["highest_rate_year"]], ".",
-                  " See exceedances profiles per year below:",
-                  mydatastructure[[site]][["alt_bullets2"]])
+                  " The highest proportion of threshold exceedances per measurements taken in a single year was ", mydatastructure[[site]][["highest_ex_rate"]], " in ", mydatastructure[[site]][["highest_rate_year"]], "."
+                  # " See exceedances profiles per year below:",
+                  # mydatastructure[[site]][["alt_bullets2"]]
+                  )
+              mydatastructure[[site]][["html_extext"]]<- paste0(
+                "<p><b><span style='font-size: 18px;'>Exceedances Report:</b></p>",
+                "<ul>",
+                mydatastructure[[site]][["extext_bullets"]],
+                mydatastructure[[site]][["alt_bullets2"]],
+                "</ul>"
+              )
           } else {
               mydatastructure[[site]][["alt_text"]] <- paste0(
                   "<b>Figure Description:</b> All ", mydatastructure[[site]][["Characteristic"]], " measurements at ", mydatastructure[[site]][["Sitename"]], " were acceptable between ", mydatastructure[[site]][["oldest_year"]], " and ", mydatastructure[[site]][["recent_year"]], ". ",

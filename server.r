@@ -2531,6 +2531,15 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
           # freq_comp<- ifelse((nex/ntot) > (sum_nex/sum_ntot), "greater than",
           #                      ifelse((nex/ntot) == (sum_nex/sum_ntot), "equal to", "less than"))
           
+          # Histogram
+          mydatastructure[[site]][["ExPoint"]]<- dplyr::case_when(
+            is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE ~ mydatastructure[[site]][["LowerPoint"]]
+            ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE ~ mydatastructure[[site]][["UpperPoint"]]
+            ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & any(mydatastructure[[site]][["exdf"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm=TRUE) & all(mydatastructure[[site]][["exdf"]]$Value < mydatastructure[[site]][["UpperPoint"]], na.rm=TRUE) ~ mydatastructure[[site]][["LowerPoint"]]
+            ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & any(mydatastructure[[site]][["exdf"]]$Value >= mydatastructure[[site]][["UpperPoint"]], na.rm=TRUE) & all(mydatastructure[[site]][["exdf"]]$Value > mydatastructure[[site]][["LowerPoint"]], na.rm=TRUE) ~ mydatastructure[[site]][["UpperPoint"]]
+            # ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & any(mydatastructure[[site]][["exdf"]]$Value >= mydatastructure[[site]][["UpperPoint"]], na.rm=TRUE) & any(mydatastructure[[site]][["exdf"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm=TRUE) ~ paste0(mydatastructure[[site]][["LowerPoint"]], " and ", mydatastructure[[site]][["UpperPoint"]])
+          )
+          
           # most recent year of data
           mydatastructure[[site]][["grammar1"]]<- 
             if (mydatastructure[[site]][['nex']]==0){
@@ -2666,14 +2675,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
           )
           mydatastructure[[site]][["extext_bullets"]]<- paste0("<li>", mydatastructure[[site]][["extext"]], "</li>", collapse = "")
           
-          # Histogram
-          mydatastructure[[site]][["ExPoint"]]<- dplyr::case_when(
-              is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE ~ mydatastructure[[site]][["LowerPoint"]]
-              ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE ~ mydatastructure[[site]][["UpperPoint"]]
-              ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & any(mydatastructure[[site]][["exdf"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm=TRUE) & all(mydatastructure[[site]][["exdf"]]$Value < mydatastructure[[site]][["UpperPoint"]], na.rm=TRUE) ~ mydatastructure[[site]][["LowerPoint"]]
-              ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & any(mydatastructure[[site]][["exdf"]]$Value >= mydatastructure[[site]][["UpperPoint"]], na.rm=TRUE) & all(mydatastructure[[site]][["exdf"]]$Value > mydatastructure[[site]][["LowerPoint"]], na.rm=TRUE) ~ mydatastructure[[site]][["UpperPoint"]]
-              # ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & any(mydatastructure[[site]][["exdf"]]$Value >= mydatastructure[[site]][["UpperPoint"]], na.rm=TRUE) & any(mydatastructure[[site]][["exdf"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm=TRUE) ~ paste0(mydatastructure[[site]][["LowerPoint"]], " and ", mydatastructure[[site]][["UpperPoint"]])
-          )
+
 
           mydatastructure[[site]][["p"]]<- ggplot2::ggplot(mydatastructure[[site]][["histdata"]], aes(x = Year, y = percent_ex, text = hover_text)) +
               geom_bar(stat = "identity", fill = "lightgray") +

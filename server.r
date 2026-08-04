@@ -2589,6 +2589,48 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
                 " exceedances "
               )
             }
+          # Annual summaries for exceedances report
+          alt_text <- c()
+          for (i in seq_len(nrow(mydatastructure[[site]][["histdata"]]))) {
+            nex <- mydatastructure[[site]][["histdata"]]$nex[i]
+            ntot <- mydatastructure[[site]][["histdata"]]$ntot[i]
+            alt_text <- c(
+              alt_text,
+              paste0(
+                "<b>",
+                mydatastructure[[site]][["histdata"]]$Year[i],
+                "</b>: ",
+                nex,
+                ' of ',
+                mydatastructure[[site]][["histdata"]]$ntot[i],
+                " measurement",
+                if (ntot>1) "s",
+                " (",
+                mydatastructure[[site]][["histdata"]]$formatted_percent_ex[i],
+                ") exceeded ",
+                mydatastructure[[site]][["ExPoint"]],
+                " ", mydatastructure[[site]][["Unit"]]
+              )
+            )
+          }
+          
+          mydatastructure[[site]][["histdata"]]$hover_text <- paste0(
+            mydatastructure[[site]][["histdata"]]$Year, ", ", mydatastructure[[site]][["Characteristic"]], "\n",
+            mydatastructure[[site]][["histdata"]]$ntot, " total observation(s)", "\n",
+            mydatastructure[[site]][["histdata"]]$formatted_percent_ex, " of observations exceeding ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]]
+          )
+          
+          mydatastructure[[site]][["recent_ex"]] <- max(mydatastructure[[site]][["histdata"]]$Year[mydatastructure[[site]][["histdata"]]$nex != 0])
+          mydatastructure[[site]][["oldest_ex"]] <- min(mydatastructure[[site]][["histdata"]]$Year[mydatastructure[[site]][["histdata"]]$nex != 0])
+          mydatastructure[[site]][["highest_ex_rate"]] <- mydatastructure[[site]][["histdata"]]$formatted_percent_ex[which.max(mydatastructure[[site]][["histdata"]]$percent_ex)]
+          mydatastructure[[site]][["hry_vec"]] <- mydatastructure[[site]][["histdata"]]$Year[mydatastructure[[site]][["histdata"]]$percent_ex == max(mydatastructure[[site]][["histdata"]]$percent_ex)]
+          vec_format <- function(vec) {
+            n <- length(vec)
+            if (n == 1) return(as.character(vec[1]))
+            if (n == 2) return(paste(vec, collapse = " and "))
+            paste(paste(vec[-n], collapse = ", "), "and", vec[n])
+          }
+          mydatastructure[[site]][["highest_rate_year"]] <- vec_format(mydatastructure[[site]][["hry_vec"]])
           
           # Writing text
           mydatastructure[[site]][["extext"]]<- c(
@@ -2601,6 +2643,13 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
                 mydatastructure[[site]][["Sitename"]],
                 "."
                 )
+              ,paste0(
+                "The highest proportion of threshold exceedances per measurements taken in a single year was ",
+                mydatastructure[[site]][["highest_ex_rate"]],
+                " in ",
+                mydatastructure[[site]][["highest_rate_year"]],
+                "."
+              )
               ,paste0(
                 "In all years of data, ",
                 mydatastructure[[site]][["oldest_year"]],
@@ -2617,7 +2666,6 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
           mydatastructure[[site]][["extext_bullets"]]<- paste0("<li>", mydatastructure[[site]][["extext"]], "</li>", collapse = "")
           
           # Histogram
-          
           mydatastructure[[site]][["ExPoint"]]<- dplyr::case_when(
               is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE ~ mydatastructure[[site]][["LowerPoint"]]
               ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE ~ mydatastructure[[site]][["UpperPoint"]]
@@ -2625,14 +2673,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
               ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & any(mydatastructure[[site]][["exdf"]]$Value >= mydatastructure[[site]][["UpperPoint"]], na.rm=TRUE) & all(mydatastructure[[site]][["exdf"]]$Value > mydatastructure[[site]][["LowerPoint"]], na.rm=TRUE) ~ mydatastructure[[site]][["UpperPoint"]]
               # ,!is.na(mydatastructure[[site]][["UpperPoint"]]) == TRUE & !is.na(mydatastructure[[site]][["LowerPoint"]]) == TRUE & any(mydatastructure[[site]][["exdf"]]$Value >= mydatastructure[[site]][["UpperPoint"]], na.rm=TRUE) & any(mydatastructure[[site]][["exdf"]]$Value <= mydatastructure[[site]][["LowerPoint"]], na.rm=TRUE) ~ paste0(mydatastructure[[site]][["LowerPoint"]], " and ", mydatastructure[[site]][["UpperPoint"]])
           )
-          
-          
-          mydatastructure[[site]][["histdata"]]$hover_text <- paste0(
-              mydatastructure[[site]][["histdata"]]$Year, ", ", mydatastructure[[site]][["Characteristic"]], "\n",
-              mydatastructure[[site]][["histdata"]]$ntot, " total observation(s)", "\n",
-              mydatastructure[[site]][["histdata"]]$formatted_percent_ex, " of observations exceeding ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]]
-          )
-          
+
           mydatastructure[[site]][["p"]]<- ggplot2::ggplot(mydatastructure[[site]][["histdata"]], aes(x = Year, y = percent_ex, text = hover_text)) +
               geom_bar(stat = "identity", fill = "lightgray") +
               scale_x_continuous(breaks = seq(min(mydatastructure[[site]][["histdata"]]$Year), max(mydatastructure[[site]][["histdata"]]$Year), by = 1)) +
@@ -2666,45 +2707,11 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
               theme(panel.grid.major.x = element_blank()) +
               theme(plot.title = element_text(hjust = 0.5))
           
-          # Annual summaries for exceedances report
-          alt_text <- c()
-          for (i in seq_len(nrow(mydatastructure[[site]][["histdata"]]))) {
-            nex <- mydatastructure[[site]][["histdata"]]$nex[i]
-            ntot <- mydatastructure[[site]][["histdata"]]$ntot[i]
-                  alt_text <- c(
-                    alt_text,
-                    paste0(
-                      "<b>",
-                      mydatastructure[[site]][["histdata"]]$Year[i],
-                      "</b>: ",
-                      nex,
-                      ' of ',
-                      mydatastructure[[site]][["histdata"]]$ntot[i],
-                      " measurement",
-                      if (ntot>1) "s",
-                      " (",
-                      mydatastructure[[site]][["histdata"]]$formatted_percent_ex[i],
-                      ") exceeded ",
-                      mydatastructure[[site]][["ExPoint"]],
-                      " ", mydatastructure[[site]][["Unit"]]
-                      )
-                    )
-          }
+
           mydatastructure[[site]][["alt_raw"]] <- alt_text
           mydatastructure[[site]][["alt_bullets"]] <- paste0("<li>", mydatastructure[[site]][["alt_raw"]], "</li>", collapse = "")
           mydatastructure[[site]][["alt_bullets2"]] <- paste0("<ul>", mydatastructure[[site]][["alt_bullets"]], "</ul>")
           
-          mydatastructure[[site]][["recent_ex"]] <- max(mydatastructure[[site]][["histdata"]]$Year[mydatastructure[[site]][["histdata"]]$nex != 0])
-          mydatastructure[[site]][["oldest_ex"]] <- min(mydatastructure[[site]][["histdata"]]$Year[mydatastructure[[site]][["histdata"]]$nex != 0])
-          mydatastructure[[site]][["highest_ex_rate"]] <- mydatastructure[[site]][["histdata"]]$formatted_percent_ex[which.max(mydatastructure[[site]][["histdata"]]$percent_ex)]
-          mydatastructure[[site]][["hry_vec"]] <- mydatastructure[[site]][["histdata"]]$Year[mydatastructure[[site]][["histdata"]]$percent_ex == max(mydatastructure[[site]][["histdata"]]$percent_ex)]
-          vec_format <- function(vec) {
-              n <- length(vec)
-              if (n == 1) return(as.character(vec[1]))
-              if (n == 2) return(paste(vec, collapse = " and "))
-              paste(paste(vec[-n], collapse = ", "), "and", vec[n])
-          }
-          mydatastructure[[site]][["highest_rate_year"]] <- vec_format(mydatastructure[[site]][["hry_vec"]])
           
           mydatastructure[[site]][["n_ex_year"]] <- sum(mydatastructure[[site]][["histdata"]]$nex != 0)
           if (mydatastructure[[site]][["n_ex_year"]] == 1) {
@@ -2720,8 +2727,8 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
                   " and ",
                   mydatastructure[[site]][["recent_year"]],
                   ". ",
-                  mydatastructure[[site]][["alt_text_line2"]],
-                  " The highest proportion of threshold exceedances per measurements taken in a single year was ", mydatastructure[[site]][["highest_ex_rate"]], " in ", mydatastructure[[site]][["highest_rate_year"]], "."
+                  mydatastructure[[site]][["alt_text_line2"]]
+                  # ," The highest proportion of threshold exceedances per measurements taken in a single year was ", mydatastructure[[site]][["highest_ex_rate"]], " in ", mydatastructure[[site]][["highest_rate_year"]], "."
                   # " See exceedances profiles per year below:",
                   # mydatastructure[[site]][["alt_bullets2"]]
                   )
@@ -2729,6 +2736,9 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
                 "<p><b><span style='font-size: 18px;'>Exceedances Report:</b></p>",
                 "<ul>",
                 mydatastructure[[site]][["extext_bullets"]],
+                # "<li>",
+                # " The highest proportion of threshold exceedances per measurements taken in a single year was ", mydatastructure[[site]][["highest_ex_rate"]], " in ", mydatastructure[[site]][["highest_rate_year"]], ".",
+                # "</li>",
                 mydatastructure[[site]][["alt_bullets2"]],
                 "</ul>"
               )

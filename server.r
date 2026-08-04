@@ -2670,7 +2670,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
           alt_text <- c()
           for (i in seq_len(nrow(mydatastructure[[site]][["histdata"]]))) {
             nex <- mydatastructure[[site]][["histdata"]]$nex[i]
-              if(nex != 0) {
+            ntot <- mydatastructure[[site]][["histdata"]]$ntot[i]
                   alt_text <- c(
                     alt_text,
                     paste0(
@@ -2681,7 +2681,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
                       ' of ',
                       mydatastructure[[site]][["histdata"]]$ntot[i],
                       " measurement",
-                      if (nex>1) "s",
+                      if (ntot>1) "s",
                       " (",
                       mydatastructure[[site]][["histdata"]]$formatted_percent_ex[i],
                       ") exceeded ",
@@ -2689,7 +2689,6 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
                       " ", mydatastructure[[site]][["Unit"]]
                       )
                     )
-              }
           }
           mydatastructure[[site]][["alt_raw"]] <- alt_text
           mydatastructure[[site]][["alt_bullets"]] <- paste0("<li>", mydatastructure[[site]][["alt_raw"]], "</li>", collapse = "")

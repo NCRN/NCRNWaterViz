@@ -2529,21 +2529,89 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
           # sum_freq<- sprintf("%.2f%%", (sum_nex/sum_ntot)*100)
           # freq_comp<- ifelse((nex/ntot) > (sum_nex/sum_ntot), "greater than",
           #                      ifelse((nex/ntot) == (sum_nex/sum_ntot), "equal to", "less than"))
-          mydatastructure[[site]][["grammar1"]]<- if(mydatastructure[[site]][["nex"]]==1) {
-              paste0("There was ", "<b>", mydatastructure[[site]][["nex"]], "</b>", " exceedance of the ")
+          
+          # most recent year of data
+          mydatastructure[[site]][["grammar1"]]<- 
+            if (mydatastructure[[site]][['nex']]==0){
+              paste0(
+                'there were no ',
+                mydatastructure[[site]][['Characteristic']],
+                ' exceedances '
+              )
+            } else if(mydatastructure[[site]][["nex"]]==1) {
+              paste0(
+                "there was ",
+                "<b>",
+                mydatastructure[[site]][["nex"]],
+                "</b>",
+                " ",
+                mydatastructure[[site]][['Characteristic']],
+                " exceedance "
+                )
           } else {
-              paste0("There were ", "<b>", mydatastructure[[site]][["nex"]], "</b>", " exceedances of the ")
+              paste0(
+                "there were ",
+                "<b>",
+                mydatastructure[[site]][["nex"]],
+                "</b>",
+                " ",
+                mydatastructure[[site]][['Characteristic']],
+                " exceedances "
+                )
           }
-          mydatastructure[[site]][["grammar2"]]<- if(mydatastructure[[site]][["sum_nex"]]==1) {
-              paste0("There has been ", "<b>", mydatastructure[[site]][["sum_nex"]], "</b>", " exceedance of the ")
-          } else {
-              paste0("There have been ", "<b>", mydatastructure[[site]][["sum_nex"]], "</b>", " exceedances of the ")
-          }
+          
+          # by-year summary of all years
+          mydatastructure[[site]][["grammar2"]]<- 
+            if (mydatastructure[[site]][['sum_nex']]==0){
+              paste0(
+                'there were no ',
+                mydatastructure[[site]][['Characteristic']],
+                ' exceedances '
+              )
+            } else if(mydatastructure[[site]][["sum_nex"]]==1) {
+              paste0(
+                "there was ",
+                "<b>",
+                mydatastructure[[site]][["sum_nex"]],
+                "</b>",
+                " ",
+                mydatastructure[[site]][['Characteristic']],
+                " exceedance "
+              )
+            } else {
+              paste0(
+                "there were ",
+                "<b>",
+                mydatastructure[[site]][["sum_nex"]],
+                "</b>",
+                " ",
+                mydatastructure[[site]][['Characteristic']],
+                " exceedances "
+              )
+            }
           
           # Writing text
           mydatastructure[[site]][["extext"]]<- c(
-              paste0(mydatastructure[[site]][["grammar1"]], mydatastructure[[site]][["Characteristic"]], " water quality threshold among ", mydatastructure[[site]][["ntot"]], " observations at ", mydatastructure[[site]][["Sitename"]], " in ", mydatastructure[[site]][["recent_year"]], ".")
-              ,paste0(mydatastructure[[site]][["grammar2"]], mydatastructure[[site]][["Characteristic"]], " water quality threshold among ", mydatastructure[[site]][["sum_ntot"]], " observations at ", mydatastructure[[site]][["Sitename"]], " since monitoring began in ", mydatastructure[[site]][["oldest_year"]], ".")
+              paste0(
+                "In the most recent year of data, ",
+                mydatastructure[[site]][["recent_year"]],
+                ", ",
+                mydatastructure[[site]][["grammar1"]],
+                " at ",
+                mydatastructure[[site]][["Sitename"]],
+                "."
+                )
+              ,paste0(
+                "In all years of data, ",
+                mydatastructure[[site]][["oldest_year"]],
+                ' through ',
+                mydatastructure[[site]][["recent_year"]],
+                ", ",
+                mydatastructure[[site]][["grammar2"]],
+                " at ",
+                mydatastructure[[site]][["Sitename"]],
+                "."
+              )
               # ,paste0("<u>", recent_freq, "</u>", " of observations exceeded the water quality threshold in ", recent_year, ", ", freq_comp, " the overall exceedance percentage of ", "<u>", sum_freq, "</u>", ".")
           )
           mydatastructure[[site]][["extext_bullets"]]<- paste0("<li>", mydatastructure[[site]][["extext"]], "</li>", collapse = "")

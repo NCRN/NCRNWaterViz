@@ -2598,11 +2598,29 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
               theme(panel.grid.major.x = element_blank()) +
               theme(plot.title = element_text(hjust = 0.5))
           
-          # Hist Alt Text
+          # Annual summaries for exceedances report
           alt_text <- c()
           for (i in seq_len(nrow(mydatastructure[[site]][["histdata"]]))) {
-              if(mydatastructure[[site]][["histdata"]]$nex[i] != 0) {
-                  alt_text <- c(alt_text, paste0("<b>", mydatastructure[[site]][["histdata"]]$Year[i], "</b>: ", mydatastructure[[site]][["histdata"]]$ntot[i], " non-NA observation(s), ", mydatastructure[[site]][["histdata"]]$formatted_percent_ex[i], " exceeding ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]]))
+            nex <- mydatastructure[[site]][["histdata"]]$nex[i]
+              if(nex != 0) {
+                  alt_text <- c(
+                    alt_text,
+                    paste0(
+                      "<b>",
+                      mydatastructure[[site]][["histdata"]]$Year[i],
+                      "</b>: ",
+                      nex,
+                      ' of ',
+                      mydatastructure[[site]][["histdata"]]$ntot[i],
+                      " measurement",
+                      if (nex>1) "s",
+                      " (",
+                      mydatastructure[[site]][["histdata"]]$formatted_percent_ex[i],
+                      ") exceeded ",
+                      mydatastructure[[site]][["ExPoint"]],
+                      " ", mydatastructure[[site]][["Unit"]]
+                      )
+                    )
               }
           }
           mydatastructure[[site]][["alt_raw"]] <- alt_text
@@ -2630,7 +2648,11 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
           
           if (mydatastructure[[site]][["n_ex_year"]] != 0) {
               mydatastructure[[site]][["alt_text"]] <- paste0(
-                  "<b>Figure Description:</b>", mydatastructure[[site]][["oldest_year"]], " and ", mydatastructure[[site]][["recent_year"]], ". ",
+                  "<b>Figure Description:</b>",
+                  mydatastructure[[site]][["oldest_year"]],
+                  " and ",
+                  mydatastructure[[site]][["recent_year"]],
+                  ". ",
                   mydatastructure[[site]][["alt_text_line2"]],
                   " The highest proportion of threshold exceedances per measurements taken in a single year was ", mydatastructure[[site]][["highest_ex_rate"]], " in ", mydatastructure[[site]][["highest_rate_year"]], "."
                   # " See exceedances profiles per year below:",

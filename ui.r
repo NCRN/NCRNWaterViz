@@ -437,7 +437,7 @@ shinyUI(
     
     tabPanel(
       h4("About")
-      ,includeHTML("www/projectintro.html")
+      ,tags$iframe("www/projectintro.html")
       )
     )
   )

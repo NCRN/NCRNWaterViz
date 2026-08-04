@@ -2516,7 +2516,8 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
           mydatastructure[[site]][["histdata"]][is.na(mydatastructure[[site]][["histdata"]])] <- 0
           mydatastructure[[site]][["histdata"]] <- mydatastructure[[site]][["histdata"]] %>%
               dplyr::mutate(percent_ex = (nex / ntot) * 100) %>%
-              dplyr::mutate(formatted_percent_ex = scales::percent(percent_ex / 100, accuracy = 0.01))
+              # dplyr::mutate(formatted_percent_ex = scales::percent(percent_ex / 100, accuracy = 0.01))
+              dplyr::mutate(formatted_percent_ex = scales::percent(percent_ex / 100, accuracy = 1))
           
           # Text prep
           mydatastructure[[site]][["recent_year"]]<- max(mydatastructure[[site]][["histdata"]]$Year)
@@ -2644,7 +2645,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
                 "."
                 )
               ,paste0(
-                "The highest proportion of threshold exceedances per measurements taken in a single year was ",
+                "The highest percentage of threshold exceedances was ",
                 mydatastructure[[site]][["highest_ex_rate"]],
                 " in ",
                 mydatastructure[[site]][["highest_rate_year"]],

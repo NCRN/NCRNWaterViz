@@ -2556,7 +2556,10 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
                 "</b>",
                 " ",
                 mydatastructure[[site]][['Characteristic']],
-                " exceedance "
+                ' exceedance (',
+                mydatastructure[[site]][['histdata']] %>% dplyr::filter(Year==max(mydatastructure[[site]][["histdata"]]$Year)) %>% dplyr::pull(formatted_percent_ex),
+                # mydatastructure[[site]][['histdata']]$formatted_percent_ex,
+                ') '
                 )
           } else {
               paste0(
@@ -2566,7 +2569,10 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
                 "</b>",
                 " ",
                 mydatastructure[[site]][['Characteristic']],
-                " exceedances "
+                ' exceedances (',
+                mydatastructure[[site]][['histdata']] %>% dplyr::filter(Year==max(mydatastructure[[site]][["histdata"]]$Year)) %>% dplyr::pull(formatted_percent_ex),
+                # mydatastructure[[site]][['histdata']]$formatted_percent_ex,
+                ') '
                 )
           }
           
@@ -2633,7 +2639,9 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
           mydatastructure[[site]][["recent_ex"]] <- max(mydatastructure[[site]][["histdata"]]$Year[mydatastructure[[site]][["histdata"]]$nex != 0])
           mydatastructure[[site]][["oldest_ex"]] <- min(mydatastructure[[site]][["histdata"]]$Year[mydatastructure[[site]][["histdata"]]$nex != 0])
           mydatastructure[[site]][["highest_ex_rate"]] <- mydatastructure[[site]][["histdata"]]$formatted_percent_ex[which.max(mydatastructure[[site]][["histdata"]]$percent_ex)]
+          mydatastructure[[site]][["lowest_ex_rate"]] <- mydatastructure[[site]][["histdata"]]$formatted_percent_ex[which.min(mydatastructure[[site]][["histdata"]]$percent_ex)]
           mydatastructure[[site]][["hry_vec"]] <- mydatastructure[[site]][["histdata"]]$Year[mydatastructure[[site]][["histdata"]]$percent_ex == max(mydatastructure[[site]][["histdata"]]$percent_ex)]
+          mydatastructure[[site]][["lry_vec"]] <- mydatastructure[[site]][["histdata"]]$Year[mydatastructure[[site]][["histdata"]]$percent_ex == min(mydatastructure[[site]][["histdata"]]$percent_ex)]
           vec_format <- function(vec) {
             n <- length(vec)
             if (n == 1) return(as.character(vec[1]))
@@ -2641,6 +2649,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
             paste(paste(vec[-n], collapse = ", "), "and", vec[n])
           }
           mydatastructure[[site]][["highest_rate_year"]] <- vec_format(mydatastructure[[site]][["hry_vec"]])
+          mydatastructure[[site]][["lowest_rate_year"]] <- vec_format(mydatastructure[[site]][["lry_vec"]])
           
           # Writing text
           mydatastructure[[site]][["extext"]]<- c(
@@ -2654,10 +2663,25 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
                 "."
                 )
               ,paste0(
-                "The highest percentage of threshold exceedances was ",
+                "The highest percentage of ",
+                mydatastructure[[site]][['Characteristic']],
+                " exceedances at ",
+                mydatastructure[[site]][['Sitename']],
+                ' was ',
                 mydatastructure[[site]][["highest_ex_rate"]],
                 " in ",
                 mydatastructure[[site]][["highest_rate_year"]],
+                "."
+              )
+              ,paste0(
+                "The lowest percentage of ",
+                mydatastructure[[site]][['Characteristic']],
+                " exceedances at ",
+                mydatastructure[[site]][['Sitename']],
+                ' was ',
+                mydatastructure[[site]][["lowest_ex_rate"]],
+                " in ",
+                mydatastructure[[site]][["lowest_rate_year"]],
                 "."
               )
               ,paste0(
@@ -2705,7 +2729,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
                     mydatastructure[[site]][["Unit"]]
                     ),
                   x = "Year",
-                  y = "% non-NA observations") +
+                  y = "% of measurements") +
               theme_minimal() +
               theme(panel.grid.major.x = element_blank()) +
               theme(plot.title = element_text(hjust = 0.5))
@@ -2717,20 +2741,30 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
           
           
           mydatastructure[[site]][["n_ex_year"]] <- sum(mydatastructure[[site]][["histdata"]]$nex != 0)
-          if (mydatastructure[[site]][["n_ex_year"]] == 1) {
-              mydatastructure[[site]][["alt_text_line2"]] <- paste0("Exceedances of the water quality threshold of ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]], " were measured in only ", mydatastructure[[site]][["recent_ex"]], ".")
-          } else {
-              mydatastructure[[site]][["alt_text_line2"]] <- paste0("Exceedances of the water quality threshold of ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]], " were measured first in ", mydatastructure[[site]][["oldest_ex"]], ", and most recently in ", mydatastructure[[site]][["recent_ex"]], ".")
-          }
+          # if (mydatastructure[[site]][["n_ex_year"]] == 1) {
+          #     mydatastructure[[site]][["alt_text_line2"]] <- paste0("Exceedances of the water quality threshold of ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]], " were measured in only ", mydatastructure[[site]][["recent_ex"]], ".")
+          # } else {
+          #     mydatastructure[[site]][["alt_text_line2"]] <- paste0("Exceedances of the water quality threshold of ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]], " were measured first in ", mydatastructure[[site]][["oldest_ex"]], ", and most recently in ", mydatastructure[[site]][["recent_ex"]], ".")
+          # }
           
           if (mydatastructure[[site]][["n_ex_year"]] != 0) {
               mydatastructure[[site]][["alt_text"]] <- paste0(
-                  "<b>Figure Description:</b>",
-                  mydatastructure[[site]][["oldest_year"]],
-                  " and ",
-                  mydatastructure[[site]][["recent_year"]],
-                  ". ",
-                  mydatastructure[[site]][["alt_text_line2"]]
+                  ''
+                  # "<b>Figure Description:</b> A bar chart showing the percent of ",
+                  # mydatastructure[[site]][['Characteristic']],
+                  # ' measurements that exceeded ',
+                  # mydatastructure[[site]][["ExPoint"]],
+                  # " ",
+                  # mydatastructure[[site]][["Unit"]],
+                  # ' in years ',
+                  # mydatastructure[[site]][["oldest_year"]],
+                  # " - ",
+                  # mydatastructure[[site]][["recent_year"]],
+                  # " at ",
+                  # mydatastructure[[site]][['Sitename']],
+                  # '. '
+                  
+                  # mydatastructure[[site]][["alt_text_line2"]]
                   # ," The highest proportion of threshold exceedances per measurements taken in a single year was ", mydatastructure[[site]][["highest_ex_rate"]], " in ", mydatastructure[[site]][["highest_rate_year"]], "."
                   # " See exceedances profiles per year below:",
                   # mydatastructure[[site]][["alt_bullets2"]]

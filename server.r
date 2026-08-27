@@ -23,9 +23,8 @@ source('secrets.R')
 
 #### Get data ####
 if (Network == 'NCRN'){
-  fnames <- filterActive(Network, metadataname, dataname) # NCRN filters-out inactive sites and chars
-  WaterData<-suppressWarnings(importNCRNWater(paste0("./Data/", Network), Data=fnames$dname_active, MetaData = fnames$mname_active, wqx=wqx_bool))
-  active_metadataname <- fnames$mname_active
+  WaterData<-suppressWarnings(importNCRNWater(paste0("./Data/", Network), Data=dataname, MetaData = metadataname, wqx=wqx_bool))
+  active_metadataname <- metadataname2
 } else {
   WaterData<-suppressWarnings(importNCRNWater(paste0("./Data/", Network), Data=dataname, MetaData = metadataname, wqx=wqx_bool))
   active_metadataname <- metadataname

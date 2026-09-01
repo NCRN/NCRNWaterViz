@@ -2443,6 +2443,9 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
           mydatastructure[[site]][["Characteristic"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info = "DisplayName")
           mydatastructure[[site]][["Unit"]]<- NCRNWater::getCharInfo(WaterData, parkcode = DataOpts$Park, sitecode = site, charname = DataOpts$Param, info="Units")
           mydatastructure[[site]][["df"]]$Characteristic<-mydatastructure[[site]][["Characteristic"]]
+          
+          # handle incomplete metadata
+          # generate description when a point is provided but no description is provided for the point
           if (is.na(mydatastructure[[site]][["LowerThreshold"]]) &&
               is.na(mydatastructure[[site]][["UpperThreshold"]]) &&
               !is.na(mydatastructure[[site]][["UpperPoint"]])
@@ -2461,6 +2464,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
           }
           
           # Building exdf
+          # TODO: replace this section with calls to NCRNWater::exceed()
           if(any(mydatastructure[[site]][["df"]]$Value < mydatastructure[[site]][["LowerPoint"]], na.rm = TRUE)) {
               lower_sd<- mydatastructure[[site]][["df"]][mydatastructure[[site]][["df"]]$Value <= mydatastructure[[site]][["LowerPoint"]], ]
               lower_sd$LowerThreshold <- mydatastructure[[site]][["LowerThreshold"]]
@@ -2632,7 +2636,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
           mydatastructure[[site]][["histdata"]]$hover_text <- paste0(
             mydatastructure[[site]][["histdata"]]$Year, ", ", mydatastructure[[site]][["Characteristic"]], "\n",
             mydatastructure[[site]][["histdata"]]$ntot, " total observation(s)", "\n",
-            mydatastructure[[site]][["histdata"]]$formatted_percent_ex, " of observations exceeding ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]]
+            mydatastructure[[site]][["histdata"]]$formatted_percent_ex, " of observations exceeded ", mydatastructure[[site]][["ExPoint"]], " ", mydatastructure[[site]][["Unit"]]
           )
           
           mydatastructure[[site]][["recent_ex"]] <- max(mydatastructure[[site]][["histdata"]]$Year[mydatastructure[[site]][["histdata"]]$nex != 0])
@@ -2769,7 +2773,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
                   # mydatastructure[[site]][["alt_bullets2"]]
                   )
               mydatastructure[[site]][["html_extext"]]<- paste0(
-                "<p><b><span style='font-size: 18px;'>Exceedances Report:</b></p>",
+                "<p><b><span style='font-size: 18px;'>Exceedances Summary:</b></p>",
                 "<ul>",
                 mydatastructure[[site]][["extext_bullets"]],
                 # "<li>",

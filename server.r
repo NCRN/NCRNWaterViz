@@ -15,7 +15,7 @@ library(magrittr)
 library(openair)
 library(NADA)
 library(plotly)
-source('R/photos.R')
+# source('R/photos.R')
 source('R/active.R')
 source('R/threshold.R')
 source('secrets.R')
@@ -36,7 +36,7 @@ metadata_active <- dh$metadata_active
 #### Get photos ####
 
 dir <- file.path('Data',Network,'img')
-imgs <- parsePhotos(dir, WaterData)
+imgs <- NCRNWater::parsePhotos(dir, WaterData)
 
 ##### Shiny Server ####
 

@@ -22,15 +22,16 @@ source('secrets.R')
 # library(devtools)
 
 #### Get data ####
-if (Network == 'NCRN'){
-  WaterData<-suppressWarnings(importNCRNWater(paste0("./Data/", Network), Data=dataname, MetaData = metadataname, wqx=wqx_bool))
-  active_metadataname <- metadataname2
-} else {
-  WaterData<-suppressWarnings(importNCRNWater(paste0("./Data/", Network), Data=dataname, MetaData = metadataname, wqx=wqx_bool))
-  active_metadataname <- metadataname
-}
+dh <- NCRNWater::hydrate_network(Network,
+                   base_dir = "Data",
+                   dataname = dataname,
+                   metadataname = metadataname,
+                   active_dataname = dataname2,
+                   active_metadataname = metadataname2,
+                   wqx = wqx_bool)
 
-metadata_active <- read.csv(file.path('Data',Network,active_metadataname)) # a global variable whose name changes by network
+WaterData <- dh$wd
+metadata_active <- dh$metadata_active
 
 #### Get photos ####
 

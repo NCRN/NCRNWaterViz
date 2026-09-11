@@ -21,30 +21,44 @@ source('R/threshold.R')
 source('secrets.R')
 # library(devtools)
 
-#### Get data ####
-dh <- NCRNWater::hydrate_network(Network,
-                   base_dir = "Data",
-                   dataname = dataname,
-                   metadataname = metadataname,
-                   active_dataname = dataname2,
-                   active_metadataname = metadataname2,
-                   wqx = wqx_bool)
 
-WaterData <- dh$wd
-metadata_active <- dh$metadata_active
 
-#### Get photos ####
+## --- Photos (optional) -------------------------------------------------------
+imgs <- NULL
+if (photos_available) {
+  imgs <- tryCatch({
+    NCRNWater::parsePhotos(photos_dir, WaterData)
+  }, error = function(e) {
+    warning("Photos parsing failed (continuing without photos): ", conditionMessage(e))
+    NULL
+  })
+} else {
+  message("No photos directory found at '", photos_dir, "'. Continuing without photos.")
+}
 
-dir <- file.path('Data',Network,'img')
-imgs <- NCRNWater::parsePhotos(dir, WaterData)
+## --- Expose cfg to modules ----------------------------------------
+options(ncrnwater.shiny.cfg = cfg)
+
 
 ##### Shiny Server ####
 
 shinyServer(function(input,output,session){
 
   #### Reactive Values for Graphics Options with Defaults ####
-  GraphOpts<-shiny::reactiveValues(Legend=TRUE, FontSize=20, GoodColor="Blue", BadColor="Orange",OutColor="Vermillion",PointSize=6,
-                              ThColor="Orange", TrColor="Green", LineWidth=2, ShowHidePoint=T, FigureHorizontalScaling=0.9, FigureVerticalScaling=0.7)
+  GraphOpts<-shiny::reactiveValues(
+    Legend=figure_defaults$show_legend,
+    FontSize=figure_defaults$font_size,
+    GoodColor=figure_defaults$good_color,
+    BadColor=figure_defaults$bad_color,
+    OutColor=figure_defaults$out_color,
+    PointSize=figure_defaults$point_size,
+    ThColor=figure_defaults$threshold_line_color,
+    TrColor=figure_defaults$tr_line_color,
+    LineWidth=figure_defaults$line_width,
+    ShowHidePoint=figure_defaults$show_point,
+    FigureHorizontalScaling=figure_defaults$figure_horizontal_scaling,
+    FigureVerticalScaling=figure_defaults$figure_vertical_scaling
+    )
   
   #### Reactive Values for Choosing Data ####
   DataOpts<-shiny::reactiveValues(Park=NA, Site=NA, Param=NA, Agg=NA, DateRange=NA, Years=NA, USGSload=FALSE, USGSdata=NA, Param2=NA, SiteVisit=NA, Photo=NA, Park2=NA, Site2=NA, Years2=NA, SiteVisit2=NA, Photo2=NA)
@@ -3609,4 +3623,28 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     deleteFile=F)
 
 }) #End of Shiny Server function
+
+#-------------------------
+# Specify the network 
+# Network <- "NETN" 
+# Network_long <- "Northeast Temperate Network" # for navbar title
+# Viz_name <- "Lake and Stream Water Quality"
+# dataname <- "wqp.csv" # global variable instead of hardcoding in `server.R` NCRNWater::importNCRNWater() call
+# dataname2 <- "wqp_active.csv"
+# metadataname <- "wqp_ncrnwater_metadata.csv"
+# metadataname2 <- "wqp_ncrnwater_metadata_active.csv"
+# wqx_bool <- T
+# Network <- "NCRN" # for leaflet map center
+# Network_long <- "National Capital Region Network" # for navbar title
+# Viz_name <- "Stream Water Quality"
+# GraphColors<-read.csv("colors.csv", header=T, as.is=T)
+# DATASET_URL <- a("Click here to export the dataset from NPS DataStore\n", href="https://irma.nps.gov/DataStore/Reference/Profile/2317661", target="_blank", rel="noopener nonreferrer")
+# MAXYR <- 2025 # TODO can read temporal coverage from xml? can't max() a year column because we accomodate two different data input formats
+# MINYR <- 2005 # TODO can read temporal coverage from xml? can't max() a year column because we accomodate two different data input formats
+# 
+#
+# Get global constants from yaml
+
+
+
     

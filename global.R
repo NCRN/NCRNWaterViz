@@ -1,21 +1,71 @@
-#-------------------------
-# Specify the network 
-# Network <- "NETN" 
-# Network_long <- "Northeast Temperate Network" # for navbar title
-# Viz_name <- "Lake and Stream Water Quality"
-dataname <- "wqp.csv" # global variable instead of hardcoding in `server.R` NCRNWater::importNCRNWater() call
-dataname2 <- "wqp_active.csv"
-metadataname <- "wqp_ncrnwater_metadata.csv"
-metadataname2 <- "wqp_ncrnwater_metadata_active.csv"
-wqx_bool <- T
-Network <- "NCRN" # for leaflet map center
-Network_long <- "National Capital Region Network" # for navbar title
-Viz_name <- "Stream Water Quality"
-GraphColors<-read.csv("colors.csv", header=T, as.is=T)
-DATASET_URL <- a("Click here to export the dataset from NPS DataStore\n", href="https://irma.nps.gov/DataStore/Reference/Profile/2317661", target="_blank", rel="noopener nonreferrer")
-MAXYR <- 2025 # TODO can read temporal coverage from xml? can't max() a year column because we accomodate two different data input formats
-MINYR <- 2005 # TODO can read temporal coverage from xml? can't max() a year column because we accomodate two different data input formats
+library(NCRNWater)
+## --- Load config (pure) ------------------------------------------------------
+cfg <- NCRNWater::load_app_config(profile = "NCRN")
 
+Network_long     <- cfg$app$network_long
+Network          <- cfg$app$network_code
+Viz_name         <- cfg$app$app_name
+figure_defaults  <- cfg$app$figure_defaults
+
+# Colors CSV: robust read with clear error
+GraphColors <- tryCatch({
+  utils::read.csv(cfg$files$colors_csv, header = TRUE, stringsAsFactors = FALSE)
+}, error = function(e) {
+  stop("Failed to read colors CSV at '", cfg$files$colors_csv, "': ", conditionMessage(e))
+})
+
+## --- Pre-flight: existence checks for data paths -----------------------------
+net_dir    <- file.path(cfg$files$datadir, cfg$app$network_code)
+data_fp    <- file.path(net_dir, cfg$files$dataname)
+meta_fp    <- file.path(net_dir, cfg$files$metadataname)
+photos_dir <- file.path(net_dir, cfg$files$imagesdir)
+
+if (!file.exists(data_fp)) {
+  stop("Data file not found: ", data_fp, 
+       ". Check cfg$files$datadir and cfg$files$dataname.")
+}
+if (!file.exists(meta_fp)) {
+  stop("Metadata file not found: ", meta_fp, 
+       ". Check cfg$files$datadir and cfg$files$metadataname.")
+}
+# Don't fail if photos missing; handle gently later
+photos_available <- dir.exists(photos_dir)
+
+## --- Hydrate NCRNWater object -----------------------------------------------
+dh <- NCRNWater::hydrate_network(
+  cfg$app$network_code,
+  datadir      = cfg$files$datadir,
+  dataname     = cfg$files$dataname,
+  metadataname = cfg$files$metadataname,
+  wqx          = cfg$wqx$enabled
+)
+WaterData        <- dh$wd
+metadata_active  <- dh$metadata_active
+
+## --- Late resolution of time bounds ('auto' -> numeric) ----------------------
+if (identical(cfg$time$min_year, "auto") || identical(cfg$time$max_year, "auto")) {
+  yrs <- NCRNWater:::resolve_year_bounds(cfg, wd = WaterData)
+  cfg$time$min_year <- yrs$min_year
+  cfg$time$max_year <- yrs$max_year
+  if (identical(yrs$source, "fallback")) {
+    message(sprintf("time.auto: using fallback bounds %s–%s.", yrs$min_year, yrs$max_year))
+  }
+}
+MINYR <- cfg$time$min_year
+MAXYR <- cfg$time$max_year
+
+
+LOADING_TEXT <- c(
+  "Loading application..."
+  ,"Loading application..."
+  ,"Loading application..."
+)
+
+LOADING_IMAGES <- list(
+  list(src= "dwq_NCRN_ANTI_SHCK_2024-06-04_20240604-131442.jpg", location = "Antietam National Battlefield, Sharpsburg Creek", date = "June 4, 2024")
+  ,list(src= "dwq_NCRN_MONO_BUCK_2024-06-04_20240604-084406.jpg", location = "Monocacy National Battlefield, Bush Creek", date = "June 4, 2024")
+  ,list(src= "dwq_NCRN_PRWI_BONE_2024-06-11_20240611-130821.jpg", location = "Prince William Forest Park, Boneyard Run", date = "June 11, 2024")
+)
 
 #### Years Module ####
 yearChooserUI<-function(id){
@@ -40,7 +90,7 @@ yearChooser<-function(input,output,session,data,chosen)  {
       updateSliderInput(session, inputId="YearsShow", min=YrMin_debounce(),max=YrMax_debounce(),val=chosen())
     }
   })
-
+  
   return(reactive(input$YearsShow))
 }
 
@@ -66,7 +116,7 @@ yearChooser2<-function(input,output,session,data,chosen)  {
       updateSliderInput(session, inputId="YearsShow2", min=YrMin_debounce(),max=YrMax_debounce(),val=chosen())
     }
   })
-
+  
   return(reactive(input$YearsShow2))
 }
 
@@ -96,7 +146,7 @@ parkChooserUI<-function(id){
 
 parkChooser<-function(input,output,session, data, chosen){
   observe({updateSelectizeInput(session, "ParkIn", selected=chosen(),
-    choices=c("Choose a Park"="", c(`names<-`(getParkInfo(data, info="ParkCode"), getParkInfo(data, info="ParkShortName"))))
+                                choices=c("Choose a Park"="", c(`names<-`(getParkInfo(data, info="ParkCode"), getParkInfo(data, info="ParkShortName"))))
   )})
   return(reactive(input$ParkIn))
 }
@@ -108,7 +158,7 @@ parkChooserUI2<-function(id){
 
 parkChooser2<-function(input,output,session, data, chosen){
   observe({updateSelectizeInput(session, "ParkIn2", selected=chosen(),
-    choices=c("Choose a Park"="", c(`names<-`(getParkInfo(data, info="ParkCode"), getParkInfo(data, info="ParkShortName"))))
+                                choices=c("Choose a Park"="", c(`names<-`(getParkInfo(data, info="ParkCode"), getParkInfo(data, info="ParkShortName"))))
   )})
   return(reactive(input$ParkIn2))
 }
@@ -123,28 +173,28 @@ siteChooserUI<-function(id){
                  choices=NULL,
                  multiple = TRUE,
                  options = list(plugins = list("remove_button"))
-                 )
+  )
 }
 
 siteChooser<-function(input, output, session, data, park, chosen){
-    # debounce slows down the app to prevent infinite loops caused by the user changing
-    # variables faster than the app can respond
-   debouncedSiteIn <- shiny::debounce(reactive(input$SiteIn), 1000)
-   
-   observe({
-     updateSelectizeInput(session, inputId = "SiteIn", selected=chosen(), 
-       choices=c("Choose a Site"="",
-       c("Select All" = "ALL", setNames(getSiteInfo(data, parkcode=park(), info="SiteCode"), 
-         getSiteInfo(data, parkcode=park(), info="SiteName") )))
-     )
-   })
+  # debounce slows down the app to prevent infinite loops caused by the user changing
+  # variables faster than the app can respond
+  debouncedSiteIn <- shiny::debounce(reactive(input$SiteIn), 1000)
+  
+  observe({
+    updateSelectizeInput(session, inputId = "SiteIn", selected=chosen(), 
+                         choices=c("Choose a Site"="",
+                                   c("Select All" = "ALL", setNames(getSiteInfo(data, parkcode=park(), info="SiteCode"), 
+                                                                    getSiteInfo(data, parkcode=park(), info="SiteName") )))
+    )
+  })
   return(reactive({
     if ("ALL" %in% debouncedSiteIn()){
       getSiteInfo(data, parkcode = park(), info = "SiteCode")
     } else {
-        debouncedSiteIn()
+      debouncedSiteIn()
     }
-    }))
+  }))
 }
 
 siteChooserUI2<-function(id){
@@ -154,28 +204,28 @@ siteChooserUI2<-function(id){
                  choices=NULL,
                  multiple = TRUE,
                  options = list(plugins = list("remove_button"))
-                 )
+  )
 }
 
 siteChooser2<-function(input, output, session, data, park, chosen){
-    # debounce slows down the app to prevent infinite loops caused by the user changing
-    # variables faster than the app can respond
-    debouncedSiteIn2 <- shiny::debounce(reactive(input$SiteIn2), 1000)
-    
-   observe({
-     updateSelectizeInput(session, inputId = "SiteIn2", selected=chosen(), 
-       choices=c("Choose a Site"="",
-       c("Select All" = "ALL", setNames(getSiteInfo(data, parkcode=park(), info="SiteCode"), 
-         getSiteInfo(data, parkcode=park(), info="SiteName") )))
-     )
-   })
+  # debounce slows down the app to prevent infinite loops caused by the user changing
+  # variables faster than the app can respond
+  debouncedSiteIn2 <- shiny::debounce(reactive(input$SiteIn2), 1000)
+  
+  observe({
+    updateSelectizeInput(session, inputId = "SiteIn2", selected=chosen(), 
+                         choices=c("Choose a Site"="",
+                                   c("Select All" = "ALL", setNames(getSiteInfo(data, parkcode=park(), info="SiteCode"), 
+                                                                    getSiteInfo(data, parkcode=park(), info="SiteName") )))
+    )
+  })
   return(reactive({
-      if ("ALL" %in% debouncedSiteIn2()){
-          getSiteInfo(data, parkcode = park(), info = "SiteCode")
-      } else {
-          debouncedSiteIn2()
-      }
-    }))
+    if ("ALL" %in% debouncedSiteIn2()){
+      getSiteInfo(data, parkcode = park(), info = "SiteCode")
+    } else {
+      debouncedSiteIn2()
+    }
+  }))
 }
 
 ### Parameter Module ####
@@ -195,7 +245,7 @@ paramChooser<-function(input, output, session, data, park, chosen){
                          iconv("","UTF-8"), ")")#%>% iconv("","UTF-8"))
     if(isTruthy(Choice) & isTruthy(ChoiceName)) { names(Choice)<-ChoiceName }
     return(Choice)
-   })
+  })
   
   observe(
     updateSelectizeInput(session, inputId="ParamIn",selected=chosen(), 
@@ -220,7 +270,7 @@ paramChooser2<-function(input, output, session, data, park, chosen){
                          iconv("","UTF-8"), ")")#%>% iconv("","UTF-8"))
     if(isTruthy(Choice) & isTruthy(ChoiceName)) { names(Choice)<-ChoiceName }
     return(Choice)
-   })
+  })
   
   observe(
     updateSelectizeInput(session, inputId="ParamIn2",selected=chosen(), 
@@ -229,7 +279,7 @@ paramChooser2<-function(input, output, session, data, park, chosen){
   
   return(reactive(input$ParamIn2))
 }
-  
+
 ### Site Visit Module ####
 
 siteVisitChooserUI<-function(id){
@@ -245,7 +295,7 @@ siteVisitChooser<-function(input, output, session, data, park, site, years, imgs
     sites <- site()
     years <- years()
     imgs <- imgs()
-
+    
     sitevisits <- c()
     if (park %in% names(imgs)){
       for (site in sites){
@@ -260,9 +310,9 @@ siteVisitChooser<-function(input, output, session, data, park, site, years, imgs
         }
       }
     }
-
+    
     return(sitevisits)
-   })
+  })
   
   observe(
     updateSelectizeInput(session, inputId="siteVisitIn",selected=chosen(), 
@@ -285,7 +335,7 @@ siteVisitChooser2<-function(input, output, session, data, park, site, years, img
     sites <- site()
     years <- years()
     imgs <- imgs()
-
+    
     sitevisits <- c()
     if (park %in% names(imgs)){
       for (site in sites){
@@ -300,9 +350,9 @@ siteVisitChooser2<-function(input, output, session, data, park, site, years, img
         }
       }
     }
-
+    
     return(sitevisits)
-   })
+  })
   
   observe(
     updateSelectizeInput(session, inputId="siteVisitIn2",selected=chosen(), 
@@ -326,7 +376,7 @@ photoChooser<-function(input, output, session, data, park, site, years, imgs, si
     years <- years()
     imgs <- imgs()
     sitevisit <- sitevisit()
-
+    
     filenames <- c()
     if (park %in% names(imgs)){
       for (site in sites){
@@ -346,9 +396,9 @@ photoChooser<-function(input, output, session, data, park, site, years, imgs, si
         }
       }
     }
-
+    
     return(filenames)
-   })
+  })
   
   observe(
     updateSliderInput(session, inputId="PhotoPhoto", min=1,max=length(PhotoChoices()))
@@ -370,7 +420,7 @@ photoChooser2<-function(input, output, session, data, park, site, years, imgs, s
     years <- years()
     imgs <- imgs()
     sitevisit <- sitevisit()
-
+    
     filenames <- c()
     if (park %in% names(imgs)){
       for (site in sites){
@@ -390,9 +440,9 @@ photoChooser2<-function(input, output, session, data, park, site, years, imgs, s
         }
       }
     }
-
+    
     return(filenames)
-   })
+  })
   
   observe(
     updateSliderInput(session, inputId="PhotoPhoto2", min=1,max=length(PhotoChoices()))
@@ -412,9 +462,9 @@ LOADING_TEXT <- c(
 )
 
 LOADING_IMAGES <- list(
-    list(src= "dwq_NCRN_ANTI_SHCK_2024-06-04_20240604-131442.jpg", location = "Antietam National Battlefield, Sharpsburg Creek", date = "June 4, 2024")
-    ,list(src= "dwq_NCRN_MONO_BUCK_2024-06-04_20240604-084406.jpg", location = "Monocacy National Battlefield, Bush Creek", date = "June 4, 2024")
-    ,list(src= "dwq_NCRN_PRWI_BONE_2024-06-11_20240611-130821.jpg", location = "Prince William Forest Park, Boneyard Run", date = "June 11, 2024")
+  list(src= "dwq_NCRN_ANTI_SHCK_2024-06-04_20240604-131442.jpg", location = "Antietam National Battlefield, Sharpsburg Creek", date = "June 4, 2024")
+  ,list(src= "dwq_NCRN_MONO_BUCK_2024-06-04_20240604-084406.jpg", location = "Monocacy National Battlefield, Bush Creek", date = "June 4, 2024")
+  ,list(src= "dwq_NCRN_PRWI_BONE_2024-06-11_20240611-130821.jpg", location = "Prince William Forest Park, Boneyard Run", date = "June 11, 2024")
 )
 
 

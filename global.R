@@ -1,3 +1,4 @@
+# global.R
 library(NCRNWater)
 ## --- Load config (pure) ------------------------------------------------------
 cfg <- NCRNWater::load_app_config(profile = "NCRN")

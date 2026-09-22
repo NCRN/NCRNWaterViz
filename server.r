@@ -2906,11 +2906,18 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
       }
     )
   )
-  
+  show_plot <- reactiveVal(TRUE)   # show plot at startup
   shiny::observeEvent(input$hist_button, {
     show_plot(!show_plot())
-    new_label<- ifelse(show_plot(), "Hide Figure", "Show Figure")
+    new_label <- if (show_plot()) "Hide Figure" else "Show Figure"
     shiny::updateActionButton(session, "hist_button", label = new_label)
+  })
+  
+  show_summary <- reactiveVal(TRUE)   # show plot at startup
+  shiny::observeEvent(input$summary_button, {
+    show_summary(!show_summary())
+    new_summary_label <- if (show_summary()) "Hide Summary" else "Show Fummary"
+    shiny::updateActionButton(session, "summary_button", label = new_summary_label)
   })
   
   

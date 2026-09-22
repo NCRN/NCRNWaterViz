@@ -15,9 +15,6 @@ library(magrittr)
 library(openair)
 library(NADA)
 library(plotly)
-# source('R/photos.R')
-source('R/active.R')
-source('R/threshold.R')
 source('secrets.R')
 # library(devtools)
 
@@ -43,7 +40,7 @@ options(ncrnwater.shiny.cfg = cfg)
 ##### Shiny Server ####
 
 shinyServer(function(input,output,session){
-
+  figure_defaults  <- cfg$app$figure_defaults
   #### Reactive Values for Graphics Options with Defaults ####
   GraphOpts<-shiny::reactiveValues(
     Legend=figure_defaults$show_legend,

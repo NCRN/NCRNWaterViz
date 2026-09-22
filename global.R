@@ -6,7 +6,7 @@ cfg <- NCRNWater::load_app_config(profile = "NCRN")
 Network_long     <- cfg$app$network_long
 Network          <- cfg$app$network_code
 Viz_name         <- cfg$app$app_name
-figure_defaults  <- cfg$app$figure_defaults
+
 
 # Colors CSV: robust read with clear error
 GraphColors <- tryCatch({

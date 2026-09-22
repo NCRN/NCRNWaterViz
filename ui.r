@@ -213,8 +213,8 @@ shinyUI(
                      }, 60);
                     }
                   }, 2000);",
-                               jsonlite::toJSON(LOADING_TEXT, auto_unbox = TRUE),
-                               jsonlite::toJSON(LOADING_IMAGES, auto_unbox = TRUE)))))
+                               jsonlite::toJSON('Application loading...', auto_unbox = TRUE),
+                               jsonlite::toJSON(LOADING_IMAGES[[1]]$src, auto_unbox = TRUE)))))
     ),
     
   

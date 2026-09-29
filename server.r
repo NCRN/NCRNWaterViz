@@ -2913,14 +2913,6 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     shiny::updateActionButton(session, "hist_button", label = new_label)
   })
   
-  show_summary <- reactiveVal(TRUE)   # show plot at startup
-  shiny::observeEvent(input$summary_button, {
-    show_summary(!show_summary())
-    new_summary_label <- if (show_summary()) "Hide Summary" else "Show Fummary"
-    shiny::updateActionButton(session, "summary_button", label = new_summary_label)
-  })
-  
-  
 #### Mapping ####
   
 #### USGS Functions ####

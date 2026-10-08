@@ -3,42 +3,50 @@ library(NCRNWater)
 ## --- Load config ------------------------------------------------------
 cfg <- NCRNWater::load_app_config(profile = "NCRN")
 
-Network_long     <- cfg$app$network_long
-Network          <- cfg$app$network_code
-Viz_name         <- cfg$app$app_name
+NETWORK_LONG        <- cfg$app$network_long
+NETWORK             <- cfg$app$network_code
+VIZ_NAME            <- cfg$app$app_name
+DATASET_URL         <- cfg$app$dataset_url
+DATA_DIRECTORY      <- cfg$files$datadir
+DATA_FILENAME       <- cfg$files$dataname
+METADATA_FILENAME   <- cfg$files$metadataname
+IMAGES_DIR          <- cfg$files$imagesdir
+WQX_ENABLED         <- cfg$wqx$enabled
+COLORS_CSV_FILENAME <- cfg$files$colors_csv
+## --- Pre-flight: existence checks for data paths -----------------------------
+NETWORK_DIR    <- file.path(DATA_DIRECTORY, NETWORK)
+DATA_FILEPATH    <- file.path(NETWORK_DIR, DATA_FILENAME)
+METADATA_FILEPATH    <- file.path(NETWORK_DIR, METADATA_FILENAME)
+PHOTO_DIR <- file.path(NETWORK_DIR, IMAGES_DIR)
 
-
+## --- Pre-flight: existence checks for required assets -----------------------------
 # Colors CSV: robust read with clear error
-GraphColors <- tryCatch({
-  utils::read.csv(cfg$files$colors_csv, header = TRUE, stringsAsFactors = FALSE)
+GRAPH_COLORS <- tryCatch({
+  utils::read.csv(COLORS_CSV_FILENAME, header = TRUE, stringsAsFactors = FALSE)
 }, error = function(e) {
-  stop("Failed to read colors CSV at '", cfg$files$colors_csv, "': ", conditionMessage(e))
+  stop("Failed to read colors CSV at '", COLORS_CSV_FILENAME, "': ", conditionMessage(e))
 })
 
-## --- Pre-flight: existence checks for data paths -----------------------------
-net_dir    <- file.path(cfg$files$datadir, cfg$app$network_code)
-data_fp    <- file.path(net_dir, cfg$files$dataname)
-meta_fp    <- file.path(net_dir, cfg$files$metadataname)
-photos_dir <- file.path(net_dir, cfg$files$imagesdir)
-
-if (!file.exists(data_fp)) {
-  stop("Data file not found: ", data_fp, 
+if (!file.exists(DATA_FILEPATH)) {
+  stop("Data file not found: ", DATA_FILEPATH, 
        ". Check cfg$files$datadir and cfg$files$dataname.")
 }
-if (!file.exists(meta_fp)) {
-  stop("Metadata file not found: ", meta_fp, 
+if (!file.exists(METADATA_FILEPATH)) {
+  stop("Metadata file not found: ", METADATA_FILEPATH, 
        ". Check cfg$files$datadir and cfg$files$metadataname.")
 }
+
+## --- Pre-flight: existence checks for optional assets -----------------------------
 # Don't fail if photos missing; handle gently later
-photos_available <- dir.exists(photos_dir)
+photos_available <- dir.exists(PHOTO_DIR)
 
 ## --- Hydrate NCRNWater object -----------------------------------------------
 dh <- NCRNWater::hydrate_network(
-  cfg$app$network_code,
-  datadir      = cfg$files$datadir,
-  dataname     = cfg$files$dataname,
-  metadataname = cfg$files$metadataname,
-  wqx          = cfg$wqx$enabled
+  NETWORK,
+  datadir      = DATA_DIRECTORY,
+  dataname     = DATA_FILENAME,
+  metadataname = METADATA_FILENAME,
+  wqx          = WQX_ENABLED
 )
 WaterData        <- dh$wd
 metadata_active  <- dh$metadata_active

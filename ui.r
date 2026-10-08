@@ -7,7 +7,7 @@ shinyUI(
   fluidPage(
     theme="https://www.nps.gov/lib/bootstrap/3.3.2/css/nps-bootstrap.min.css"
     ,style="padding: 0px"
-    ,title=paste0(Network, " Water Quality")
+    ,title=paste0(NETWORK, " Water Quality")
     ,column(
       12
       ,id="NPSBanner"
@@ -37,7 +37,7 @@ shinyUI(
       ,div(
         h1(
           style="background-color: black; color: white; height: 125px; padding: 10px; margin: 0px"
-          ,HTML(Network_long, '<br>', Viz_name)
+          ,HTML(NETWORK_LONG, '<br>', VIZ_NAME)
           )
       )
       ,tags$head(tags$style(HTML("

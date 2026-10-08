@@ -24,13 +24,13 @@ source('secrets.R')
 imgs <- NULL
 if (photos_available) {
   imgs <- tryCatch({
-    NCRNWater::parsePhotos(photos_dir, WaterData)
+    NCRNWater::parsePhotos(PHOTO_DIR, WaterData)
   }, error = function(e) {
     warning("Photos parsing failed (continuing without photos): ", conditionMessage(e))
     NULL
   })
 } else {
-  message("No photos directory found at '", photos_dir, "'. Continuing without photos.")
+  message("No photos directory found at '", PHOTO_DIR, "'. Continuing without photos.")
 }
 
 ## --- Expose cfg to modules ----------------------------------------
@@ -586,20 +586,20 @@ shinyServer(function(input,output,session){
       # column(12,hr()),
       column(12, h4("Points:"),
         column(6,sliderInput("PointSize", "Point Size", min=1, max=30,value=GraphOpts$PointSize, step=1))
-        # column(3,selectInput("GoodColor","Measurement Color:",choices=GraphColors$DisplayColor, 
+        # column(3,selectInput("GoodColor","Measurement Color:",choices=GRAPH_COLORS$DisplayColor, 
         #                    selected=GraphOpts$GoodColor, width='130px')
         # ),
-        # ,column(3,selectInput("BadColor","Poor Quality Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$BadColor,
+        # ,column(3,selectInput("BadColor","Poor Quality Color:",choices=GRAPH_COLORS$DisplayColor,selected=GraphOpts$BadColor,
         #                      width='130px') )
         # ,column(6,checkboxInput("ShowHidePoint", "Show/hide points", value=GraphOpts$ShowHidePoint))
-        # column(3,selectInput("OutColor","Outlier Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$OutColor, width='130px')),   
+        # column(3,selectInput("OutColor","Outlier Color:",choices=GRAPH_COLORS$DisplayColor,selected=GraphOpts$OutColor, width='130px')),   
         
       ),
       # column(12,hr()),
       column(12, h4("Lines:"),
         column(6,sliderInput("LineWidth", "Line Width", min=1, max=10,value=GraphOpts$LineWidth, step=1))
-        ,column(6,selectInput("ThColor","Threshold Line Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$ThColor))
-        # column(3,selectInput("TrColor","Trend Color:",choices=GraphColors$DisplayColor,selected=GraphOpts$TrColor, width='130px')),
+        ,column(6,selectInput("ThColor","Threshold Line Color:",choices=GRAPH_COLORS$DisplayColor,selected=GraphOpts$ThColor))
+        # column(3,selectInput("TrColor","Trend Color:",choices=GRAPH_COLORS$DisplayColor,selected=GraphOpts$TrColor, width='130px')),
       )
       ,column(12) # required to make the below hr() show up
       ,column(12,hr())
@@ -791,11 +791,11 @@ shinyServer(function(input,output,session){
   
 
 #### Get Colors from user inputs ####
-  BadCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$BadColor,]$rgb_color})
-  GoodCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$GoodColor,]$rgb_color})
-  OutCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$OutColor,]$rgb_color})
-  ThCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$ThColor,]$rgb_color})
-  TrCol<-reactive({GraphColors[GraphColors$DisplayColor==GraphOpts$TrColor,]$rgb_color})
+  BadCol<-reactive({GRAPH_COLORS[GRAPH_COLORS$DisplayColor==GraphOpts$BadColor,]$rgb_color})
+  GoodCol<-reactive({GRAPH_COLORS[GRAPH_COLORS$DisplayColor==GraphOpts$GoodColor,]$rgb_color})
+  OutCol<-reactive({GRAPH_COLORS[GRAPH_COLORS$DisplayColor==GraphOpts$OutColor,]$rgb_color})
+  ThCol<-reactive({GRAPH_COLORS[GRAPH_COLORS$DisplayColor==GraphOpts$ThColor,]$rgb_color})
+  TrCol<-reactive({GRAPH_COLORS[GRAPH_COLORS$DisplayColor==GraphOpts$TrColor,]$rgb_color})
   
 #### Summary Table ####
   summary <- shiny::reactive({
@@ -2707,12 +2707,12 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
 
   #netzoom<- ifelse(max(lat_range, long_range) >5, 7, 9)
 
-  # netlat<-dplyr::case_when(Network == "NCRN" ~ 39.25,
-  #                          Network == "NETN" ~ 42.5)
-  # netlon<-dplyr::case_when(Network == "NCRN" ~ -77,
-  #                          Network == "NETN" ~ -71.6)
-  # netzoom<-dplyr::case_when(Network == "NCRN" ~ 9,
-  #                          Network == "NETN" ~ 7)
+  # netlat<-dplyr::case_when(NETWORK == "NCRN" ~ 39.25,
+  #                          NETWORK == "NETN" ~ 42.5)
+  # netlon<-dplyr::case_when(NETWORK == "NCRN" ~ -77,
+  #                          NETWORK == "NETN" ~ -71.6)
+  # netzoom<-dplyr::case_when(NETWORK == "NCRN" ~ 9,
+  #                          NETWORK == "NETN" ~ 7)
 
     leaflet() %>%
       leaflet::addTiles(group="Map", urlTemplate=TEMPLATE_A, attribution="National Park Service, © Mapbox, and © OpenStreetMap") %>%
@@ -3245,18 +3245,18 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
 
 #-------------------------
 # Specify the network 
-# Network <- "NETN" 
-# Network_long <- "Northeast Temperate Network" # for navbar title
-# Viz_name <- "Lake and Stream Water Quality"
+# NETWORK <- "NETN" 
+# NETWORK_LONG <- "Northeast Temperate Network" # for navbar title
+# VIZ_NAME <- "Lake and Stream Water Quality"
 # dataname <- "wqp.csv" # global variable instead of hardcoding in `server.R` NCRNWater::importNCRNWater() call
 # dataname2 <- "wqp_active.csv"
 # metadataname <- "wqp_ncrnwater_metadata.csv"
 # metadataname2 <- "wqp_ncrnwater_metadata_active.csv"
 # wqx_bool <- T
-# Network <- "NCRN" # for leaflet map center
-# Network_long <- "National Capital Region Network" # for navbar title
-# Viz_name <- "Stream Water Quality"
-# GraphColors<-read.csv("colors.csv", header=T, as.is=T)
+# NETWORK <- "NCRN" # for leaflet map center
+# NETWORK_LONG <- "National Capital Region Network" # for navbar title
+# VIZ_NAME <- "Stream Water Quality"
+# GRAPH_COLORS<-read.csv("colors.csv", header=T, as.is=T)
 # DATASET_URL <- a("Click here to export the dataset from NPS DataStore\n", href="https://irma.nps.gov/DataStore/Reference/Profile/2317661", target="_blank", rel="noopener nonreferrer")
 # MAXYR <- 2025 # TODO can read temporal coverage from xml? can't max() a year column because we accomodate two different data input formats
 # MINYR <- 2005 # TODO can read temporal coverage from xml? can't max() a year column because we accomodate two different data input formats

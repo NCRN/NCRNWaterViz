@@ -3243,27 +3243,3 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
 
 }) #End of Shiny Server function
 
-#-------------------------
-# Specify the network 
-# NETWORK <- "NETN" 
-# NETWORK_LONG <- "Northeast Temperate Network" # for navbar title
-# VIZ_NAME <- "Lake and Stream Water Quality"
-# dataname <- "wqp.csv" # global variable instead of hardcoding in `server.R` NCRNWater::importNCRNWater() call
-# dataname2 <- "wqp_active.csv"
-# metadataname <- "wqp_ncrnwater_metadata.csv"
-# metadataname2 <- "wqp_ncrnwater_metadata_active.csv"
-# wqx_bool <- T
-# NETWORK <- "NCRN" # for leaflet map center
-# NETWORK_LONG <- "National Capital Region Network" # for navbar title
-# VIZ_NAME <- "Stream Water Quality"
-# GRAPH_COLORS<-read.csv("colors.csv", header=T, as.is=T)
-# DATASET_URL <- a("Click here to export the dataset from NPS DataStore\n", href="https://irma.nps.gov/DataStore/Reference/Profile/2317661", target="_blank", rel="noopener nonreferrer")
-# MAXYR <- 2025 # TODO can read temporal coverage from xml? can't max() a year column because we accomodate two different data input formats
-# MINYR <- 2005 # TODO can read temporal coverage from xml? can't max() a year column because we accomodate two different data input formats
-# 
-#
-# Get global constants from yaml
-
-
-
-    

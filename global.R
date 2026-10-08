@@ -3,6 +3,7 @@ library(NCRNWater)
 ## --- Load config ------------------------------------------------------
 cfg <- NCRNWater::load_app_config(profile = "NCRN")
 
+## --- Build global CONSTANTS ------------------------------------------------------
 NETWORK_LONG        <- cfg$app$network_long
 NETWORK             <- cfg$app$network_code
 VIZ_NAME            <- cfg$app$app_name
@@ -13,6 +14,7 @@ METADATA_FILENAME   <- cfg$files$metadataname
 IMAGES_DIR          <- cfg$files$imagesdir
 WQX_ENABLED         <- cfg$wqx$enabled
 COLORS_CSV_FILENAME <- cfg$files$colors_csv
+
 ## --- Pre-flight: existence checks for data paths -----------------------------
 NETWORK_DIR    <- file.path(DATA_DIRECTORY, NETWORK)
 DATA_FILEPATH    <- file.path(NETWORK_DIR, DATA_FILENAME)
@@ -85,12 +87,7 @@ yearChooser<-function(input,output,session,data,chosen)  {
       YrMax<-reactive(max(year(data()$Date), na.rm=T))
       YrMin<-reactive(min(year(data()$Date), na.rm=T))
       
-      # debounce slows down the app to prevent infinite loops caused by the user changing
-      # variables faster than the app can respond
-      YrMax_debounce <- debounce(YrMax, 1000)
-      YrMin_debounce <- debounce(YrMin, 1000)
-      
-      updateSliderInput(session, inputId="YearsShow", min=YrMin_debounce(),max=YrMax_debounce(),val=chosen())
+      updateSliderInput(session, inputId="YearsShow", min=YrMin(),max=YrMax(),val=chosen())
     }
   })
   
@@ -111,12 +108,7 @@ yearChooser2<-function(input,output,session,data,chosen)  {
       YrMax<-reactive(max(year(data()$Date), na.rm=T))
       YrMin<-reactive(min(year(data()$Date), na.rm=T))
       
-      # debounce slows down the app to prevent infinite loops caused by the user changing
-      # variables faster than the app can respond
-      YrMax_debounce <- debounce(YrMax, 1000)
-      YrMin_debounce <- debounce(YrMin, 1000)
-      
-      updateSliderInput(session, inputId="YearsShow2", min=YrMin_debounce(),max=YrMax_debounce(),val=chosen())
+      updateSliderInput(session, inputId="YearsShow2", min=YrMin(),max=YrMax(),val=chosen())
     }
   })
   
@@ -180,9 +172,7 @@ siteChooserUI<-function(id){
 }
 
 siteChooser<-function(input, output, session, data, park, chosen){
-  # debounce slows down the app to prevent infinite loops caused by the user changing
-  # variables faster than the app can respond
-  debouncedSiteIn <- shiny::debounce(reactive(input$SiteIn), 1000)
+  SiteIn <- shiny::reactive(input$SiteIn)
   
   observe({
     updateSelectizeInput(session, inputId = "SiteIn", selected=chosen(), 
@@ -192,10 +182,10 @@ siteChooser<-function(input, output, session, data, park, chosen){
     )
   })
   return(reactive({
-    if ("ALL" %in% debouncedSiteIn()){
+    if ("ALL" %in% SiteIn()){
       getSiteInfo(data, parkcode = park(), info = "SiteCode")
     } else {
-      debouncedSiteIn()
+      SiteIn()
     }
   }))
 }
@@ -211,9 +201,7 @@ siteChooserUI2<-function(id){
 }
 
 siteChooser2<-function(input, output, session, data, park, chosen){
-  # debounce slows down the app to prevent infinite loops caused by the user changing
-  # variables faster than the app can respond
-  debouncedSiteIn2 <- shiny::debounce(reactive(input$SiteIn2), 1000)
+  SiteIn2 <- shiny::reactive(input$SiteIn2)
   
   observe({
     updateSelectizeInput(session, inputId = "SiteIn2", selected=chosen(), 
@@ -223,10 +211,10 @@ siteChooser2<-function(input, output, session, data, park, chosen){
     )
   })
   return(reactive({
-    if ("ALL" %in% debouncedSiteIn2()){
+    if ("ALL" %in% SiteIn2()){
       getSiteInfo(data, parkcode = park(), info = "SiteCode")
     } else {
-      debouncedSiteIn2()
+      SiteIn2()
     }
   }))
 }

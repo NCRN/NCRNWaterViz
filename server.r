@@ -2419,6 +2419,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
 ### Exceedances Data Use Multiple ###
   exDUM <- shiny::reactive({
     req(DataOpts$Park, DataOpts$Site, DataOpts$Param)
+    
     # Build a named list of site packages
     out <- setNames(vector("list", length(DataOpts$Site)), DataOpts$Site)
     for (site in DataOpts$Site) {

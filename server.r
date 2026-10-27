@@ -19,7 +19,12 @@ source('secrets.R')
 # library(devtools)
 
 
-
+####getThresholdText Function
+getThresholdText<-function(object, parkcode,sitecode,charname){    
+  x<-c(getCharInfo(object, parkcode=parkcode, sitecode=sitecode, charname=charname, info="LowerDescription"),
+       getCharInfo(object, parkcode=parkcode, sitecode=sitecode, charname=charname, info="UpperDescription"))
+  return(x[!is.na(x)])
+}
 ## --- Photos (optional) -------------------------------------------------------
 imgs <- NULL
 if (photos_available) {

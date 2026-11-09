@@ -411,7 +411,7 @@ shinyServer(function(input,output,session){
     ,years=reactive(DataOpts$Years)
     ,imgs=reactive(imgs)
     ,chosen=reactive(DataOpts$SiteVisit)
-    )
+    ) %>% debounce(2000)
   PhotoPhoto<-shiny::callModule(
     photoChooser
     ,id="PhotoPhoto"
@@ -471,13 +471,13 @@ shinyServer(function(input,output,session){
     ,data=WaterData
     ,park=reactive(DataOpts$Park2)
     ,chosen=reactive(DataOpts$Site2)
-    )
+    ) %>% debounce(2000)
   PhotoYears2<-shiny::callModule(
     yearChooser2
     ,id="PhotoYears2"
     ,data=DataUseMultiple
     ,chosen=reactive(DataOpts$Years2)
-    )
+    ) %>% debounce(2000)
   PhotoSiteVisit2<-shiny::callModule(
     siteVisitChooser2
     ,id="PhotoSiteVisit2"
@@ -487,7 +487,7 @@ shinyServer(function(input,output,session){
     ,years=reactive(DataOpts$Years2)
     ,imgs=reactive(imgs)
     ,chosen=reactive(DataOpts$SiteVisit2)
-    )
+    ) %>% debounce(2000)
   PhotoPhoto2<-shiny::callModule(
     photoChooser2
     ,id="PhotoPhoto2"

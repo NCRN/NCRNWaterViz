@@ -173,7 +173,7 @@ shinyUI(
           style = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: white; opacity: 0.8; 
           z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column;",
           
-          tags$div(id =  "typingText", class = "typing-text"),
+          # tags$div(id =  "typingText", class = "typing-text"),
           tags$img(id = "loadingImage", class = "loading-image", alt = "Water monitoring Image"),
           tags$div(id = "captionText"),
           tags$div(id = "spinner", class = "loading-bar-container",
@@ -188,9 +188,7 @@ shinyUI(
                      const fact_index = Math.floor(Math.random() * facts.length);
                      const image_index = Math.floor(Math.random() * images.length);
                    
-                    const fact1 = document.getElementById('typingText'); 
-                      fact1.textContent = facts[fact_index];
-                      fact1.style.display = 'block';
+
                     const img1 = document.getElementById('loadingImage')
                       img1.src = images[image_index].src;
                       img1.style.display = 'block';

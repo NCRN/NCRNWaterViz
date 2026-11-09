@@ -188,13 +188,17 @@ shinyUI(
                      const fact_index = Math.floor(Math.random() * facts.length);
                      const image_index = Math.floor(Math.random() * images.length);
                    
-
+                    /*
+                    const fact1 = document.getElementById('typingText'); 
+                      fact1.textContent = facts[fact_index];
+                      fact1.style.display = 'block';
                     const img1 = document.getElementById('loadingImage')
                       img1.src = images[image_index].src;
                       img1.style.display = 'block';
                     const caption1 = document.getElementById('captionText')
                       caption1.textContent = images[image_index].location + ' - ' + images[image_index].date;
                       caption1.style.display = 'block';  
+                    /*
                     const spinner1 = document.getElementById('spinner');
                     const progressBar = document.getElementById('progressBar');
                       spinner1.style.display = 'block';

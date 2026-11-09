@@ -110,7 +110,7 @@ shinyServer(function(input,output,session){
     ,data=WaterData
     ,park=reactive(DataOpts$Park)
     ,chosen=reactive(DataOpts$Site)
-    )
+    ) %>% debounce(2000)
   TimeParam<-shiny::callModule(
     paramChooser
     ,id="TimeParam"
@@ -172,7 +172,7 @@ shinyServer(function(input,output,session){
     ,data=WaterData
     ,park=reactive(DataOpts$Park)
     ,chosen=reactive(DataOpts$Site)
-    )
+    ) %>% debounce(2000)
   SummaryParam<-shiny::callModule(
     paramChooser
     ,id="SummaryParam"
@@ -228,7 +228,7 @@ shinyServer(function(input,output,session){
     ,data=WaterData
     ,park=reactive(DataOpts$Park)
     ,chosen=reactive(DataOpts$Site)
-    )
+    ) %>% debounce(2000)
   BoxParam<-shiny::callModule(
     paramChooser
     ,id="BoxParam"
@@ -284,7 +284,7 @@ shinyServer(function(input,output,session){
     ,data=WaterData
     ,park=reactive(DataOpts$Park)
     ,chosen=reactive(DataOpts$Site)
-    )
+    ) %>% debounce(2000)
   CorrParam1<-shiny::callModule(
     paramChooser
     ,id="CorrParam1"
@@ -349,7 +349,7 @@ shinyServer(function(input,output,session){
     ,data=WaterData
     ,park=reactive(DataOpts$Park)
     ,chosen=reactive(DataOpts$Site)
-    )
+    ) %>% debounce(2000)
   DataParam<-shiny::callModule(
     paramChooser
     ,id="DataParam"
@@ -395,7 +395,7 @@ shinyServer(function(input,output,session){
     ,data=WaterData
     ,park=reactive(DataOpts$Park)
     ,chosen=reactive(DataOpts$Site)
-    )
+    ) %>% debounce(2000)
   PhotoYears<-shiny::callModule(
     yearChooser
     ,id="PhotoYears"
@@ -547,7 +547,7 @@ shinyServer(function(input,output,session){
     ,data=WaterData
     ,park=reactive(DataOpts$Park)
     ,chosen=reactive(DataOpts$Site)
-    )
+    ) %>% debounce(2000)
   ExceedancesParam<-shiny::callModule(
     paramChooser
     ,id="DataParamExceedances"
@@ -2304,7 +2304,15 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
   )
     
 ### Data table output ####
-  output$DatasetURL <- renderUI({tagList(DATASET_URL)}) # a constant stored in global.R
+  output$DatasetURL <- renderUI({
+    tags$a(
+      href = DATASET_URL,
+      target = "_blank",
+      rel = "noopener noreferrer",
+      "Download the dataset"
+    )
+    })
+    # a constant stored in global.R
   DATATABLE_COLNAME_LOOKUP <- c( # a lookup used in output$WaterTable
     Site = 'MonitoringLocationName'
     ,Latitude = 'ActivityLocation.LatitudeMeasure'

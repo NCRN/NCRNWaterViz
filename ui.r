@@ -445,7 +445,7 @@ shinyUI(
             ,column(width=4, uiOutput('NoPhotos'))
           )
         )
-        ,h4(uiOutput('UpstreamDownstreamPhotoMessage'))
+        ,h4(uiOutput('NoUpstreamPhotoMessage'))
         ,imageOutput("image_plot", height = "65vh")      
         )
         ,tabPanel(
@@ -464,7 +464,7 @@ shinyUI(
             ,column(width=4, uiOutput('NoPhotos2'))
           )
         )
-        ,uiOutput('UpstreamDownstreamPhotoMessage2')
+        ,h4(uiOutput('NoUpstreamPhotoMessage2'))
         ,imageOutput("image_plot2", height = "65vh")     
       )
     )

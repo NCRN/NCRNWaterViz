@@ -426,7 +426,7 @@ shinyServer(function(input,output,session){
     PhotoPark()
     ,{
       DataOpts$Park<-PhotoPark()
-      ;DataOpts$Site<-NA
+      # ;DataOpts$Site<-NA
       ;DataOpts$SiteVisit<-NA
       # ;DataOpts$Param<-NA
       # ;DataOpts$Years<-c(1900,2100)

@@ -219,6 +219,22 @@ shinyUI(
                                jsonlite::toJSON(LOADING_IMAGES[[1]]$src, auto_unbox = TRUE)))))
     ),
     
+    tags$head(
+      tags$style(HTML("
+      #image_plot img {
+        max-width: 100%;
+        max-height: 70vh;
+        width: auto;
+        height: auto;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+      }
+    "))
+    ),
+    
+    
+    
   
  #mainPanel(
   tabsetPanel(
@@ -416,7 +432,7 @@ shinyUI(
             ,column(width=4, uiOutput('NoPhotos'))
           )
         )
-        ,imageOutput("image_plot")      
+        ,imageOutput("image_plot", height = "70vh")      
         )
         ,tabPanel(
           h4("Second Photo")

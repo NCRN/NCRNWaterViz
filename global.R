@@ -356,7 +356,19 @@ siteVisitChooser2<-function(input, output, session, data, park, site, years, img
 #### Photo module
 photoChooserUI<-function(id){
   ns<-NS(id)
-  sliderInput(inputId = ns("PhotoPhoto"), label = "Photo", min = 1, max = 8, value = 1, ticks=F)
+  # sliderInput(inputId = ns("PhotoPhoto"), label = "Photo", min = 1, max = 2, value = 1, ticks=F)
+  
+  radioButtons(
+    inputId = ns("PhotoPhoto"),
+    label = "Photo",
+    choices = c(
+      "Downstream" = 1,
+      "Upstream" = 2
+    ),
+    selected = 1,
+    inline = TRUE
+  )
+  
 }
 
 photoChooser<-function(input, output, session, data, park, site, years, imgs, sitevisit){

@@ -3298,7 +3298,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     # filenames <- paste(filenames, collapse=', ')
 
     # Get the current slider value
-    current_image_index <- DataOpts$Photo
+    current_image_index <- as.integer(DataOpts$Photo)
     # Get the path to the corresponding image
     image_path <- filenames[current_image_index]
     # Return the image as a list
@@ -3336,7 +3336,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     # filenames <- paste(filenames, collapse=', ')
 
     # Get the current slider value
-    current_image_index <- DataOpts$Photo2
+    current_image_index <- as.integer(DataOpts$Photo2)
     # Get the path to the corresponding image
     image_path <- filenames[current_image_index]
     # Return the image as a list

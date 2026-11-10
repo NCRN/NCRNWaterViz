@@ -223,7 +223,20 @@ shinyUI(
       tags$style(HTML("
       #image_plot img {
         max-width: 100%;
-        max-height: 70vh;
+        max-height: 65vh;
+        width: auto;
+        height: auto;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+      }
+    "))
+    ),
+    tags$head(
+      tags$style(HTML("
+      #image_plot2 img {
+        max-width: 100%;
+        max-height: 65vh;
         width: auto;
         height: auto;
         display: block;
@@ -432,7 +445,8 @@ shinyUI(
             ,column(width=4, uiOutput('NoPhotos'))
           )
         )
-        ,imageOutput("image_plot", height = "70vh")      
+        ,h4(uiOutput('UpstreamDownstreamPhotoMessage'))
+        ,imageOutput("image_plot", height = "65vh")      
         )
         ,tabPanel(
           h4("Second Photo")
@@ -449,7 +463,9 @@ shinyUI(
             ,column(width=4, photoChooserUI2("PhotoPhoto2"))
             ,column(width=4, uiOutput('NoPhotos2'))
           )
-        )  ,imageOutput("image_plot2")      
+        )
+        ,uiOutput('UpstreamDownstreamPhotoMessage2')
+        ,imageOutput("image_plot2", height = "65vh")     
       )
     )
     ),

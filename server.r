@@ -3142,6 +3142,90 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
   
   output$NoPhotos<-renderUI(NoPhotos())
 
+  UpstreamDownstreamPhotoMessage<-reactive({    
+    # Make a html message telling the user if the parameters they chose have no photos
+    # Args:
+    #  DataOpts$Park, chr, required. A park acronym. E.g., 'ROCR'.
+    #  DataOpts$Site, chr or c(chr), required. A site code. E.g., 'NCRN_ROCR_KLVA'
+    #  DataOpts$Years, c(int), required. Vector of integers from the app's year slider.
+    #  DataOpts$SiteVisit, chr, required. Character string like 'Sharpsburg Creek 2025-12-03'.
+    #  DataOpts$Photo, int, required. Either 1 or 2.
+    #  
+    # Returns:
+    #  chr
+    # 
+    # Example:
+    #   DataOpts$Park <- 'ROCR'
+    #   DataOpts$Site <- c('NCRN_ROCR_KLVA', 'NCRN_ROCR_FEBR')
+    #   DataOpts$Years <- c(2010,2020)
+    #   DataOpts$SiteVisit <- 'Sharpsburg Creek 2025-12-03'
+    #   DataOpts$Photo <- 1
+    #   
+    #   msg <- 
+    #     UpstreamDownstreamPhotoMessage(
+    #       ,DataOpts$Park
+    #       ,DataOpts$Site
+    #       ,DataOpts$Years
+    #       ,DataOpts$SiteVisit
+    #       ,DataOpts$Photo
+    #   )
+    #
+    req(DataOpts$Park, DataOpts$Site, DataOpts$Years, DataOpts$SiteVisit, DataOpts$Photo)
+
+    msg <- NULL
+    if (DataOpts$Photo==1){
+      msg <- 'Photo orientation: looking downstream'
+    }
+    if (DataOpts$Photo==2){
+      msg <- 'Photo orientation: looking upstream'
+    }
+    return(msg)
+  })
+  
+  output$UpstreamDownstreamPhotoMessage<-renderUI(UpstreamDownstreamPhotoMessage())
+
+  UpstreamDownstreamPhotoMessage2<-reactive({    
+    # Make a html message telling the user if the parameters they chose have no photos
+    # Args:
+    #  DataOpts$Park, chr, required. A park acronym. E.g., 'ROCR'.
+    #  DataOpts$Site, chr or c(chr), required. A site code. E.g., 'NCRN_ROCR_KLVA'
+    #  DataOpts$Years, c(int), required. Vector of integers from the app's year slider.
+    #  DataOpts$SiteVisit, chr, required. Character string like 'Sharpsburg Creek 2025-12-03'.
+    #  DataOpts$Photo, int, required. Either 1 or 2.
+    #  
+    # Returns:
+    #  chr
+    # 
+    # Example:
+    #   DataOpts$Park <- 'ROCR'
+    #   DataOpts$Site <- c('NCRN_ROCR_KLVA', 'NCRN_ROCR_FEBR')
+    #   DataOpts$Years <- c(2010,2020)
+    #   DataOpts$SiteVisit <- 'Sharpsburg Creek 2025-12-03'
+    #   DataOpts$Photo <- 1
+    #   
+    #   msg <- 
+    #     UpstreamDownstreamPhotoMessage(
+    #       ,DataOpts$Park
+    #       ,DataOpts$Site
+    #       ,DataOpts$Years
+    #       ,DataOpts$SiteVisit
+    #       ,DataOpts$Photo
+    #   )
+    #
+    req(DataOpts$Park2, DataOpts$Site2, DataOpts$Years2, DataOpts$SiteVisit2, DataOpts$Photo2)
+
+    msg <- NULL
+    if (DataOpts$Photo2==1){
+      msg <- 'Photo orientation: looking downstream'
+    }
+    if (DataOpts$Photo2==2){
+      msg <- 'Photo orientation: looking upstream'
+    }
+    return(msg)
+  })
+  
+  output$UpstreamDownstreamPhotoMessage2<-renderUI(UpstreamDownstreamPhotoMessage2())
+
   NoPhotos2<-reactive({    
     # Make a html message telling the user if the parameters they chose have no photos
     # Args:

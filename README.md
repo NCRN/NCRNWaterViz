@@ -30,7 +30,7 @@ mkdir NCRN
 cd ../..
 ```
 
-5.  Copy the data and metadata files to your `Data/NCRN` folder from [here](https://irma.nps.gov/DataStore/Reference/Profile/2321438) wqp.csv wqp_ncrnwater_metadata.csv
+5.  Copy the data and metadata files to your `Data/NCRN` folder from [here](https://irma.nps.gov/DataStore/Reference/Profile/2321619) wqp.csv wqp_ncrnwater_metadata.csv
 
 6.  Confirm that you can run the shiny app.
 

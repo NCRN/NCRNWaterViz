@@ -226,7 +226,7 @@
     },
     "NCRNWater": {
       "Package": "NCRNWater",
-      "Version": "1.1.0",
+      "Version": "1.1.1",
       "Source": "GitHub",
       "Type": "Package",
       "Title": "Data analysis and visualization for NPS I&M water monitoring",
@@ -273,8 +273,8 @@
       "RemoteHost": "api.github.com",
       "RemoteUsername": "NCRN",
       "RemoteRepo": "NCRNWater",
-      "RemoteRef": "thresholds",
-      "RemoteSha": "585b4b612b21c72ba0ea1cb6ad0df55e6b5228ab"
+      "RemoteRef": "master",
+      "RemoteSha": "46c07eebe2faf2971790acb3beaf193089faf6e0"
     },
     "R6": {
       "Package": "R6",

@@ -2335,7 +2335,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
   )
   data_tooltips_json <- jsonlite::toJSON(data_tooltips, auto_unbox = TRUE)
   
-  data_text_cols<-c("Park", "Site", "Parameter", "Units")
+  data_text_cols<-c("Park", "Site", "Parameter", "Units", "AssessmentDetails")
   data_num_or_date_cols<-c("Latitude", "Longitude", "SampleDate", "SampleTime", "Value")
 
   output$WaterTable <-DT::renderDataTable(
@@ -2451,6 +2451,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     ,"Units" = "Units of the measured value"
     ,"UpperThreshold" = "Description of the upper threshold for this site and parameter"
     ,"LowerThreshold" = "Description of the lower threshold for this site and parameter"
+    ,"AssessmentDetails" = "Reference, rationale, or source used to define the threshold"
   )
   exceedances_tooltips_json <- jsonlite::toJSON(exceedances_tooltips, auto_unbox = TRUE)
   

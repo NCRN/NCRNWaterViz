@@ -2443,15 +2443,15 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
   
 ### Table Hover Text ###
   exceedances_tooltips <- list(
-    "Site" = "Site name of monitoring event"
-    ,"SampleDate" = "Date of monitoring event"
-    ,"Parameter" = "Water quality parameter"
-    ,"Value" = "Numeric measurement of a water quality parameter"
-    ,"Difference" = "Magnitude of the exceedance (Value - Threshold)"
-    ,"Units" = "Units of the measured value"
-    ,"UpperThreshold" = "Description of the upper threshold for this site and parameter"
-    ,"LowerThreshold" = "Description of the lower threshold for this site and parameter"
-    ,"AssessmentDetails" = "Reference, rationale, or source used to define the threshold"
+    "Site" = "Site name of monitoring event",
+    "SampleDate" = "Date of monitoring event",
+    "Parameter" = "Water quality parameter",
+    "Value" = "Numeric measurement of a water quality parameter",
+    "Difference" = "Magnitude of the exceedance (Value - Threshold)",
+    "Units" = "Units of the measured value",
+    "Citation" = "Reference, rationale, or source used to define the threshold",
+    "UpperThreshold" = "Description of the upper threshold for this site and parameter",
+    "LowerThreshold" = "Description of the lower threshold for this site and parameter"
   )
   exceedances_tooltips_json <- jsonlite::toJSON(exceedances_tooltips, auto_unbox = TRUE)
   

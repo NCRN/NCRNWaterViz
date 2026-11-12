@@ -2335,7 +2335,7 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
   )
   data_tooltips_json <- jsonlite::toJSON(data_tooltips, auto_unbox = TRUE)
   
-  data_text_cols<-c("Park", "Site", "Parameter", "Units", "AssessmentDetails")
+  data_text_cols<-c("Park", "Site", "Parameter", "Units")
   data_num_or_date_cols<-c("Latitude", "Longitude", "SampleDate", "SampleTime", "Value")
 
   output$WaterTable <-DT::renderDataTable(

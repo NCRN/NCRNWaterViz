@@ -3289,44 +3289,25 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
   },
   deleteFile=F
   )
-  
+
   output$image_plot2 <- renderImage({
-    req(DataOpts$Park2, DataOpts$Site2, DataOpts$Years2, DataOpts$SiteVisit2, DataOpts$Photo2)
-    # https://cran.r-project.org/web/packages/slickR/vignettes/shiny.html possible 2.0 version?
-
-    filenames <- c()
-    if (DataOpts$Park2 %in% names(imgs)){
-      for (site in DataOpts$Site2){
-        if (site %in% names(imgs[[DataOpts$Park2]])){
-          for (yr in names(imgs[[DataOpts$Park2]][[site]])){
-            if (as.numeric(yr) >= as.numeric(DataOpts$Years2[1]) & as.numeric(yr) <= as.numeric(DataOpts$Years2[2])){
-              for (sitevisit in names(imgs[[DataOpts$Park2]][[site]][[yr]])){
-                if (sitevisit == DataOpts$SiteVisit2){
-                  for (f in names(imgs[[DataOpts$Park2]][[site]][[yr]][[sitevisit]])){
-                    fname <- imgs[[DataOpts$Park2]][[site]][[yr]][[sitevisit]][[f]]$rel_fpath
-                    filenames <- c(filenames, fname)
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-    # filenames <- paste(filenames, collapse=', ')
-
-    # Get the current slider value
-    current_image_index <- as.integer(DataOpts$Photo2)
-    # Get the path to the corresponding image
-    image_path <- filenames[current_image_index]
-    # Return the image as a list
-    list(src = image_path,
-         contentType = "image/jpeg", # Or appropriate image type
-         width = "100%" # Or desired width
+    image_path <- CurrentPhotoPath2()
+    
+    req(
+      file.exists(image_path),
+      cancelOutput = FALSE
     )
-        
-    },
-    deleteFile=F)
+    
+    list(
+      src = image_path,
+      contentType = mime::guess_type(image_path),
+      alt = basename(image_path)
+    )
+  },
+  deleteFile=F
+  )
+  
+
 
   CurrentPhotoPath <- reactive({
     files <- PhotoFiles()
@@ -3334,6 +3315,31 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     req(length(files) > 0L)
     
     index <- suppressWarnings(as.integer(DataOpts$Photo))
+    
+    req(
+      length(index) == 1L,
+      !is.na(index),
+      index >= 1L,
+      index <= length(files)
+    )
+    
+    path <- files[[index]]
+    
+    req(
+      length(path) == 1L,
+      !is.na(path),
+      nzchar(path)
+    )
+    
+    path
+  })
+
+  CurrentPhotoPath2 <- reactive({
+    files <- PhotoFiles2()
+    
+    req(length(files) > 0L)
+    
+    index <- suppressWarnings(as.integer(DataOpts$Photo2))
     
     req(
       length(index) == 1L,
@@ -3366,6 +3372,93 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     sites <- DataOpts$Site
     years <- DataOpts$Years
     selected_visit <- DataOpts$SiteVisit
+    
+    req(
+      length(park) == 1L,
+      !is.na(park),
+      nzchar(park),
+      length(sites) > 0L,
+      length(years) == 2L,
+      length(selected_visit) == 1L,
+      !is.na(selected_visit),
+      nzchar(selected_visit)
+    )
+    
+    if (!park %in% names(imgs)) {
+      return(character(0))
+    }
+    
+    filenames <- character(0)
+    
+    for (site in sites) {
+      if (!site %in% names(imgs[[park]])) {
+        next
+      }
+      
+      available_years <- names(imgs[[park]][[site]])
+      
+      for (yr in available_years) {
+        year_num <- suppressWarnings(as.numeric(yr))
+        
+        if (
+          is.na(year_num) ||
+          year_num < as.numeric(years[1]) ||
+          year_num > as.numeric(years[2])
+        ) {
+          next
+        }
+        
+        visits <- names(imgs[[park]][[site]][[yr]])
+        
+        # This is the important stale-selection guard.
+        if (!selected_visit %in% visits) {
+          next
+        }
+        
+        visit_photos <- imgs[[park]][[site]][[yr]][[selected_visit]]
+        
+        if (!is.list(visit_photos) || !length(visit_photos)) {
+          next
+        }
+        
+        visit_files <- vapply(
+          visit_photos,
+          function(photo) {
+            path <- photo$rel_fpath
+            
+            if (is.null(path) || !length(path) || is.na(path[1])) {
+              return(NA_character_)
+            }
+            
+            as.character(path[1])
+          },
+          FUN.VALUE = character(1)
+        )
+        
+        filenames <- c(filenames, visit_files)
+      }
+    }
+    
+    filenames <- filenames[
+      !is.na(filenames) &
+        nzchar(filenames)
+    ]
+    
+    unique(filenames)
+  })
+
+  PhotoFiles2 <- reactive({
+    req(
+      DataOpts$Park2,
+      DataOpts$Site2,
+      DataOpts$Years2,
+      DataOpts$SiteVisit2
+    )
+    
+    park <- DataOpts$Park2
+    sites <- DataOpts$Site2
+    years <- DataOpts$Years2
+    selected_visit <- DataOpts$SiteVisit2
     
     req(
       length(park) == 1L,
@@ -3489,65 +3582,55 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     
     tags$p(msg)
   })
-  
 
-  NoUpstreamPhotoMessage2<-reactive({    
-    # Make a html message telling the user if the parameters they chose have no photos
-    # Args:
-    #  DataOpts$Park, chr, required. A park acronym. E.g., 'ROCR'.
-    #  DataOpts$Site, chr or c(chr), required. A site code. E.g., 'NCRN_ROCR_KLVA'
-    #  DataOpts$Years, c(int), required. Vector of integers from the app's year slider.
-    #  
-    # Returns:
-    #  vector
-    # 
-    # Example:
-    #   DataOpts$Park <- 'ROCR'
-    #   DataOpts$Site <- c('NCRN_ROCR_KLVA', 'NCRN_ROCR_FEBR')
-    #   DataOpts$Years <- c(2010,2020)
-    #   
-    #   sitevisits <- 
-    #     PhotoSiteVisits(
-    #       ,DataOpts$Park
-    #       ,DataOpts$Site
-    #       ,DataOpts$Years
-    #   )
-    #
-    req(DataOpts$Park2, DataOpts$Site2, DataOpts$Years2, DataOpts$SiteVisit2, DataOpts$Photo2)
-    # https://cran.r-project.org/web/packages/slickR/vignettes/shiny.html possible 2.0 version?
+  NoUpstreamPhotoMessage2 <- reactive({
+    req(
+      DataOpts$Park2,
+      DataOpts$Site2,
+      DataOpts$Years2,
+      DataOpts$SiteVisit2
+    )
     
-    filenames <- c()
-    if (DataOpts$Park2 %in% names(imgs)){
-      for (site in DataOpts$Site2){
-        if (site %in% names(imgs[[DataOpts$Park2]])){
-          for (yr in names(imgs[[DataOpts$Park2]][[site]])){
-            if (as.numeric(yr) >= as.numeric(DataOpts$Years2[1]) & as.numeric(yr) <= as.numeric(DataOpts$Years2[2])){
-              for (sitevisit in names(imgs[[DataOpts$Park2]][[site]][[yr]])){
-                if (sitevisit == DataOpts$SiteVisit2){
-                  for (f in names(imgs[[DataOpts$Park2]][[site]][[yr]][[sitevisit]])){
-                    fname <- imgs[[DataOpts$Park2]][[site]][[yr]][[sitevisit]][[f]]$rel_fpath
-                    filenames <- c(filenames, fname)
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-    # filenames <- paste(filenames, collapse=', ')
+    files <- PhotoFiles2()
     
-    # Get the current slider value
-    current_image_index <- as.integer(DataOpts$Photo2)
-    # Get the path to the corresponding image
-    image_path <- filenames[current_image_index]
-    msg <- NULL
-    if (is.null(image_path) | is.na(image_path)){
-      msg <- 'This site visit has no upstream photo'
+    if (!length(files)) {
+      return("") # this message is only visible for the duration of the debounce()
     }
+    
+    index <- suppressWarnings(as.integer(DataOpts$Photo))
+    
+    if (
+      length(index) != 1L ||
+      is.na(index) ||
+      index < 1L ||
+      index > length(files)
+    ) {
+      return("This site visit has no upstream photo.")
+    }
+    
+    image_path <- files[[index]]
+    
+    if (
+      length(image_path) != 1L ||
+      is.na(image_path) ||
+      !nzchar(image_path) ||
+      !file.exists(image_path)
+    ) {
+      return("This site visit has no upstream photo.")
+    }
+    
+    NULL
   })
   
-  output$NoUpstreamPhotoMessage2<-renderUI(NoUpstreamPhotoMessage2())
-
+  output$NoUpstreamPhotoMessage2 <- renderUI({
+    msg <- NoUpstreamPhotoMessage2()
+    
+    if (is.null(msg)) {
+      return(NULL)
+    }
+    
+    tags$p(msg)
+  })
+  
 }) #End of Shiny Server function
 

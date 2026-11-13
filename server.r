@@ -3286,7 +3286,9 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
       contentType = mime::guess_type(image_path),
       alt = basename(image_path)
     )
-  })
+  },
+  deleteFile=F
+  )
   
   output$image_plot2 <- renderImage({
     req(DataOpts$Park2, DataOpts$Site2, DataOpts$Years2, DataOpts$SiteVisit2, DataOpts$Photo2)

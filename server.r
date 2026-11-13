@@ -3349,6 +3349,94 @@ output$SeriesRefSummaryMultiple<-renderUI(HTML(SeriesRefSummaryMultiple()))
     },
     deleteFile=F)
 
+  
+  PhotoFiles <- reactive({
+    req(
+      DataOpts$Park,
+      DataOpts$Site,
+      DataOpts$Years,
+      DataOpts$SiteVisit
+    )
+    
+    park <- DataOpts$Park
+    sites <- DataOpts$Site
+    years <- DataOpts$Years
+    selected_visit <- DataOpts$SiteVisit
+    
+    req(
+      length(park) == 1L,
+      !is.na(park),
+      nzchar(park),
+      length(sites) > 0L,
+      length(years) == 2L,
+      length(selected_visit) == 1L,
+      !is.na(selected_visit),
+      nzchar(selected_visit)
+    )
+    
+    if (!park %in% names(imgs)) {
+      return(character(0))
+    }
+    
+    filenames <- character(0)
+    
+    for (site in sites) {
+      if (!site %in% names(imgs[[park]])) {
+        next
+      }
+      
+      available_years <- names(imgs[[park]][[site]])
+      
+      for (yr in available_years) {
+        year_num <- suppressWarnings(as.numeric(yr))
+        
+        if (
+          is.na(year_num) ||
+          year_num < as.numeric(years[1]) ||
+          year_num > as.numeric(years[2])
+        ) {
+          next
+        }
+        
+        visits <- names(imgs[[park]][[site]][[yr]])
+        
+        # This is the important stale-selection guard.
+        if (!selected_visit %in% visits) {
+          next
+        }
+        
+        visit_photos <- imgs[[park]][[site]][[yr]][[selected_visit]]
+        
+        if (!is.list(visit_photos) || !length(visit_photos)) {
+          next
+        }
+        
+        visit_files <- vapply(
+          visit_photos,
+          function(photo) {
+            path <- photo$rel_fpath
+            
+            if (is.null(path) || !length(path) || is.na(path[1])) {
+              return(NA_character_)
+            }
+            
+            as.character(path[1])
+          },
+          FUN.VALUE = character(1)
+        )
+        
+        filenames <- c(filenames, visit_files)
+      }
+    }
+    
+    filenames <- filenames[
+      !is.na(filenames) &
+        nzchar(filenames)
+    ]
+    
+    unique(filenames)
+  })
+  
   NoUpstreamPhotoMessage<-reactive({    
     # Make a html message telling the user if the parameters they chose have no photos
     # Args:

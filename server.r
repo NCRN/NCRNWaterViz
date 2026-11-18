@@ -1352,7 +1352,7 @@ shinyServer(function(input,output,session){
               title=list(text='<br><br>')
               ,font=list(size=GraphOpts$FontSize)
           )
-          ,hovermode='x'
+          ,hovermode='closest'
           ,showlegend=T
           ,yaxis = list(title=list(text=paste0(yname, '<br>'), font=list(size=GraphOpts$FontSize)), font=list(size=GraphOpts$FontSize))
           ,xaxis = list(title=list(text=paste0(xname, '<br>'), font=list(size=GraphOpts$FontSize)), font=list(size=GraphOpts$FontSize))

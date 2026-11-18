@@ -17,6 +17,7 @@ library(NADA)
 library(plotly)
 source('secrets.R')
 # library(devtools)
+set.seed(1)
 
 
 ####getThresholdText Function
@@ -1316,7 +1317,30 @@ shinyServer(function(input,output,session){
     t = 100,
     pad = 20
   )
-
+  series_df <- series_df %>%
+    dplyr::mutate(
+      hover_text = paste0(
+        "Date: ", Date,
+        "<br>Site: ", MonitoringLocationName,
+        "<br>", yname, ": ", round(Value, 2)
+      )
+    ) %>%
+    dplyr::group_by(
+      Date,
+      MonitoringLocationName,
+      Value
+    ) %>%
+    dplyr::mutate(
+      duplicate_index = row_number(),
+      duplicate_count = n()
+    ) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(
+      PlotDate =
+        Date + (duplicate_index -
+                  (duplicate_count + 1)/2) * 1
+    )
+  
   baseplot <-
       plotly::plot_ly(
           series_df
@@ -1326,7 +1350,7 @@ shinyServer(function(input,output,session){
           ,height = (GraphOpts$FigureVerticalScaling*as.numeric(input$dimension[2]))
       ) %>% add_trace(
           y= ~Value
-          ,x= ~Date
+          ,x= ~PlotDate
           ,color= ~MonitoringLocationName
           ,symbol= ~MonitoringLocationName
           ,connectgaps=TRUE # set to FALSE to create breaks in the line for NAs
@@ -1335,15 +1359,8 @@ shinyServer(function(input,output,session){
               size=GraphOpts$PointSize
               ,opacity=as.numeric(GraphOpts$ShowHidePoint)
           )
-          ,hovertemplate = paste0(
-              "<br>Date: ", series_df$Date
-              ,"<br>Site: ", series_df$MonitoringLocationName
-              ,"<br>", yname, ": ", round(series_df$Value,2)
-              # extra is a secondary bit of hovertext that's visible on the right-ide of the main hovertext
-              # https://community.plotly.com/t/disabling-default-tooltip-while-using-a-hovertemplate-in-python/85824/3
-              ,'<extra></extra>'
-          )
-          ,text=NULL
+          ,text=~hover_text
+          ,hovertemplate = "%{text}<extra></extra>"
       ) %>% layout(
           font=list(size=GraphOpts$FontSize)
           ,margin=m
